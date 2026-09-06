@@ -1,7 +1,8 @@
 import React from 'react';
-import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AppText from './AppText';
+import Bounce from './Bounce';
 import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
 
@@ -34,8 +35,7 @@ export default function PrayerCell({ title, icon = 'ellipse-outline', done, lock
   }
 
   return (
-    <TouchableOpacity
-      activeOpacity={disabled ? 1 : 0.75}
+    <Bounce
       disabled={disabled}
       onPress={onPress}
       onLongPress={disabled ? undefined : onLongPress}
@@ -45,7 +45,7 @@ export default function PrayerCell({ title, icon = 'ellipse-outline', done, lock
       <AppText size={9.5} weight="semibold" color={iconColor} style={styles.label} numberOfLines={1}>
         {title}
       </AppText>
-    </TouchableOpacity>
+    </Bounce>
   );
 }
 

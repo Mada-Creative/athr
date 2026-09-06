@@ -254,7 +254,7 @@ const REMINDER_PRESETS = [null, 5, 10, 15, 30, 60];
 
 async function updateSettings(req, res) {
   try {
-    const { name, city, gender, calculationMethod, madhab, weights, prayerNotifications } = req.body;
+    const { name, city, gender, calculationMethod, madhab, prayerNotifications } = req.body;
     const user = req.user;
 
     if (name !== undefined) user.name = name;
@@ -275,15 +275,6 @@ async function updateSettings(req, res) {
         return res.status(400).json({ message: 'قيمة التذكير قبل الصلاة غير صالحة' });
       }
       user.prayerNotifications = merged;
-    }
-
-    if (weights !== undefined) {
-      const merged = { ...user.weights.toObject(), ...weights };
-      const total = Object.values(merged).reduce((sum, v) => sum + Number(v || 0), 0);
-      if (total !== 100) {
-        return res.status(400).json({ message: 'مجموع النسب يجب أن يساوي 100%' });
-      }
-      user.weights = merged;
     }
 
     await user.save();

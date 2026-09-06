@@ -1,10 +1,11 @@
 import React, { useCallback, useState } from 'react';
-import { FlatList, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { FlatList, StyleSheet, TextInput, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import AppText from '../components/AppText';
 import Card from '../components/Card';
+import Bounce from '../components/Bounce';
 import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
 import { api } from '../api/client';
@@ -21,6 +22,7 @@ export default function TasbihScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [customText, setCustomText] = useState('');
   const [adding, setAdding] = useState(false);
+  const [error, setError] = useState(null);
 
   const load = useCallback(async () => {
     try {
@@ -43,6 +45,7 @@ export default function TasbihScreen({ navigation }) {
   const openCounter = (counter) => navigation.navigate('TasbihCounter', { id: counter._id, text: counter.text });
 
   const onPickPreset = async (text) => {
+    setError(null);
     const existing = counters.find((c) => c.text === text);
     if (existing) {
       openCounter(existing);
@@ -54,6 +57,7 @@ export default function TasbihScreen({ navigation }) {
       openCounter(res.counter);
     } catch (err) {
       // couldn't create — leave the preset tappable for another try
+      setError(err.message || 'تعذر إنشاء العدّاد — تحقق من اتصالك بالإنترنت');
     }
   };
 
@@ -61,6 +65,7 @@ export default function TasbihScreen({ navigation }) {
     const text = customText.trim();
     if (!text) return;
     setAdding(true);
+    setError(null);
     try {
       const res = await api.post('/tasbih', { text });
       setCounters((prev) => (existingTexts.has(text) ? prev : [res.counter, ...prev]));
@@ -68,6 +73,7 @@ export default function TasbihScreen({ navigation }) {
       openCounter(res.counter);
     } catch (err) {
       // leave the input as-is so the user can retry
+      setError(err.message || 'تعذر إضافة الذكر — تحقق من اتصالك بالإنترنت');
     } finally {
       setAdding(false);
     }
@@ -91,11 +97,11 @@ export default function TasbihScreen({ navigation }) {
 
             <View style={styles.presetsRow}>
               {PRESETS.map((text) => (
-                <TouchableOpacity key={text} style={styles.presetChip} onPress={() => onPickPreset(text)}>
+                <Bounce key={text} style={styles.presetChip} onPress={() => onPickPreset(text)}>
                   <AppText size={13} weight="semibold" color={colors.ink}>
                     {text}
                   </AppText>
-                </TouchableOpacity>
+                </Bounce>
               ))}
             </View>
 
@@ -110,14 +116,20 @@ export default function TasbihScreen({ navigation }) {
                 onSubmitEditing={onAddCustom}
                 returnKeyType="done"
               />
-              <TouchableOpacity
+              <Bounce
                 style={[styles.addBtn, (!customText.trim() || adding) && { opacity: 0.5 }]}
                 onPress={onAddCustom}
                 disabled={!customText.trim() || adding}
               >
                 <Ionicons name="add" size={22} color={colors.white} />
-              </TouchableOpacity>
+              </Bounce>
             </View>
+
+            {error ? (
+              <AppText size={12} color={colors.clay} style={{ marginTop: spacing.sm }}>
+                {error}
+              </AppText>
+            ) : null}
 
             {counters.length > 0 && (
               <AppText weight="bold" size={15} style={{ marginTop: spacing.xl, marginBottom: spacing.sm }}>
@@ -127,7 +139,7 @@ export default function TasbihScreen({ navigation }) {
           </View>
         }
         renderItem={({ item }) => (
-          <TouchableOpacity onPress={() => openCounter(item)}>
+          <Bounce scaleTo={0.97} onPress={() => openCounter(item)}>
             <Card style={styles.counterCard}>
               <AppText size={15} weight="semibold" style={{ flex: 1 }}>
                 {item.text}
@@ -138,7 +150,7 @@ export default function TasbihScreen({ navigation }) {
                 </AppText>
               </View>
             </Card>
-          </TouchableOpacity>
+          </Bounce>
         )}
         ListEmptyComponent={
           !loading ? (

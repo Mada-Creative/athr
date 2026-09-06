@@ -52,6 +52,7 @@ export default function useDailyData(date) {
     async (group, key) => {
       if (prayerLog?.excused) return; // guarded again server-side, but avoid the round trip
       const currentValue = prayerLog?.[group]?.[key];
+      setError(null);
       setPrayerLog((prev) => ({
         ...prev,
         [group]: { ...prev?.[group], [key]: !currentValue },
@@ -62,6 +63,7 @@ export default function useDailyData(date) {
         load();
       } catch (err) {
         setPrayerLog((prev) => ({ ...prev, [group]: { ...prev?.[group], [key]: currentValue } }));
+        setError(err.message || 'تعذر تسجيل الصلاة — تحقق من اتصالك بالإنترنت');
       }
     },
     [date, prayerLog, load]
@@ -97,6 +99,7 @@ export default function useDailyData(date) {
   const toggleAthkarComplete = useCallback(
     async (category) => {
       const current = Boolean(athkar?.[category]?.completed);
+      setError(null);
       setAthkar((prev) => ({ ...prev, [category]: { ...prev?.[category], completed: !current } }));
       try {
         const res = await api.patch(`/athkar/${date}/${category}`, { completed: !current });
@@ -104,6 +107,7 @@ export default function useDailyData(date) {
         load();
       } catch (err) {
         setAthkar((prev) => ({ ...prev, [category]: { ...prev?.[category], completed: current } }));
+        setError(err.message || 'تعذر تسجيل الأذكار — تحقق من اتصالك بالإنترنت');
       }
     },
     [date, athkar, load]
@@ -111,6 +115,7 @@ export default function useDailyData(date) {
 
   const toggleQuran = useCallback(async () => {
     const currentValue = quran?.completed;
+    setError(null);
     setQuran((prev) => ({ ...prev, completed: !currentValue }));
     try {
       const res = await api.patch(`/quran/${date}`, { completed: !currentValue });
@@ -118,12 +123,14 @@ export default function useDailyData(date) {
       load();
     } catch (err) {
       setQuran((prev) => ({ ...prev, completed: currentValue }));
+      setError(err.message || 'تعذر الحفظ — تحقق من اتصالك بالإنترنت');
     }
   }, [date, quran, load]);
 
   const toggleTask = useCallback(
     async (taskId) => {
       const current = taskLogs.find((l) => l.task === taskId)?.completed;
+      setError(null);
       try {
         const res = await api.patch(`/tasks/logs/${date}/${taskId}`, { completed: !current });
         setTaskLogs((prev) => {
@@ -132,7 +139,7 @@ export default function useDailyData(date) {
         });
         load();
       } catch (err) {
-        // ignore, will be corrected on next load
+        setError(err.message || 'تعذر الحفظ — تحقق من اتصالك بالإنترنت');
       }
     },
     [date, taskLogs, load]

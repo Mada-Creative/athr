@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, Switch, TextInput, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Switch, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import AppText from '../components/AppText';
@@ -10,14 +10,17 @@ import { radius, spacing } from '../theme/spacing';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
 
-const WEIGHT_LABELS = {
-  prayers: 'الصلوات',
-  athkar: 'الأذكار',
-  quran: 'القرآن',
-  nawafil: 'النوافل',
-  dailyDeeds: 'عبادات يومية',
-  other: 'أخرى',
-};
+// Fixed and not user-editable — the same split the backend always scores
+// against (see backend/src/controllers/statsController.js). Shown here only
+// so people understand how "بصمتك اليوم" is computed, nothing more.
+const SCORE_BREAKDOWN = [
+  { label: 'الصلوات', percent: 50 },
+  { label: 'الأذكار', percent: 10 },
+  { label: 'القرآن', percent: 10 },
+  { label: 'النوافل', percent: 10 },
+  { label: 'عبادات يومية', percent: 10 },
+  { label: 'أخرى', percent: 10 },
+];
 
 // Graduated presets, shortest to longest — matches how far ahead someone
 // actually plans to stop what they're doing for a prayer.
@@ -40,7 +43,6 @@ export default function SettingsScreen({ navigation }) {
   const { colors, preference, setPreference } = useTheme();
   const styles = createStyles(colors);
   const { user, isGuest, updateUser, logout } = useAuth();
-  const [weights, setWeights] = useState(() => ({ ...user?.weights }));
   const [atAdhan, setAtAdhan] = useState(user?.prayerNotifications?.atAdhan ?? false);
   const [reminderMinutes, setReminderMinutes] = useState(user?.prayerNotifications?.reminderMinutes ?? null);
   const [gender, setGender] = useState(user?.gender ?? null);
@@ -48,26 +50,19 @@ export default function SettingsScreen({ navigation }) {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
 
-  const total = Object.values(weights).reduce((sum, v) => sum + Number(v || 0), 0);
-
   const onSave = async () => {
     setError(null);
     setSuccess(false);
-    if (total !== 100) {
-      setError(`مجموع النسب حاليًا ${total}%، يجب أن يكون 100%`);
-      return;
-    }
     setSaving(true);
     try {
       const res = await api.put('/auth/settings', {
-        weights,
         gender,
         prayerNotifications: { atAdhan, reminderMinutes },
       });
       updateUser(res.user);
       setSuccess(true);
     } catch (err) {
-      setError(err.message || 'تعذر حفظ الإعدادات');
+      setError(err.message || 'تعذر حفظ الإعدادات — تحقق من اتصالك بالإنترنت وحاول مجددًا');
     } finally {
       setSaving(false);
     }
@@ -168,29 +163,18 @@ export default function SettingsScreen({ navigation }) {
       <AppText weight="bold" size={16} style={{ marginTop: spacing.xl, marginBottom: spacing.sm }}>
         كيف يُحسب إنجازك اليومي؟
       </AppText>
-      <Card>
-        {Object.keys(WEIGHT_LABELS).map((key) => (
-          <View key={key} style={styles.weightRow}>
-            <AppText size={14}>{WEIGHT_LABELS[key]}</AppText>
-            <View style={styles.weightInputWrap}>
-              <TextInput
-                value={String(weights[key] ?? 0)}
-                onChangeText={(v) => setWeights((prev) => ({ ...prev, [key]: v.replace(/[^0-9]/g, '') }))}
-                keyboardType="number-pad"
-                style={styles.weightInput}
-                textAlign="center"
-              />
-              <AppText size={13} color={colors.inkSoft}>
-                %
-              </AppText>
-            </View>
+      <AppText size={12} color={colors.inkSoft} style={{ marginBottom: spacing.sm }}>
+        نسبة ثابتة للجميع — الصلوات أساس اليوم، وكل ما عداها يكمّلها بالتساوي
+      </AppText>
+      <Card style={styles.breakdownCard}>
+        {SCORE_BREAKDOWN.map((row) => (
+          <View key={row.label} style={styles.breakdownRow}>
+            <AppText size={14}>{row.label}</AppText>
+            <AppText size={14} weight="semibold" color={colors.inkSoft}>
+              {row.percent}%
+            </AppText>
           </View>
         ))}
-        <View style={styles.totalRow}>
-          <AppText weight="semibold" size={13} color={total === 100 ? colors.sage : colors.clay}>
-            المجموع: {total}%
-          </AppText>
-        </View>
       </Card>
 
       <AppText weight="bold" size={16} style={{ marginTop: spacing.xl, marginBottom: spacing.sm }}>
@@ -241,12 +225,9 @@ export default function SettingsScreen({ navigation }) {
       ) : null}
 
       <PrimaryButton title="حفظ الإعدادات" onPress={onSave} loading={saving} style={{ marginTop: spacing.lg }} />
-      <PrimaryButton
-        title={isGuest ? 'الخروج من وضع الضيف' : 'تسجيل الخروج'}
-        onPress={logout}
-        variant="outline"
-        style={{ marginTop: spacing.md }}
-      />
+      {!isGuest ? (
+        <PrimaryButton title="تسجيل الخروج" onPress={logout} variant="outline" style={{ marginTop: spacing.md }} />
+      ) : null}
     </Screen>
   );
 }
@@ -266,7 +247,9 @@ function createStyles(colors) {
       borderWidth: 1,
       borderColor: colors.border,
     },
-    themeOptionActive: { backgroundColor: colors.ink, borderColor: colors.ink },
+    // Fixed dark surface (like a solid button) — never inverts with the
+    // theme, so the white icon/label on it never washes out in dark mode.
+    themeOptionActive: { backgroundColor: colors.accentDark, borderColor: colors.accentDark },
     chipsRow: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: spacing.sm },
     chip: {
       paddingHorizontal: spacing.md,
@@ -276,8 +259,9 @@ function createStyles(colors) {
       borderWidth: 1,
       borderColor: colors.border,
     },
-    chipActive: { backgroundColor: colors.ink, borderColor: colors.ink },
-    weightRow: {
+    chipActive: { backgroundColor: colors.accentDark, borderColor: colors.accentDark },
+    breakdownCard: { gap: 0 },
+    breakdownRow: {
       flexDirection: 'row-reverse',
       alignItems: 'center',
       justifyContent: 'space-between',
@@ -285,17 +269,6 @@ function createStyles(colors) {
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
     },
-    weightInputWrap: { flexDirection: 'row-reverse', alignItems: 'center', gap: 6 },
-    weightInput: {
-      width: 50,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: radius.sm,
-      paddingVertical: 4,
-      fontSize: 14,
-      color: colors.ink,
-    },
-    totalRow: { paddingTop: spacing.sm, alignItems: 'flex-end' },
     notifRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: spacing.md },
     divider: { height: 1, backgroundColor: colors.border, marginVertical: spacing.md },
   });

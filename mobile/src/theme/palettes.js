@@ -9,6 +9,12 @@
 // a filled button stays dark regardless of the page around it.
 const shared = {
   accentDark: '#3A2A1E',
+  // Fixed warm-light tint for secondary text/icons drawn *on* the
+  // `accentDark` surface (hero card, active chips) — never flips with the
+  // theme, since that surface doesn't either. Using a theme-reactive token
+  // (like `amberSoft`) there was the bug: it turned near-black in dark mode
+  // and vanished against the still-dark surface underneath it.
+  accentSoft: '#EFD9B3',
   amber: '#C4863B',
   sage: '#5F8467',
   clay: '#B5573D',

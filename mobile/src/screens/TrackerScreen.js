@@ -1,5 +1,5 @@
-import React, { useCallback, useState } from 'react';
-import { RefreshControl, StyleSheet, Switch, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { LayoutAnimation, Platform, RefreshControl, StyleSheet, Switch, UIManager, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import Screen from '../components/Screen';
@@ -10,6 +10,7 @@ import SectionHeader from '../components/SectionHeader';
 import ProgressRing from '../components/ProgressRing';
 import PrayerCell from '../components/PrayerCell';
 import WeekRingStrip from '../components/WeekRingStrip';
+import Bounce from '../components/Bounce';
 import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
 import { todayISO, formatGregorian, formatWeekday } from '../utils/date';
@@ -72,12 +73,32 @@ const PRAYER_COLUMNS = [
 // Athkar not already folded into a prayer column above.
 const REMAINING_ATHKAR_KEYS = ['afterPrayer', 'wakeup'];
 
+// Old-architecture Android needs this opt-in for LayoutAnimation; harmless
+// to call unconditionally elsewhere.
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+// Smooths every checked/unchecked-driven layout & color change on this
+// screen (prayer cells, nawafil, athkar rows, check rows) instead of them
+// snapping instantly — call right before the state update that causes it.
+function animateNext() {
+  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+}
+
 export default function TrackerScreen({ navigation }) {
   const { colors, scheme } = useTheme();
   const styles = createStyles(colors);
   const { user } = useAuth();
   const date = todayISO();
-  const now = new Date();
+  // Ticks so a prayer cell unlocks itself the moment its time starts,
+  // instead of staying locked-looking until something else re-renders the
+  // screen (a pull-to-refresh, navigating away and back, ...).
+  const [now, setNow] = useState(new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 30 * 1000);
+    return () => clearInterval(id);
+  }, []);
   const { schedule } = usePrayerTimes();
   const {
     stats,
@@ -87,6 +108,7 @@ export default function TrackerScreen({ navigation }) {
     dailyDeedTasks,
     otherTasks,
     taskLogs,
+    error,
     reload,
     togglePrayer,
     toggleExcused,
@@ -111,6 +133,23 @@ export default function TrackerScreen({ navigation }) {
   const isTaskDone = (taskId) => taskLogs.find((l) => l.task === taskId)?.completed || false;
   const excused = Boolean(prayerLog?.excused);
 
+  const onTogglePrayer = (type, key) => {
+    animateNext();
+    togglePrayer(type, key);
+  };
+  const onToggleAthkar = (category) => {
+    animateNext();
+    toggleAthkarComplete(category);
+  };
+  const onToggleQuran = () => {
+    animateNext();
+    toggleQuran();
+  };
+  const onToggleTask = (taskId) => {
+    animateNext();
+    toggleTask(taskId);
+  };
+
   return (
     <Screen refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.amber} />}>
       <AppText weight="bold" size={22}>
@@ -120,7 +159,15 @@ export default function TrackerScreen({ navigation }) {
         {formatWeekday(now)}، {formatGregorian(now)}
       </AppText>
 
-      <WeekRingStrip />
+      <WeekRingStrip refreshSignal={stats} />
+
+      {error ? (
+        <View style={styles.errorBanner}>
+          <AppText size={12.5} color={colors.clay}>
+            {error}
+          </AppText>
+        </View>
+      ) : null}
 
       <Card style={styles.summaryCard}>
         <ProgressRing percentage={stats?.percentage ?? 0} size={72} strokeWidth={8} />
@@ -174,7 +221,7 @@ export default function TrackerScreen({ navigation }) {
                       done={done}
                       locked={!excused && locked}
                       excused={excused}
-                      onPress={() => togglePrayer(cell.type, cell.key)}
+                      onPress={() => onTogglePrayer(cell.type, cell.key)}
                     />
                   );
                 }
@@ -189,7 +236,7 @@ export default function TrackerScreen({ navigation }) {
                     icon={cell.icon}
                     done={Boolean(progress?.completed)}
                     locked={locked}
-                    onPress={() => toggleAthkarComplete(cell.category)}
+                    onPress={() => onToggleAthkar(cell.category)}
                     onLongPress={() => navigation.navigate('AthkarCounter', { category: cell.category })}
                   />
                 );
@@ -209,11 +256,11 @@ export default function TrackerScreen({ navigation }) {
         const completed = progress?.completed;
         const ratio = progress ? `${progress.completedItems.length}/${progress.totalItems}` : '';
         return (
-          <TouchableOpacity
+          <Bounce
             key={key}
+            scaleTo={0.97}
             style={[styles.athkarRow, completed && styles.athkarRowDone]}
             onPress={() => navigation.navigate('AthkarCounter', { category: key })}
-            activeOpacity={0.8}
           >
             <View style={[styles.athkarIcon, { backgroundColor: `${meta.color}${scheme === 'dark' ? '33' : '22'}` }]}>
               <Ionicons name={completed ? 'checkmark' : meta.icon} size={18} color={meta.color} />
@@ -224,7 +271,7 @@ export default function TrackerScreen({ navigation }) {
             <AppText size={12.5} color={colors.inkSoft}>
               {ratio}
             </AppText>
-          </TouchableOpacity>
+          </Bounce>
         );
       })}
 
@@ -233,7 +280,7 @@ export default function TrackerScreen({ navigation }) {
         title="قراءة القرآن"
         subtitle="ورد يومي من القرآن الكريم"
         checked={Boolean(quran?.completed)}
-        onToggle={toggleQuran}
+        onToggle={onToggleQuran}
         icon="book-outline"
       />
 
@@ -247,7 +294,7 @@ export default function TrackerScreen({ navigation }) {
             title={task.title}
             subtitle={task.description}
             checked={isTaskDone(task._id)}
-            onToggle={() => toggleTask(task._id)}
+            onToggle={() => onToggleTask(task._id)}
             icon="sunny-outline"
           />
         ))
@@ -263,7 +310,7 @@ export default function TrackerScreen({ navigation }) {
             title={task.title}
             subtitle={task.description}
             checked={isTaskDone(task._id)}
-            onToggle={() => toggleTask(task._id)}
+            onToggle={() => onToggleTask(task._id)}
             icon="sparkles-outline"
           />
         ))
@@ -302,6 +349,14 @@ function EmptyHint({ text }) {
 
 function createStyles(colors) {
   return StyleSheet.create({
+    errorBanner: {
+      backgroundColor: colors.claySoft,
+      borderRadius: radius.sm,
+      borderWidth: 1,
+      borderColor: colors.clay,
+      padding: spacing.sm,
+      marginBottom: spacing.md,
+    },
     summaryCard: { flexDirection: 'row-reverse', alignItems: 'center', gap: spacing.md },
     bucketLine: { marginTop: 6 },
     bucketTrack: { height: 5, borderRadius: 3, backgroundColor: colors.backgroundAlt, marginTop: 3, overflow: 'hidden' },

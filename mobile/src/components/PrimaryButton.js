@@ -1,8 +1,9 @@
 import React from 'react';
-import { ActivityIndicator, StyleSheet, TouchableOpacity } from 'react-native';
+import { ActivityIndicator, StyleSheet } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
 import AppText from './AppText';
+import Bounce from './Bounce';
 
 export default function PrimaryButton({ title, onPress, loading, disabled, variant = 'solid', style }) {
   const { colors } = useTheme();
@@ -10,8 +11,8 @@ export default function PrimaryButton({ title, onPress, loading, disabled, varia
   const isOutline = variant === 'outline';
 
   return (
-    <TouchableOpacity
-      activeOpacity={0.85}
+    <Bounce
+      scaleTo={0.97}
       onPress={onPress}
       disabled={disabled || loading}
       style={[
@@ -28,7 +29,7 @@ export default function PrimaryButton({ title, onPress, loading, disabled, varia
           {title}
         </AppText>
       )}
-    </TouchableOpacity>
+    </Bounce>
   );
 }
 

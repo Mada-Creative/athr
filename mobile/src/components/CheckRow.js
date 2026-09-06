@@ -1,16 +1,17 @@
 import React from 'react';
-import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
 import AppText from './AppText';
+import Bounce from './Bounce';
 
 export default function CheckRow({ title, subtitle, checked, onToggle, locked, icon = 'moon-outline' }) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
   return (
-    <TouchableOpacity
-      activeOpacity={locked ? 1 : 0.75}
+    <Bounce
+      disabled={locked}
       onPress={locked ? undefined : onToggle}
       style={[styles.row, checked && styles.rowChecked]}
     >
@@ -31,7 +32,7 @@ export default function CheckRow({ title, subtitle, checked, onToggle, locked, i
           </AppText>
         ) : null}
       </View>
-    </TouchableOpacity>
+    </Bounce>
   );
 }
 

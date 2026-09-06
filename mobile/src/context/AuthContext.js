@@ -17,33 +17,43 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isBooting, setIsBooting] = useState(true);
   const [authError, setAuthError] = useState(null);
+  // True only if boot finished with no session at all (e.g. no network on
+  // first launch) — every screen renders fine either way, but every
+  // authenticated request would silently 401 forever without a way back.
+  // A visible retry banner (see RootNavigator) is what actually recovers it.
+  const [sessionFailed, setSessionFailed] = useState(false);
+
+  const bootstrapSession = useCallback(async () => {
+    setIsBooting(true);
+    setSessionFailed(false);
+    try {
+      const token = await getToken();
+      if (token) {
+        const data = await api.get('/auth/me');
+        setUser(data.user);
+        return;
+      }
+      setUser(await establishGuestSession());
+    } catch (err) {
+      // Stored token was invalid/expired, or the very first /auth/me
+      // failed — either way, fall back to a fresh guest session rather
+      // than ever stopping at a blank/broken screen.
+      try {
+        await setToken(null);
+        setUser(await establishGuestSession());
+      } catch (guestErr) {
+        // No network at all — nothing to show yet. Surface it instead of
+        // leaving every screen looking fine while silently failing.
+        setSessionFailed(true);
+      }
+    } finally {
+      setIsBooting(false);
+    }
+  }, []);
 
   useEffect(() => {
-    (async () => {
-      try {
-        const token = await getToken();
-        if (token) {
-          const data = await api.get('/auth/me');
-          setUser(data.user);
-          return;
-        }
-        setUser(await establishGuestSession());
-      } catch (err) {
-        // Stored token was invalid/expired, or the very first /auth/me
-        // failed — either way, fall back to a fresh guest session rather
-        // than ever stopping at a blank/broken screen.
-        try {
-          await setToken(null);
-          setUser(await establishGuestSession());
-        } catch (guestErr) {
-          // No network at all on first launch — nothing to show yet; the
-          // screens below all tolerate a null user until this resolves.
-        }
-      } finally {
-        setIsBooting(false);
-      }
-    })();
-  }, []);
+    bootstrapSession();
+  }, [bootstrapSession]);
 
   const login = useCallback(async (email, password) => {
     setAuthError(null);
@@ -112,6 +122,8 @@ export function AuthProvider({ children }) {
       isBooting,
       authError,
       setAuthError,
+      sessionFailed,
+      retrySession: bootstrapSession,
       login,
       register,
       loginWithGoogle,
@@ -126,6 +138,8 @@ export function AuthProvider({ children }) {
       isGuest,
       isBooting,
       authError,
+      sessionFailed,
+      bootstrapSession,
       login,
       register,
       loginWithGoogle,

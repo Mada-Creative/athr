@@ -1,9 +1,10 @@
 import React, { useEffect, useLayoutEffect, useState } from 'react';
-import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import AppText from '../components/AppText';
+import Bounce from '../components/Bounce';
 import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
 import { api } from '../api/client';
@@ -14,6 +15,7 @@ export default function TasbihCounterScreen({ route, navigation }) {
   const styles = createStyles(colors);
   const [count, setCount] = useState(0);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
 
   useLayoutEffect(() => {
     navigation.setOptions({ title: text });
@@ -33,6 +35,7 @@ export default function TasbihCounterScreen({ route, navigation }) {
 
   const onTap = async () => {
     setCount((c) => c + 1);
+    setError(null);
     try {
       if (Haptics?.selectionAsync) Haptics.selectionAsync();
     } catch (err) {
@@ -41,12 +44,15 @@ export default function TasbihCounterScreen({ route, navigation }) {
     try {
       await api.patch(`/tasbih/${id}/increment`);
     } catch (err) {
-      // will reconcile next time the screen loads with network back
+      // The tap itself still counted locally — only warn, don't revert it,
+      // so a flaky connection doesn't make counting feel broken mid-dhikr.
+      setError('العدّ محفوظ على الجهاز فقط الآن — تحقق من اتصالك بالإنترنت');
     }
   };
 
   const onReset = async () => {
     setCount(0);
+    setError(null);
     try {
       if (Haptics?.notificationAsync) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     } catch (err) {
@@ -56,7 +62,7 @@ export default function TasbihCounterScreen({ route, navigation }) {
     try {
       await api.patch(`/tasbih/${id}/reset`);
     } catch (err) {
-      // will reconcile next time the screen loads with network back
+      setError('تعذر حفظ إعادة التصفير — تحقق من اتصالك بالإنترنت');
     } finally {
       setBusy(false);
     }
@@ -70,21 +76,27 @@ export default function TasbihCounterScreen({ route, navigation }) {
         </AppText>
       </View>
 
-      <TouchableOpacity activeOpacity={0.85} onPress={onTap} style={styles.dial}>
+      <Bounce scaleTo={0.92} onPress={onTap} style={styles.dial}>
         <AppText weight="bold" size={64} color={colors.accentDark}>
           {count}
         </AppText>
         <AppText size={13} color={colors.inkSoft} style={{ marginTop: spacing.xs }}>
           اضغط للعدّ
         </AppText>
-      </TouchableOpacity>
+      </Bounce>
 
-      <TouchableOpacity style={styles.resetBtn} onPress={onReset} disabled={busy}>
+      {error ? (
+        <AppText size={12} color={colors.clay} style={{ marginTop: spacing.md, textAlign: 'center' }}>
+          {error}
+        </AppText>
+      ) : null}
+
+      <Bounce onPress={onReset} disabled={busy} style={styles.resetBtn}>
         <Ionicons name="refresh" size={18} color={colors.clay} />
         <AppText weight="semibold" size={14} color={colors.clay} style={{ marginRight: spacing.xs }}>
           إعادة تعيين العداد
         </AppText>
-      </TouchableOpacity>
+      </Bounce>
     </Screen>
   );
 }

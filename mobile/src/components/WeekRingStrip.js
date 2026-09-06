@@ -13,7 +13,12 @@ const WEEKDAY_SHORT = ['أحد', 'اثنين', 'ثلاثاء', 'أربعاء', '
 // "How consistent have I been this week" at a glance — a ring per day
 // (today's date circled by its completion %) instead of a bar chart, so it
 // reads more like a streak calendar than a report.
-export default function WeekRingStrip() {
+//
+// `refreshSignal` is anything that changes when today's data changes (e.g.
+// the Tracker screen's `stats` object) — refetching only on screen focus
+// meant today's ring stayed stale after marking something while already on
+// the screen, so it never looked like it was animating at all.
+export default function WeekRingStrip({ refreshSignal }) {
   const { colors } = useTheme();
   const [days, setDays] = useState([]);
   const today = todayISO();
@@ -32,6 +37,10 @@ export default function WeekRingStrip() {
       load();
     }, [load])
   );
+
+  useEffect(() => {
+    if (refreshSignal !== undefined) load();
+  }, [refreshSignal, load]);
 
   if (!days.length) return null;
 

@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { RefreshControl, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { RefreshControl, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import Screen from '../components/Screen';
@@ -7,6 +7,8 @@ import AppText from '../components/AppText';
 import Card from '../components/Card';
 import ProgressRing from '../components/ProgressRing';
 import LiveClock from '../components/LiveClock';
+import SectionHeader from '../components/SectionHeader';
+import Bounce from '../components/Bounce';
 import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
 import { useAuth } from '../context/AuthContext';
@@ -18,10 +20,11 @@ import duas from '../constants/duas';
 
 const FARD_ORDER = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
 
-// Prayer times, Qibla, the tasbih counter and stats are grouped together
-// right under the hero card — the things you'd reach for right after
-// checking prayer times — instead of buried in the section grid below.
+// No bottom tab bar — this row is the whole app's quick-access menu, right
+// under the hero card: everything that used to live in a separate tab
+// (تتبع/الأذكار) is one tap away from Home instead.
 const PRAYER_MENU = [
+  { key: 'tracker', title: 'المتابعة', icon: 'checkbox-outline', route: 'Tracker' },
   { key: 'times', title: 'مواقيت الصلاة', icon: 'time-outline', route: 'PrayerDetail' },
   { key: 'qibla', title: 'القبلة', icon: 'compass-outline', route: 'Qibla' },
   { key: 'tasbih', title: 'العدّاد', icon: 'sync-outline', route: 'Tasbih' },
@@ -85,12 +88,12 @@ export default function HomeScreen({ navigation }) {
       <View style={styles.topBar}>
         <LiveClock size={17} />
         <View style={styles.topBarIcons}>
-          <TouchableOpacity onPress={() => navigation.navigate('Search')} style={styles.iconBtn}>
+          <Bounce onPress={() => navigation.navigate('Search')} style={styles.iconBtn}>
             <Ionicons name="search-outline" size={19} color={colors.ink} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => navigation.navigate('Settings')} style={styles.iconBtn}>
+          </Bounce>
+          <Bounce onPress={() => navigation.navigate('Settings')} style={styles.iconBtn}>
             <Ionicons name="settings-outline" size={19} color={colors.ink} />
-          </TouchableOpacity>
+          </Bounce>
         </View>
       </View>
 
@@ -101,18 +104,18 @@ export default function HomeScreen({ navigation }) {
         {formatWeekday(now)}، {formatGregorian(now)} — {hijri.day} {hijri.month} {hijri.year}هـ
       </AppText>
 
-      <TouchableOpacity activeOpacity={0.85} onPress={() => navigation.navigate('Duas')} style={styles.duaStrip}>
+      <Bounce scaleTo={0.97} onPress={() => navigation.navigate('Duas')} style={styles.duaStrip}>
         <Ionicons name="hand-left-outline" size={14} color={colors.amberDeep} />
         <AppText size={12.5} weight="semibold" color={colors.amberDeep} style={{ flex: 1 }} numberOfLines={1}>
           {dua.text}
         </AppText>
-      </TouchableOpacity>
+      </Bounce>
 
-      <TouchableOpacity activeOpacity={0.9} onPress={() => navigation.navigate('PrayerDetail')}>
+      <Bounce scaleTo={0.98} onPress={() => navigation.navigate('PrayerDetail')}>
         <Card style={styles.heroCard}>
           <View style={styles.heroTop}>
             <View>
-              <AppText color={colors.amberSoft} size={12.5}>
+              <AppText color={colors.accentSoft} size={12.5}>
                 الصلاة القادمة
               </AppText>
               <AppText weight="bold" size={22} color={colors.white} style={{ marginTop: 2 }}>
@@ -134,10 +137,10 @@ export default function HomeScreen({ navigation }) {
               return (
                 <View key={key} style={[styles.prayerChip, done && styles.prayerChipDone]}>
                   {done ? <Ionicons name="checkmark-circle" size={16} color={colors.sage} /> : null}
-                  <AppText size={12.5} weight="semibold" color={done ? colors.sage : colors.amberSoft}>
+                  <AppText size={12.5} weight="semibold" color={done ? colors.sage : colors.accentSoft}>
                     {info?.label || key}
                   </AppText>
-                  <AppText size={11} color={done ? colors.sage : colors.amberSoft}>
+                  <AppText size={11} color={done ? colors.sage : colors.accentSoft}>
                     {info ? formatClock(info.time) : '--:--'}
                   </AppText>
                 </View>
@@ -145,29 +148,29 @@ export default function HomeScreen({ navigation }) {
             })}
           </View>
 
-          <AppText size={11} color={colors.amberSoft} style={{ marginTop: spacing.md, textAlign: 'center' }}>
-            علّم صلاتك من تبويب المتابعة — اضغط هنا للتفاصيل
+          <AppText size={11} color={colors.accentSoft} style={{ marginTop: spacing.md, textAlign: 'center' }}>
+            علّم صلاتك من صفحة المتابعة — اضغط هنا للتفاصيل
           </AppText>
         </Card>
-      </TouchableOpacity>
+      </Bounce>
 
       <View style={styles.prayerMenuRow}>
         {PRAYER_MENU.map((item) => (
-          <TouchableOpacity
+          <Bounce
             key={item.key}
+            scaleTo={0.95}
             style={styles.prayerMenuItem}
-            activeOpacity={0.8}
             onPress={() => navigation.navigate(item.route)}
           >
             <Ionicons name={item.icon} size={20} color={colors.ink} />
             <AppText weight="semibold" size={11.5} style={{ marginTop: 6, textAlign: 'center' }}>
               {item.title}
             </AppText>
-          </TouchableOpacity>
+          </Bounce>
         ))}
       </View>
 
-      <TouchableOpacity activeOpacity={0.85} onPress={() => navigation.navigate('Tracker')}>
+      <Bounce scaleTo={0.98} onPress={() => navigation.navigate('Tracker')}>
         <Card style={styles.scoreCard}>
           <ProgressRing percentage={stats?.percentage ?? 0} size={78} strokeWidth={9} />
           <View style={{ flex: 1, marginRight: spacing.md }}>
@@ -180,16 +183,14 @@ export default function HomeScreen({ navigation }) {
           </View>
           <Ionicons name="chevron-back" size={20} color={colors.inkSoft} />
         </Card>
-      </TouchableOpacity>
+      </Bounce>
 
-      <AppText weight="bold" size={16} style={{ marginTop: spacing.xl, marginBottom: spacing.sm }}>
-        الأذكار
-      </AppText>
+      <SectionHeader title="الأذكار" actionLabel="كل الفئات" onAction={() => navigation.navigate('AthkarList')} />
       {ATHKAR_LINKS.map((item) => (
-        <TouchableOpacity
+        <Bounce
           key={item.key}
+          scaleTo={0.97}
           style={styles.linkRow}
-          activeOpacity={0.8}
           onPress={() => navigation.navigate('AthkarCounter', item.params)}
         >
           <View style={[styles.linkIcon, { backgroundColor: `${item.color}22` }]}>
@@ -204,19 +205,12 @@ export default function HomeScreen({ navigation }) {
             </AppText>
           </View>
           <Ionicons name="chevron-back" size={16} color={colors.inkSoft} />
-        </TouchableOpacity>
+        </Bounce>
       ))}
 
-      <AppText weight="bold" size={16} style={{ marginTop: spacing.lg, marginBottom: spacing.sm }}>
-        أخرى
-      </AppText>
+      <SectionHeader title="أخرى" />
       {MORE_LINKS.map((item) => (
-        <TouchableOpacity
-          key={item.key}
-          style={styles.linkRow}
-          activeOpacity={0.8}
-          onPress={() => navigation.navigate(item.route)}
-        >
+        <Bounce key={item.key} scaleTo={0.97} style={styles.linkRow} onPress={() => navigation.navigate(item.route)}>
           <View style={[styles.linkIcon, { backgroundColor: `${item.color}22` }]}>
             <Ionicons name={item.icon} size={19} color={item.color} />
           </View>
@@ -229,7 +223,7 @@ export default function HomeScreen({ navigation }) {
             </AppText>
           </View>
           <Ionicons name="chevron-back" size={16} color={colors.inkSoft} />
-        </TouchableOpacity>
+        </Bounce>
       ))}
     </Screen>
   );
@@ -290,11 +284,13 @@ function createStyles(colors) {
     prayerChipDone: { backgroundColor: 'rgba(95,132,103,0.18)' },
     prayerMenuRow: {
       flexDirection: 'row-reverse',
+      flexWrap: 'wrap',
       gap: spacing.sm,
       marginTop: spacing.md,
     },
     prayerMenuItem: {
-      flex: 1,
+      flexBasis: '31%',
+      flexGrow: 1,
       alignItems: 'center',
       backgroundColor: colors.surface,
       borderWidth: 1,

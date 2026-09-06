@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { FlatList, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { FlatList, InteractionManager, Keyboard, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import AppText from '../components/AppText';
@@ -26,24 +26,38 @@ export default function SearchScreen({ navigation }) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
   const [query, setQuery] = useState('');
+  const inputRef = useRef(null);
+
+  // Focusing immediately (autoFocus) raced with this screen's own modal
+  // entrance animation and could eat the very first tap on a result — wait
+  // until the transition settles before opening the keyboard.
+  useEffect(() => {
+    const task = InteractionManager.runAfterInteractions(() => inputRef.current?.focus());
+    return () => task.cancel();
+  }, []);
 
   const results = useMemo(() => {
     if (!query.trim()) return SEARCHABLE;
     return SEARCHABLE.filter((item) => item.title.includes(query.trim()));
   }, [query]);
 
+  const onSelect = (item) => {
+    Keyboard.dismiss();
+    navigation.navigate(item.route, item.params);
+  };
+
   return (
     <Screen scroll={false} contentStyle={{ flex: 1 }}>
       <View style={styles.searchBar}>
         <Ionicons name="search" size={18} color={colors.inkSoft} />
         <TextInput
+          ref={inputRef}
           value={query}
           onChangeText={setQuery}
           placeholder="ابحث عن قسم..."
           placeholderTextColor={colors.inkFaint}
           style={styles.input}
           textAlign="right"
-          autoFocus
         />
       </View>
 
@@ -53,7 +67,7 @@ export default function SearchScreen({ navigation }) {
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ paddingTop: spacing.lg, paddingBottom: spacing.xxl }}
         renderItem={({ item }) => (
-          <TouchableOpacity style={styles.row} onPress={() => navigation.navigate(item.route, item.params)}>
+          <TouchableOpacity style={styles.row} onPress={() => onSelect(item)}>
             <Ionicons name={item.icon} size={20} color={colors.amberDeep} />
             <AppText size={14.5} weight="semibold" style={{ flex: 1 }}>
               {item.title}

@@ -84,7 +84,7 @@ export default function PrayerDetailScreen() {
               <AppText weight="bold" size={16} color={isNext ? colors.white : colors.ink}>
                 {prayer.label}
               </AppText>
-              <AppText size={12} color={isNext ? colors.amberSoft : colors.inkSoft} style={{ marginTop: 2 }}>
+              <AppText size={12} color={isNext ? colors.accentSoft : colors.inkSoft} style={{ marginTop: 2 }}>
                 {hasPassed ? 'مضت' : isNext ? 'القادمة' : 'لاحقًا اليوم'}
               </AppText>
             </View>
@@ -131,7 +131,9 @@ function createStyles(colors) {
     padding: spacing.lg,
     marginBottom: spacing.sm,
   },
-  rowActive: { backgroundColor: colors.ink, borderColor: colors.ink },
+  // Fixed dark surface (like a solid button) — never inverts with the
+  // theme, so the white text/time on it never washes out in dark mode.
+  rowActive: { backgroundColor: colors.accentDark, borderColor: colors.accentDark },
   rowMain: { flex: 1 },
   });
 }

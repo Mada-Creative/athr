@@ -11,18 +11,6 @@ const PrayerNotificationsSchema = new mongoose.Schema(
   { _id: false }
 );
 
-const WeightsSchema = new mongoose.Schema(
-  {
-    prayers: { type: Number, default: 50 },
-    athkar: { type: Number, default: 10 },
-    quran: { type: Number, default: 10 },
-    nawafil: { type: Number, default: 10 },
-    dailyDeeds: { type: Number, default: 10 },
-    other: { type: Number, default: 10 },
-  },
-  { _id: false }
-);
-
 const UserSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
@@ -52,7 +40,6 @@ const UserSchema = new mongoose.Schema(
     gender: { type: String, enum: ['male', 'female', null], default: null },
     calculationMethod: { type: String, default: 'UmmAlQura' },
     madhab: { type: String, enum: ['shafii', 'hanafi'], default: 'shafii' },
-    weights: { type: WeightsSchema, default: () => ({}) },
     prayerNotifications: { type: PrayerNotificationsSchema, default: () => ({}) },
   },
   { timestamps: true }
@@ -73,7 +60,6 @@ UserSchema.methods.toPublicJSON = function toPublicJSON() {
     gender: this.gender,
     calculationMethod: this.calculationMethod,
     madhab: this.madhab,
-    weights: this.weights,
     prayerNotifications: this.prayerNotifications,
     createdAt: this.createdAt,
   };

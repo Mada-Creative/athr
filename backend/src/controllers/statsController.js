@@ -9,12 +9,18 @@ const { FARD_KEYS, NAWAFIL_KEYS } = require('./prayerController');
 
 const ATHKAR_CATEGORIES = Object.keys(athkarContent);
 
+// Fixed for every user — prayers are the foundation of the day's score,
+// everything else splits the rest evenly. Not configurable, and not read
+// from the user document (older accounts created before this field existed
+// could have it missing entirely, which used to 500 this whole endpoint).
+const FIXED_WEIGHTS = { prayers: 50, athkar: 10, quran: 10, nawafil: 10, dailyDeeds: 10, other: 10 };
+
 /**
  * Computes the weighted daily completion percentage for one user/date,
- * using the same six buckets shown on the settings screen:
- * prayers, nawafil, dailyDeeds, athkar, quran, other.
+ * using the same six fixed buckets: prayers, nawafil, dailyDeeds, athkar,
+ * quran, other.
  */
-async function computeDayScore(userId, date, weights) {
+async function computeDayScore(userId, date, weights = FIXED_WEIGHTS) {
   const [prayerLog, athkarLogs, quranLog, dailyDeedTasks, otherTasks, taskLogs] = await Promise.all([
     PrayerLog.findOne({ user: userId, date }),
     AthkarLog.find({ user: userId, date }),
@@ -73,15 +79,13 @@ async function getDayStats(req, res) {
   if (!isValidDateParam(date)) {
     return res.status(400).json({ message: 'صيغة التاريخ غير صحيحة (YYYY-MM-DD)' });
   }
-  const weights = req.user.weights.toObject();
-  const result = await computeDayScore(req.user._id, date, weights);
+  const result = await computeDayScore(req.user._id, date);
   return res.json(result);
 }
 
 async function getWeekStats(req, res) {
   const { endDate } = req.query;
   const end = endDate && isValidDateParam(endDate) ? new Date(endDate) : new Date();
-  const weights = req.user.weights.toObject();
 
   const days = [];
   for (let i = 6; i >= 0; i -= 1) {
@@ -90,7 +94,7 @@ async function getWeekStats(req, res) {
     days.push(d.toISOString().slice(0, 10));
   }
 
-  const results = await Promise.all(days.map((d) => computeDayScore(req.user._id, d, weights)));
+  const results = await Promise.all(days.map((d) => computeDayScore(req.user._id, d)));
   return res.json({ days: results });
 }
 
