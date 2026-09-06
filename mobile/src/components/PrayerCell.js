@@ -2,12 +2,13 @@ import React from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AppText from './AppText';
-import colors from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
 
 // One small square in the tracker's per-prayer columns. Exactly one of
 // done/locked/excused should be true; plain "pending" is the default.
 export default function PrayerCell({ title, icon = 'ellipse-outline', done, locked, excused, onPress, onLongPress }) {
+  const { colors, scheme } = useTheme();
   const disabled = locked || excused || !onPress;
 
   let bg = colors.surface;
@@ -16,9 +17,9 @@ export default function PrayerCell({ title, icon = 'ellipse-outline', done, lock
   let displayIcon = icon;
 
   if (excused) {
-    bg = '#EFE9F5';
-    borderColor = '#C9B8E0';
-    iconColor = '#7C5FA6';
+    bg = scheme === 'dark' ? '#2A2233' : '#EFE9F5';
+    borderColor = scheme === 'dark' ? '#4A3D5C' : '#C9B8E0';
+    iconColor = scheme === 'dark' ? '#B39DDB' : '#7C5FA6';
     displayIcon = 'moon';
   } else if (done) {
     bg = colors.sageSoft;

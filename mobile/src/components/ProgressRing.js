@@ -1,12 +1,13 @@
 import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet, Animated } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
-import colors from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
 import AppText from './AppText';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 export default function ProgressRing({ size = 96, strokeWidth = 10, percentage = 0, label, sublabel }) {
+  const { colors } = useTheme();
   const radiusValue = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radiusValue;
   const clamped = Math.max(0, Math.min(100, percentage));

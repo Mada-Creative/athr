@@ -13,8 +13,8 @@ import {
 } from '@expo-google-fonts/cairo';
 
 import { AuthProvider } from './src/context/AuthContext';
+import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import RootNavigator from './src/navigation/RootNavigator';
-import colors from './src/theme/colors';
 import { ensureAndroidNotificationChannel } from './src/hooks/usePrayerNotifications';
 
 // Show prayer-time notifications as a banner + sound even while the app is
@@ -38,6 +38,24 @@ if (!I18nManager.isRTL) {
 LogBox.ignoreLogs(['new NativeEventEmitter']);
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
+
+// Split out so it can call useTheme() — the provider has to be above it.
+function AppShell({ fontsLoaded, onLayoutRootView }) {
+  const { colors, scheme } = useTheme();
+
+  if (!fontsLoaded) {
+    return <View style={{ flex: 1, backgroundColor: colors.background }} />;
+  }
+
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.background }} onLayout={onLayoutRootView}>
+      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+      <AuthProvider>
+        <RootNavigator />
+      </AuthProvider>
+    </View>
+  );
+}
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -63,16 +81,9 @@ export default function App() {
     ensureAndroidNotificationChannel().catch(() => {});
   }, []);
 
-  if (!fontsLoaded) {
-    return <View style={{ flex: 1, backgroundColor: colors.background }} />;
-  }
-
   return (
-    <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
-      <StatusBar style="dark" />
-      <AuthProvider>
-        <RootNavigator />
-      </AuthProvider>
-    </View>
+    <ThemeProvider>
+      <AppShell fontsLoaded={fontsLoaded} onLayoutRootView={onLayoutRootView} />
+    </ThemeProvider>
   );
 }

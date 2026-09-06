@@ -9,13 +9,33 @@ Deliberately different from typical blue/white prayer-time apps: a warm
 "manuscript" palette (parchment background, ink-brown primary, amber/gold
 accent, sage-green success state) inspired by the أثر pen-and-ink logo, with
 a Cairo Arabic typeface, full RTL layout, and a bottom-tab + card-based
-navigation instead of the reference app's top horizontal tab bar. See
-`src/theme/colors.js`.
+navigation instead of the reference app's top horizontal tab bar.
+
+The palette ships in a light and a dark variant built from the same
+identity (`src/theme/palettes.js`), plus a "تلقائي" (system) option that
+follows the OS setting — switchable anytime from Settings → "مظهر التطبيق"
+and persisted on-device. Every screen reads colors through `useTheme()`
+(`src/context/ThemeContext.js`) rather than importing a static palette, so
+the whole app re-renders live when the preference changes. A handful of
+surfaces (hero cards, solid buttons, the active tab) intentionally use the
+fixed `colors.accentDark` token instead and stay dark in both themes, the
+same way a filled button doesn't invert with the page around it.
 
 ## Features
 
-- Email/password auth against the أثر API, plus **Sign in with Google** and
-  **Sign in with Apple** (`src/context/AuthContext.js`, `src/components/SocialAuthButtons.js`)
+- **No forced login.** The app opens straight into the Tracker/Home with a
+  silent guest session tied to an on-device id (`src/utils/deviceId.js` +
+  `POST /api/auth/device`) — nothing is ever asked for at launch or blocked
+  behind a sign-in wall. Settings shows a one-tap "احفظ بياناتك" (save your
+  data) prompt for guests, which attaches a real email/password to that
+  *same* account (`UpgradeAccountScreen.js`) without losing anything already
+  tracked. Real accounts still get email/password, **Sign in with Google**,
+  and **Sign in with Apple** (`src/context/AuthContext.js`,
+  `src/components/SocialAuthButtons.js`) for signing in from another device.
+- **العدّاد (tasbih counter)**: reachable from Home's prayer-times menu and
+  from "المزيد" — pick a common dhikr or add a custom one, tap to count
+  (with a reset button), synced to the same guest/real account
+  (`TasbihScreen.js`, `TasbihCounterScreen.js`, `/api/tasbih`).
 - **Home**: a live ticking clock, greeting + Hijri/Gregorian date, a
   read-only next-prayer countdown (calculated on-device from GPS via
   `adhan`, no server round-trip needed — marking a prayer prayed only
@@ -98,14 +118,16 @@ their buttons still render but will show an error when tapped.
 
 ```
 mobile/
-  App.js                    # font loading, RTL setup, provider tree
+  App.js                      # font loading, RTL setup, provider tree
   src/
-    theme/                  # colors, typography, spacing tokens
-    api/client.js           # fetch wrapper + token storage
-    context/AuthContext.js  # login/register/logout/session
-    hooks/                  # usePrayerTimes (adhan), useDailyData (API)
-    navigation/             # bottom tabs + stack
-    screens/                # one file per screen
-    components/             # Card, ProgressRing, CheckRow, ...
-    constants/              # athkar text, 99 names, duas (bundled offline)
+    theme/                    # palettes (light/dark), typography, spacing tokens
+    api/client.js             # fetch wrapper + token storage
+    context/AuthContext.js    # guest/login/register/upgrade/logout/session
+    context/ThemeContext.js   # light/dark/system preference, persisted
+    utils/deviceId.js         # on-device guest id (AsyncStorage, generated once)
+    hooks/                    # usePrayerTimes (adhan), useDailyData (API)
+    navigation/               # bottom tabs + stack
+    screens/                  # one file per screen
+    components/               # Card, ProgressRing, CheckRow, ...
+    constants/                # athkar text, 99 names, duas (bundled offline)
 ```

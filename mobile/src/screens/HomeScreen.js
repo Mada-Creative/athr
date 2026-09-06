@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { RefreshControl, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -7,7 +7,7 @@ import AppText from '../components/AppText';
 import Card from '../components/Card';
 import ProgressRing from '../components/ProgressRing';
 import LiveClock from '../components/LiveClock';
-import colors from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
 import { useAuth } from '../context/AuthContext';
 import { todayISO, formatGregorian, formatWeekday, toHijri, greetingFor } from '../utils/date';
@@ -18,30 +18,19 @@ import duas from '../constants/duas';
 
 const FARD_ORDER = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
 
-// Prayer times, Qibla and stats are grouped together right under the hero
-// card — the three things you'd reach for right after checking prayer
-// times — instead of buried in the section grid below.
+// Prayer times, Qibla, the tasbih counter and stats are grouped together
+// right under the hero card — the things you'd reach for right after
+// checking prayer times — instead of buried in the section grid below.
 const PRAYER_MENU = [
   { key: 'times', title: 'مواقيت الصلاة', icon: 'time-outline', route: 'PrayerDetail' },
   { key: 'qibla', title: 'القبلة', icon: 'compass-outline', route: 'Qibla' },
+  { key: 'tasbih', title: 'العدّاد', icon: 'sync-outline', route: 'Tasbih' },
   { key: 'stats', title: 'إحصائياتي', icon: 'stats-chart-outline', route: 'WeeklyStats' },
 ];
 
-const ATHKAR_LINKS = [
-  { key: 'morning', title: 'أذكار الصباح', subtitle: 'حصنك اليوم', icon: 'partly-sunny-outline', color: colors.amber, params: { category: 'morning' } },
-  { key: 'evening', title: 'أذكار المساء', subtitle: 'قبل غروب الشمس', icon: 'moon-outline', color: colors.clay, params: { category: 'evening' } },
-  { key: 'afterPrayer', title: 'أذكار بعد الصلاة', subtitle: 'بعد كل صلاة مفروضة', icon: 'business-outline', color: colors.sage, params: { category: 'afterPrayer' } },
-  { key: 'sleep', title: 'أذكار النوم', subtitle: 'قبل أن تنام', icon: 'bed-outline', color: '#7C6A9C', params: { category: 'sleep' } },
-  { key: 'wakeup', title: 'أذكار الاستيقاظ', subtitle: 'أول ما تفتح عينيك', icon: 'alarm-outline', color: '#4E7FA8', params: { category: 'wakeup' } },
-];
-
-const MORE_LINKS = [
-  { key: 'quran', title: 'وِرد القرآن', subtitle: 'ورد يومي من القرآن الكريم', icon: 'book-outline', color: colors.amberDeep, route: 'Quran' },
-  { key: 'names', title: 'أسماء الله الحسنى', subtitle: 'الأسماء التسعة والتسعون', icon: 'sparkles-outline', color: colors.sage, route: 'Names' },
-  { key: 'duas', title: 'أدعية مأثورة', subtitle: 'من القرآن والسنة', icon: 'hand-left-outline', color: colors.clay, route: 'Duas' },
-];
-
 export default function HomeScreen({ navigation }) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const { user } = useAuth();
   const date = todayISO();
   const now = new Date();
@@ -49,6 +38,28 @@ export default function HomeScreen({ navigation }) {
   const { schedule, next, remainingMs } = usePrayerTimes();
   const { stats, prayerLog, reload } = useDailyData(date);
   const [refreshing, setRefreshing] = useState(false);
+
+  // amberDeep differs between light/dark, so these live inside the
+  // component (recomputed per theme) rather than as a module constant.
+  const ATHKAR_LINKS = useMemo(
+    () => [
+      { key: 'morning', title: 'أذكار الصباح', subtitle: 'حصنك اليوم', icon: 'partly-sunny-outline', color: colors.amber, params: { category: 'morning' } },
+      { key: 'evening', title: 'أذكار المساء', subtitle: 'قبل غروب الشمس', icon: 'moon-outline', color: colors.clay, params: { category: 'evening' } },
+      { key: 'afterPrayer', title: 'أذكار بعد الصلاة', subtitle: 'بعد كل صلاة مفروضة', icon: 'business-outline', color: colors.sage, params: { category: 'afterPrayer' } },
+      { key: 'sleep', title: 'أذكار النوم', subtitle: 'قبل أن تنام', icon: 'bed-outline', color: '#7C6A9C', params: { category: 'sleep' } },
+      { key: 'wakeup', title: 'أذكار الاستيقاظ', subtitle: 'أول ما تفتح عينيك', icon: 'alarm-outline', color: '#4E7FA8', params: { category: 'wakeup' } },
+    ],
+    [colors]
+  );
+
+  const MORE_LINKS = useMemo(
+    () => [
+      { key: 'quran', title: 'وِرد القرآن', subtitle: 'ورد يومي من القرآن الكريم', icon: 'book-outline', color: colors.amberDeep, route: 'Quran' },
+      { key: 'names', title: 'أسماء الله الحسنى', subtitle: 'الأسماء التسعة والتسعون', icon: 'sparkles-outline', color: colors.sage, route: 'Names' },
+      { key: 'duas', title: 'أدعية مأثورة', subtitle: 'من القرآن والسنة', icon: 'hand-left-outline', color: colors.clay, route: 'Duas' },
+    ],
+    [colors]
+  );
 
   // Rotates through the curated duas roughly once an hour — a light touch
   // of "there's something new here" without any dedicated timer.
@@ -109,8 +120,8 @@ export default function HomeScreen({ navigation }) {
               </AppText>
             </View>
             <View style={styles.countdownBadge}>
-              <Ionicons name="time-outline" size={14} color={colors.ink} />
-              <AppText weight="semibold" size={15} style={{ marginRight: 4 }}>
+              <Ionicons name="time-outline" size={14} color={colors.accentDark} />
+              <AppText weight="semibold" size={15} color={colors.accentDark} style={{ marginRight: 4 }}>
                 {formatCountdown(remainingMs)}
               </AppText>
             </View>
@@ -149,7 +160,7 @@ export default function HomeScreen({ navigation }) {
             onPress={() => navigation.navigate(item.route)}
           >
             <Ionicons name={item.icon} size={20} color={colors.ink} />
-            <AppText weight="semibold" size={12} style={{ marginTop: 6, textAlign: 'center' }}>
+            <AppText weight="semibold" size={11.5} style={{ marginTop: 6, textAlign: 'center' }}>
               {item.title}
             </AppText>
           </TouchableOpacity>
@@ -224,87 +235,90 @@ export default function HomeScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  topBar: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between' },
-  topBarIcons: { flexDirection: 'row-reverse', gap: spacing.sm },
-  iconBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: radius.pill,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  duaStrip: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    gap: spacing.xs,
-    backgroundColor: colors.amberSoft,
-    borderRadius: radius.pill,
-    paddingVertical: spacing.xs + 2,
-    paddingHorizontal: spacing.md,
-    marginTop: spacing.md,
-  },
-  heroCard: {
-    backgroundColor: colors.ink,
-    borderColor: colors.ink,
-    marginTop: spacing.lg,
-  },
-  heroTop: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'flex-start' },
-  countdownBadge: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    backgroundColor: colors.gold,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 6,
-    borderRadius: radius.pill,
-  },
-  prayerRow: {
-    flexDirection: 'row-reverse',
-    justifyContent: 'space-between',
-    marginTop: spacing.lg,
-  },
-  prayerChip: {
-    alignItems: 'center',
-    gap: 2,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: 6,
-    borderRadius: radius.sm,
-    flex: 1,
-  },
-  prayerChipDone: { backgroundColor: 'rgba(95,132,103,0.18)' },
-  prayerMenuRow: {
-    flexDirection: 'row-reverse',
-    gap: spacing.sm,
-    marginTop: spacing.md,
-  },
-  prayerMenuItem: {
-    flex: 1,
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingVertical: spacing.md,
-  },
-  scoreCard: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    gap: spacing.md,
-    marginTop: spacing.lg,
-  },
-  linkRow: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
-  },
-  linkIcon: { width: 40, height: 40, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
-});
+function createStyles(colors) {
+  return StyleSheet.create({
+    topBar: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between' },
+    topBarIcons: { flexDirection: 'row-reverse', gap: spacing.sm },
+    iconBtn: {
+      width: 38,
+      height: 38,
+      borderRadius: radius.pill,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    duaStrip: {
+      flexDirection: 'row-reverse',
+      alignItems: 'center',
+      gap: spacing.xs,
+      backgroundColor: colors.amberSoft,
+      borderRadius: radius.pill,
+      paddingVertical: spacing.xs + 2,
+      paddingHorizontal: spacing.md,
+      marginTop: spacing.md,
+    },
+    heroCard: {
+      // Fixed dark ink surface — deliberately doesn't invert with the theme.
+      backgroundColor: colors.accentDark,
+      borderColor: colors.accentDark,
+      marginTop: spacing.lg,
+    },
+    heroTop: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'flex-start' },
+    countdownBadge: {
+      flexDirection: 'row-reverse',
+      alignItems: 'center',
+      backgroundColor: colors.gold,
+      paddingHorizontal: spacing.md,
+      paddingVertical: 6,
+      borderRadius: radius.pill,
+    },
+    prayerRow: {
+      flexDirection: 'row-reverse',
+      justifyContent: 'space-between',
+      marginTop: spacing.lg,
+    },
+    prayerChip: {
+      alignItems: 'center',
+      gap: 2,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: 6,
+      borderRadius: radius.sm,
+      flex: 1,
+    },
+    prayerChipDone: { backgroundColor: 'rgba(95,132,103,0.18)' },
+    prayerMenuRow: {
+      flexDirection: 'row-reverse',
+      gap: spacing.sm,
+      marginTop: spacing.md,
+    },
+    prayerMenuItem: {
+      flex: 1,
+      alignItems: 'center',
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radius.md,
+      paddingVertical: spacing.md,
+    },
+    scoreCard: {
+      flexDirection: 'row-reverse',
+      alignItems: 'center',
+      gap: spacing.md,
+      marginTop: spacing.lg,
+    },
+    linkRow: {
+      flexDirection: 'row-reverse',
+      alignItems: 'center',
+      gap: spacing.md,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radius.md,
+      padding: spacing.md,
+      marginBottom: spacing.sm,
+    },
+    linkIcon: { width: 40, height: 40, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
+  });
+}

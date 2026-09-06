@@ -1,11 +1,12 @@
 import React from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import colors from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
 import { spacing } from '../theme/spacing';
 import AppText from './AppText';
 
 export default function SectionHeader({ title, actionLabel, onAction }) {
+  const { colors } = useTheme();
   return (
     <View style={styles.row}>
       <AppText weight="bold" size={18}>

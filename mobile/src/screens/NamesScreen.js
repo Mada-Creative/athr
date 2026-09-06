@@ -2,11 +2,13 @@ import React from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import Screen from '../components/Screen';
 import AppText from '../components/AppText';
-import colors from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
 import namesOfAllah from '../constants/namesOfAllah';
 
 export default function NamesScreen() {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   return (
     <Screen scroll={false} contentStyle={{ flex: 1 }}>
       <AppText weight="bold" size={22} style={{ marginBottom: 4 }}>
@@ -40,16 +42,18 @@ export default function NamesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    width: '48%',
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.sm,
-    alignItems: 'center',
-    marginBottom: spacing.md,
-  },
-});
+function createStyles(colors) {
+  return StyleSheet.create({
+    card: {
+      width: '48%',
+      backgroundColor: colors.surface,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.sm,
+      alignItems: 'center',
+      marginBottom: spacing.md,
+    },
+  });
+}

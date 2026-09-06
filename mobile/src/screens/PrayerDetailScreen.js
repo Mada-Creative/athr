@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import AppText from '../components/AppText';
 import Card from '../components/Card';
-import colors from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
 import usePrayerTimes, { formatClock } from '../hooks/usePrayerTimes';
 
@@ -22,6 +22,8 @@ function formatCountdownWithSeconds(ms) {
 // Marking happens on the Tracker tab; this one is for "when, and based on
 // what location" only, which is why it carries the location/method controls.
 export default function PrayerDetailScreen() {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const { schedule, next, permissionDenied, locationLabel, locating, methodLabel, refreshLocation } =
     usePrayerTimes();
   const [now, setNow] = useState(new Date());
@@ -104,7 +106,8 @@ export default function PrayerDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors) {
+  return StyleSheet.create({
   locationCard: { marginBottom: spacing.lg },
   locationRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: spacing.sm },
   locationActions: { flexDirection: 'row-reverse', gap: spacing.sm, marginTop: spacing.md },
@@ -130,4 +133,5 @@ const styles = StyleSheet.create({
   },
   rowActive: { backgroundColor: colors.ink, borderColor: colors.ink },
   rowMain: { flex: 1 },
-});
+  });
+}

@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import Screen from '../components/Screen';
 import AppText from '../components/AppText';
-import colors from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
 import { api } from '../api/client';
 import { todayISO } from '../utils/date';
@@ -12,6 +12,8 @@ import ATHKAR_META from '../constants/athkarMeta';
 import athkarContent from '../constants/athkarContent';
 
 export default function AthkarListScreen({ navigation }) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const date = todayISO();
   const [categories, setCategories] = useState({});
   const [refreshing, setRefreshing] = useState(false);
@@ -79,18 +81,20 @@ export default function AthkarListScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.lg,
-    marginBottom: spacing.md,
-  },
-  cardDone: { borderColor: colors.sage, backgroundColor: colors.sageSoft },
-  iconWrap: { width: 46, height: 46, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
-});
+function createStyles(colors) {
+  return StyleSheet.create({
+    card: {
+      flexDirection: 'row-reverse',
+      alignItems: 'center',
+      gap: spacing.md,
+      backgroundColor: colors.surface,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: spacing.lg,
+      marginBottom: spacing.md,
+    },
+    cardDone: { borderColor: colors.sage, backgroundColor: colors.sageSoft },
+    iconWrap: { width: 46, height: 46, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
+  });
+}

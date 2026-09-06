@@ -6,7 +6,7 @@ import HomeScreen from '../screens/HomeScreen';
 import TrackerScreen from '../screens/TrackerScreen';
 import AthkarListScreen from '../screens/AthkarListScreen';
 import MoreScreen from '../screens/MoreScreen';
-import colors from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
 import typography from '../theme/typography';
 
 const Tab = createBottomTabNavigator();
@@ -21,7 +21,7 @@ const TAB_ICONS = {
 // Plain icon + label, tinted together — no background box behind the icon,
 // so nothing shifts position when a tab becomes active. A small dot under
 // the label is the only extra feedback for "this one's selected".
-function TabIcon({ name, focused }) {
+function TabIcon({ name, focused, colors }) {
   return (
     <View style={styles.iconWrap}>
       <Ionicons
@@ -34,6 +34,9 @@ function TabIcon({ name, focused }) {
 }
 
 export default function MainTabs() {
+  const { colors } = useTheme();
+  const tabStyles = createStyles(colors);
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -41,10 +44,10 @@ export default function MainTabs() {
         tabBarShowLabel: true,
         tabBarActiveTintColor: colors.ink,
         tabBarInactiveTintColor: colors.inkFaint,
-        tabBarStyle: styles.tabBar,
-        tabBarItemStyle: styles.tabItem,
+        tabBarStyle: tabStyles.tabBar,
+        tabBarItemStyle: tabStyles.tabItem,
         tabBarLabelStyle: { fontFamily: typography.fontMedium, fontSize: 11 },
-        tabBarIcon: ({ focused }) => <TabIcon name={route.name} focused={focused} />,
+        tabBarIcon: ({ focused }) => <TabIcon name={route.name} focused={focused} colors={colors} />,
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'الرئيسية' }} />
@@ -56,12 +59,17 @@ export default function MainTabs() {
 }
 
 const styles = StyleSheet.create({
-  tabBar: {
-    backgroundColor: colors.surface,
-    borderTopColor: colors.border,
-    height: 64,
-    paddingTop: 6,
-  },
-  tabItem: { paddingVertical: 2 },
   iconWrap: { alignItems: 'center', justifyContent: 'center', height: 26 },
 });
+
+function createStyles(colors) {
+  return StyleSheet.create({
+    tabBar: {
+      backgroundColor: colors.surface,
+      borderTopColor: colors.border,
+      height: 64,
+      paddingTop: 6,
+    },
+    tabItem: { paddingVertical: 2 },
+  });
+}

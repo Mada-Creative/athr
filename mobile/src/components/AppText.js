@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text } from 'react-native';
-import colors from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
 import typography from '../theme/typography';
 
 const WEIGHT_FONTS = {
@@ -10,10 +10,11 @@ const WEIGHT_FONTS = {
   bold: typography.fontBold,
 };
 
-export default function AppText({ weight = 'regular', size = typography.body, color = colors.ink, style, ...rest }) {
+export default function AppText({ weight = 'regular', size = typography.body, color, style, ...rest }) {
+  const { colors } = useTheme();
   return (
     <Text
-      style={[{ fontFamily: WEIGHT_FONTS[weight], fontSize: size, color, textAlign: 'right' }, style]}
+      style={[{ fontFamily: WEIGHT_FONTS[weight], fontSize: size, color: color ?? colors.ink, textAlign: 'right' }, style]}
       {...rest}
     />
   );

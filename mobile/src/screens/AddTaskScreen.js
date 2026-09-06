@@ -3,11 +3,13 @@ import { StyleSheet, TextInput, View } from 'react-native';
 import Screen from '../components/Screen';
 import AppText from '../components/AppText';
 import PrimaryButton from '../components/PrimaryButton';
-import colors from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
 import { api } from '../api/client';
 
 export default function AddTaskScreen({ route, navigation }) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const { group } = route.params;
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -71,16 +73,18 @@ export default function AddTaskScreen({ route, navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  label: { marginBottom: spacing.xs, marginTop: spacing.md },
-  input: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md - 2,
-    fontSize: 15,
-    color: colors.ink,
-  },
-});
+function createStyles(colors) {
+  return StyleSheet.create({
+    label: { marginBottom: spacing.xs, marginTop: spacing.md },
+    input: {
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radius.sm,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md - 2,
+      fontSize: 15,
+      color: colors.ink,
+    },
+  });
+}

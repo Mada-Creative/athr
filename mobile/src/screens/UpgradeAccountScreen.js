@@ -1,19 +1,22 @@
 import React, { useState } from 'react';
-import { KeyboardAvoidingView, Platform, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, StyleSheet, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import AppText from '../components/AppText';
 import PrimaryButton from '../components/PrimaryButton';
-import SocialAuthButtons from '../components/SocialAuthButtons';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius } from '../theme/spacing';
 import { useAuth } from '../context/AuthContext';
 
-export default function RegisterScreen({ navigation }) {
+// Reached from Settings when the current session is a guest one. Unlike
+// Register, this keeps the same account (and everything already tracked
+// under it) — it only attaches real credentials so the guest can sign back
+// into this same history from another device.
+export default function UpgradeAccountScreen({ navigation }) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
-  const { register } = useAuth();
-  const [name, setName] = useState('');
+  const { user, upgradeAccount } = useAuth();
+  const [name, setName] = useState(user?.name === 'مستخدم أثر' ? '' : user?.name || '');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -27,9 +30,10 @@ export default function RegisterScreen({ navigation }) {
     setLoading(true);
     setError(null);
     try {
-      await register(name.trim(), email.trim(), password);
+      await upgradeAccount(name.trim(), email.trim(), password);
+      navigation.goBack();
     } catch (err) {
-      setError(err.message || 'تعذر إنشاء الحساب');
+      setError(err.message || 'تعذر حفظ الحساب');
     } finally {
       setLoading(false);
     }
@@ -38,15 +42,15 @@ export default function RegisterScreen({ navigation }) {
   return (
     <Screen contentStyle={styles.content}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.back}>
-          <Ionicons name="arrow-forward" size={22} color={colors.ink} />
-        </TouchableOpacity>
+        <View style={styles.iconWrap}>
+          <Ionicons name="shield-checkmark" size={30} color={colors.amberDeep} />
+        </View>
 
-        <AppText weight="bold" size={24} style={{ marginBottom: spacing.xs }}>
-          حساب جديد
+        <AppText weight="bold" size={22} style={{ textAlign: 'center', marginBottom: spacing.xs }}>
+          احفظ بياناتك
         </AppText>
-        <AppText color={colors.inkSoft} size={14} style={{ marginBottom: spacing.xl }}>
-          ابدأ رحلتك في تتبع صلاتك وأذكارك
+        <AppText color={colors.inkSoft} size={14} style={{ textAlign: 'center', marginBottom: spacing.xl }}>
+          كل ما تابعته حتى الآن سيبقى محفوظًا — فقط أضف بريدًا وكلمة مرور لتتمكن من الدخول من أي جهاز
         </AppText>
 
         <AppText weight="semibold" size={13} color={colors.inkSoft} style={styles.label}>
@@ -87,7 +91,7 @@ export default function RegisterScreen({ navigation }) {
           </AppText>
         ) : null}
 
-        <PrimaryButton title="إنشاء الحساب" onPress={onSubmit} loading={loading} style={{ marginTop: spacing.lg }} />
+        <PrimaryButton title="حفظ الحساب" onPress={onSubmit} loading={loading} style={{ marginTop: spacing.lg }} />
 
         <SocialAuthButtons onError={setError} />
       </KeyboardAvoidingView>
@@ -98,7 +102,16 @@ export default function RegisterScreen({ navigation }) {
 function createStyles(colors) {
   return StyleSheet.create({
     content: { flexGrow: 1, justifyContent: 'center' },
-    back: { marginBottom: spacing.lg, alignSelf: 'flex-end' },
+    iconWrap: {
+      alignSelf: 'center',
+      width: 56,
+      height: 56,
+      borderRadius: radius.pill,
+      backgroundColor: colors.amberSoft,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: spacing.lg,
+    },
     label: { marginBottom: spacing.xs, marginTop: spacing.md },
     input: {
       backgroundColor: colors.surface,

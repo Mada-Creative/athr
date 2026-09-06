@@ -8,6 +8,7 @@ const athkarRoutes = require('./routes/athkar.routes');
 const quranRoutes = require('./routes/quran.routes');
 const taskRoutes = require('./routes/task.routes');
 const statsRoutes = require('./routes/stats.routes');
+const tasbihRoutes = require('./routes/tasbih.routes');
 
 const app = express();
 
@@ -23,6 +24,7 @@ app.use('/api/athkar', athkarRoutes);
 app.use('/api/quran', quranRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/stats', statsRoutes);
+app.use('/api/tasbih', tasbihRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ message: 'المسار غير موجود' });

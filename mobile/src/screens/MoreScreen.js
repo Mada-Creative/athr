@@ -1,24 +1,30 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import AppText from '../components/AppText';
-import colors from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
 import { useAuth } from '../context/AuthContext';
 
-const ITEMS = [
-  { title: 'مواقيت الصلاة', subtitle: 'التفاصيل، الموقع، والعدّاد', icon: 'time-outline', route: 'PrayerDetail', color: colors.amberDeep },
-  { title: 'وِرد القرآن', subtitle: 'تتبع قراءتك اليومية', icon: 'book-outline', route: 'Quran', color: colors.amberDeep },
-  { title: 'أسماء الله الحسنى', subtitle: 'الأسماء التسعة والتسعون', icon: 'sparkles-outline', route: 'Names', color: colors.sage },
-  { title: 'أدعية مأثورة', subtitle: 'من القرآن والسنة', icon: 'hand-left-outline', route: 'Duas', color: colors.clay },
-  { title: 'اتجاه القبلة', subtitle: 'بوصلة تحدد اتجاه الكعبة', icon: 'compass-outline', route: 'Qibla', color: colors.ink },
-  { title: 'إحصائياتي', subtitle: 'أداؤك خلال آخر 7 أيام', icon: 'stats-chart-outline', route: 'WeeklyStats', color: colors.amber },
-  { title: 'الإعدادات', subtitle: 'حسابك وتفضيلاتك', icon: 'settings-outline', route: 'Settings', color: colors.inkSoft },
-];
-
 export default function MoreScreen({ navigation }) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const { user } = useAuth();
+
+  const items = useMemo(
+    () => [
+      { title: 'مواقيت الصلاة', subtitle: 'التفاصيل، الموقع، والعدّاد', icon: 'time-outline', route: 'PrayerDetail', color: colors.amberDeep },
+      { title: 'وِرد القرآن', subtitle: 'تتبع قراءتك اليومية', icon: 'book-outline', route: 'Quran', color: colors.amberDeep },
+      { title: 'العدّاد', subtitle: 'سبّح واذكر واعدّ', icon: 'sync-outline', route: 'Tasbih', color: colors.amber },
+      { title: 'أسماء الله الحسنى', subtitle: 'الأسماء التسعة والتسعون', icon: 'sparkles-outline', route: 'Names', color: colors.sage },
+      { title: 'أدعية مأثورة', subtitle: 'من القرآن والسنة', icon: 'hand-left-outline', route: 'Duas', color: colors.clay },
+      { title: 'اتجاه القبلة', subtitle: 'بوصلة تحدد اتجاه الكعبة', icon: 'compass-outline', route: 'Qibla', color: colors.ink },
+      { title: 'إحصائياتي', subtitle: 'أداؤك خلال آخر 7 أيام', icon: 'stats-chart-outline', route: 'WeeklyStats', color: colors.amber },
+      { title: 'الإعدادات', subtitle: 'حسابك وتفضيلاتك', icon: 'settings-outline', route: 'Settings', color: colors.inkSoft },
+    ],
+    [colors]
+  );
 
   return (
     <Screen>
@@ -29,7 +35,7 @@ export default function MoreScreen({ navigation }) {
         مرحبًا {user?.name || ''}
       </AppText>
 
-      {ITEMS.map((item) => (
+      {items.map((item) => (
         <TouchableOpacity key={item.route} style={styles.row} onPress={() => navigation.navigate(item.route)}>
           <View style={[styles.iconWrap, { backgroundColor: `${item.color}22` }]}>
             <Ionicons name={item.icon} size={20} color={item.color} />
@@ -49,17 +55,19 @@ export default function MoreScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    marginBottom: spacing.md,
-  },
-  iconWrap: { width: 42, height: 42, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
-});
+function createStyles(colors) {
+  return StyleSheet.create({
+    row: {
+      flexDirection: 'row-reverse',
+      alignItems: 'center',
+      gap: spacing.md,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radius.md,
+      padding: spacing.md,
+      marginBottom: spacing.md,
+    },
+    iconWrap: { width: 42, height: 42, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
+  });
+}

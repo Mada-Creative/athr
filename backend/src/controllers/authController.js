@@ -174,6 +174,78 @@ async function appleLogin(req, res) {
   }
 }
 
+async function deviceLogin(req, res) {
+  try {
+    const { deviceId } = req.body;
+    if (!deviceId || typeof deviceId !== 'string' || deviceId.length < 8) {
+      return res.status(400).json({ message: 'deviceId مطلوب' });
+    }
+
+    let user = await User.findOne({ deviceId });
+    if (!user) {
+      try {
+        user = await User.create({
+          name: 'مستخدم أثر',
+          email: `device-${deviceId}@athr.local`,
+          authProvider: 'device',
+          deviceId,
+        });
+        await seedDefaultDailyDeed(user._id);
+      } catch (err) {
+        // Two near-simultaneous first-launch requests for the same fresh
+        // device raced to create it — the loser just fetches the winner's
+        // row instead of failing outright.
+        if (err.code === 11000) {
+          user = await User.findOne({ deviceId });
+        } else {
+          throw err;
+        }
+      }
+    }
+
+    const token = signToken(user);
+    return res.json({ token, user: user.toPublicJSON() });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: 'تعذر إنشاء جلسة الضيف' });
+  }
+}
+
+// Turns the *current* signed-in account (almost always a guest one) into a
+// real, credentialed account in place — same user id, so every prayer/athkar
+// log already tied to it stays exactly as it was. This is deliberately not
+// "merge two accounts"; it's "attach credentials to the one you already have".
+async function upgradeAccount(req, res) {
+  try {
+    const { name, email, password } = req.body;
+    const user = req.user;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: 'الاسم والبريد الإلكتروني وكلمة المرور مطلوبة' });
+    }
+    if (password.length < 6) {
+      return res.status(400).json({ message: 'كلمة المرور يجب ألا تقل عن 6 أحرف' });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    const existing = await User.findOne({ email: normalizedEmail, _id: { $ne: user._id } });
+    if (existing) {
+      return res.status(409).json({ message: 'يوجد حساب مسجل بهذا البريد الإلكتروني بالفعل' });
+    }
+
+    user.name = name;
+    user.email = normalizedEmail;
+    user.passwordHash = await bcrypt.hash(password, 10);
+    user.authProvider = 'local';
+    await user.save();
+
+    return res.json({ user: user.toPublicJSON() });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: 'تعذر حفظ الحساب' });
+  }
+}
+
 async function me(req, res) {
   return res.json({ user: req.user.toPublicJSON() });
 }
@@ -222,4 +294,4 @@ async function updateSettings(req, res) {
   }
 }
 
-module.exports = { register, login, googleLogin, appleLogin, me, updateSettings };
+module.exports = { register, login, googleLogin, appleLogin, deviceLogin, upgradeAccount, me, updateSettings };

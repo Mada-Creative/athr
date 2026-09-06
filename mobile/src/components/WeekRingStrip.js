@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import ProgressRing from './ProgressRing';
 import AppText from './AppText';
-import colors from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
 import { spacing } from '../theme/spacing';
 import { api } from '../api/client';
 import { todayISO } from '../utils/date';
@@ -14,6 +14,7 @@ const WEEKDAY_SHORT = ['أحد', 'اثنين', 'ثلاثاء', 'أربعاء', '
 // (today's date circled by its completion %) instead of a bar chart, so it
 // reads more like a streak calendar than a report.
 export default function WeekRingStrip() {
+  const { colors } = useTheme();
   const [days, setDays] = useState([]);
   const today = todayISO();
 

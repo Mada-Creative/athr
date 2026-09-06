@@ -1,7 +1,17 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { api, getToken, setToken } from '../api/client';
+import getOrCreateDeviceId from '../utils/deviceId';
 
 const AuthContext = createContext(null);
+
+// Silently stands up (or restores) a guest account from the on-device id —
+// this is the fallback the app always lands on, never a screen anyone sees.
+async function establishGuestSession() {
+  const deviceId = await getOrCreateDeviceId();
+  const data = await api.post('/auth/device', { deviceId }, { auth: false });
+  await setToken(data.token);
+  return data.user;
+}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -15,9 +25,20 @@ export function AuthProvider({ children }) {
         if (token) {
           const data = await api.get('/auth/me');
           setUser(data.user);
+          return;
         }
+        setUser(await establishGuestSession());
       } catch (err) {
-        await setToken(null);
+        // Stored token was invalid/expired, or the very first /auth/me
+        // failed — either way, fall back to a fresh guest session rather
+        // than ever stopping at a blank/broken screen.
+        try {
+          await setToken(null);
+          setUser(await establishGuestSession());
+        } catch (guestErr) {
+          // No network at all on first launch — nothing to show yet; the
+          // screens below all tolerate a null user until this resolves.
+        }
       } finally {
         setIsBooting(false);
       }
@@ -56,9 +77,20 @@ export function AuthProvider({ children }) {
     return data.user;
   }, []);
 
+  // Keeps this same account (and everything already tracked under it) —
+  // just adds real credentials so it can be signed into elsewhere.
+  const upgradeAccount = useCallback(async (name, email, password) => {
+    setAuthError(null);
+    const data = await api.put('/auth/upgrade', { name, email, password });
+    setUser(data.user);
+    return data.user;
+  }, []);
+
+  // Signing out of a real account never leaves the app unusable — it drops
+  // straight back into a guest session on the same device.
   const logout = useCallback(async () => {
     await setToken(null);
-    setUser(null);
+    setUser(await establishGuestSession());
   }, []);
 
   const updateUser = useCallback((patch) => {
@@ -71,9 +103,12 @@ export function AuthProvider({ children }) {
     return data.user;
   }, []);
 
+  const isGuest = user?.authProvider === 'device';
+
   const value = useMemo(
     () => ({
       user,
+      isGuest,
       isBooting,
       authError,
       setAuthError,
@@ -81,11 +116,25 @@ export function AuthProvider({ children }) {
       register,
       loginWithGoogle,
       loginWithApple,
+      upgradeAccount,
       logout,
       updateUser,
       refreshUser,
     }),
-    [user, isBooting, authError, login, register, loginWithGoogle, loginWithApple, logout, updateUser, refreshUser]
+    [
+      user,
+      isGuest,
+      isBooting,
+      authError,
+      login,
+      register,
+      loginWithGoogle,
+      loginWithApple,
+      upgradeAccount,
+      logout,
+      updateUser,
+      refreshUser,
+    ]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

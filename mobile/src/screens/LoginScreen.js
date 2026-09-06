@@ -4,11 +4,13 @@ import Screen from '../components/Screen';
 import AppText from '../components/AppText';
 import PrimaryButton from '../components/PrimaryButton';
 import SocialAuthButtons from '../components/SocialAuthButtons';
-import colors from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
 import { spacing, radius } from '../theme/spacing';
 import { useAuth } from '../context/AuthContext';
 
 export default function LoginScreen({ navigation }) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -90,21 +92,23 @@ export default function LoginScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  content: { flexGrow: 1, justifyContent: 'center' },
-  logoWrap: { alignItems: 'center', marginBottom: spacing.xxl },
-  logo: { width: 128, height: 128 },
-  form: { gap: 0 },
-  label: { marginBottom: spacing.xs, marginTop: spacing.md },
-  input: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md - 2,
-    fontSize: 15,
-    color: colors.ink,
-  },
-  switchLink: { alignItems: 'center', marginTop: spacing.lg },
-});
+function createStyles(colors) {
+  return StyleSheet.create({
+    content: { flexGrow: 1, justifyContent: 'center' },
+    logoWrap: { alignItems: 'center', marginBottom: spacing.xxl },
+    logo: { width: 128, height: 128 },
+    form: { gap: 0 },
+    label: { marginBottom: spacing.xs, marginTop: spacing.md },
+    input: {
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radius.sm,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md - 2,
+      fontSize: 15,
+      color: colors.ink,
+    },
+    switchLink: { alignItems: 'center', marginTop: spacing.lg },
+  });
+}

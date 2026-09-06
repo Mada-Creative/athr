@@ -3,11 +3,13 @@ import { StyleSheet } from 'react-native';
 import Screen from '../components/Screen';
 import AppText from '../components/AppText';
 import Card from '../components/Card';
-import colors from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
 import { spacing } from '../theme/spacing';
 import duas from '../constants/duas';
 
 export default function DuasScreen() {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   return (
     <Screen>
       <AppText weight="bold" size={22} style={{ marginBottom: 4 }}>
@@ -34,7 +36,9 @@ export default function DuasScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  card: { marginBottom: spacing.md },
-  text: { lineHeight: 28, marginTop: spacing.sm },
-});
+function createStyles(colors) {
+  return StyleSheet.create({
+    card: { marginBottom: spacing.md },
+    text: { lineHeight: 28, marginTop: spacing.sm },
+  });
+}

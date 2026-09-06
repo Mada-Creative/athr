@@ -5,7 +5,7 @@ import * as Haptics from 'expo-haptics';
 import Screen from '../components/Screen';
 import AppText from '../components/AppText';
 import Card from '../components/Card';
-import colors from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
 import { api } from '../api/client';
 import { todayISO } from '../utils/date';
@@ -13,6 +13,8 @@ import athkarContent from '../constants/athkarContent';
 import ATHKAR_META from '../constants/athkarMeta';
 
 export default function AthkarCounterScreen({ route }) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const { category } = route.params;
   const meta = ATHKAR_META[category];
   const definition = athkarContent[category];
@@ -110,26 +112,28 @@ export default function AthkarCounterScreen({ route }) {
   );
 }
 
-const styles = StyleSheet.create({
-  header: { alignItems: 'center', marginBottom: spacing.lg },
-  headerIcon: { width: 56, height: 56, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
-  itemCard: { marginBottom: spacing.md },
-  itemCardDone: { borderColor: colors.sage, backgroundColor: colors.sageSoft },
-  itemText: { lineHeight: 26 },
-  itemFooter: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: spacing.md,
-  },
-  counterBadge: {
-    minWidth: 44,
-    height: 32,
-    paddingHorizontal: spacing.sm,
-    borderRadius: radius.pill,
-    backgroundColor: colors.amberSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  counterBadgeDone: { backgroundColor: colors.sage },
-});
+function createStyles(colors) {
+  return StyleSheet.create({
+    header: { alignItems: 'center', marginBottom: spacing.lg },
+    headerIcon: { width: 56, height: 56, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
+    itemCard: { marginBottom: spacing.md },
+    itemCardDone: { borderColor: colors.sage, backgroundColor: colors.sageSoft },
+    itemText: { lineHeight: 26 },
+    itemFooter: {
+      flexDirection: 'row-reverse',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginTop: spacing.md,
+    },
+    counterBadge: {
+      minWidth: 44,
+      height: 32,
+      paddingHorizontal: spacing.sm,
+      borderRadius: radius.pill,
+      backgroundColor: colors.amberSoft,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    counterBadgeDone: { backgroundColor: colors.sage },
+  });
+}

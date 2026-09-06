@@ -3,13 +3,15 @@ import { StyleSheet, View } from 'react-native';
 import Screen from '../components/Screen';
 import AppText from '../components/AppText';
 import Card from '../components/Card';
-import colors from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
 import { api } from '../api/client';
 
 const WEEKDAY_SHORT = ['أحد', 'اثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت'];
 
 export default function WeeklyStatsScreen() {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const [days, setDays] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -70,9 +72,11 @@ export default function WeeklyStatsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  chart: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'flex-end', height: 170 },
-  barWrap: { alignItems: 'center', flex: 1 },
-  barTrack: { height: 120, justifyContent: 'flex-end', marginTop: 4 },
-  bar: { width: 16, borderRadius: radius.sm, backgroundColor: colors.amber },
-});
+function createStyles(colors) {
+  return StyleSheet.create({
+    chart: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'flex-end', height: 170 },
+    barWrap: { alignItems: 'center', flex: 1 },
+    barTrack: { height: 120, justifyContent: 'flex-end', marginTop: 4 },
+    bar: { width: 16, borderRadius: radius.sm, backgroundColor: colors.amber },
+  });
+}

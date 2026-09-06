@@ -1,10 +1,12 @@
 import React from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import colors from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
 import { spacing } from '../theme/spacing';
 
 export default function Screen({ children, scroll = true, contentStyle, refreshControl }) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const Wrapper = scroll ? ScrollView : View;
   const wrapperProps = scroll
     ? {
@@ -21,7 +23,9 @@ export default function Screen({ children, scroll = true, contentStyle, refreshC
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.lg, paddingBottom: spacing.xxl * 2 },
-});
+function createStyles(colors) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: colors.background },
+    content: { padding: spacing.lg, paddingBottom: spacing.xxl * 2 },
+  });
+}

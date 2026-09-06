@@ -3,7 +3,7 @@ import { FlatList, StyleSheet, TextInput, TouchableOpacity, View } from 'react-n
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import AppText from '../components/AppText';
-import colors from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
 
 const SEARCHABLE = [
@@ -23,6 +23,8 @@ const SEARCHABLE = [
 ];
 
 export default function SearchScreen({ navigation }) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const [query, setQuery] = useState('');
 
   const results = useMemo(() => {
@@ -69,7 +71,8 @@ export default function SearchScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors) {
+  return StyleSheet.create({
   searchBar: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
@@ -93,4 +96,5 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     marginBottom: spacing.sm,
   },
-});
+  });
+}

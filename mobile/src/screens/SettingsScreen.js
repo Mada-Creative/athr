@@ -5,7 +5,7 @@ import Screen from '../components/Screen';
 import AppText from '../components/AppText';
 import Card from '../components/Card';
 import PrimaryButton from '../components/PrimaryButton';
-import colors from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
@@ -30,8 +30,16 @@ const REMINDER_OPTIONS = [
   { value: 60, label: 'ساعة' },
 ];
 
-export default function SettingsScreen() {
-  const { user, updateUser, logout } = useAuth();
+const THEME_OPTIONS = [
+  { value: 'light', label: 'فاتح', icon: 'sunny-outline' },
+  { value: 'dark', label: 'داكن', icon: 'moon-outline' },
+  { value: 'system', label: 'تلقائي', icon: 'phone-portrait-outline' },
+];
+
+export default function SettingsScreen({ navigation }) {
+  const { colors, preference, setPreference } = useTheme();
+  const styles = createStyles(colors);
+  const { user, isGuest, updateUser, logout } = useAuth();
   const [weights, setWeights] = useState(() => ({ ...user?.weights }));
   const [atAdhan, setAtAdhan] = useState(user?.prayerNotifications?.atAdhan ?? false);
   const [reminderMinutes, setReminderMinutes] = useState(user?.prayerNotifications?.reminderMinutes ?? null);
@@ -71,14 +79,68 @@ export default function SettingsScreen() {
         الإعدادات
       </AppText>
 
-      <Card style={{ marginTop: spacing.lg }}>
-        <AppText weight="semibold" size={16}>
-          {user?.name}
-        </AppText>
-        <AppText size={13} color={colors.inkSoft} style={{ marginTop: 2 }}>
-          {user?.email}
-        </AppText>
-      </Card>
+      {isGuest ? (
+        <Card style={[{ marginTop: spacing.lg }, styles.guestCard]}>
+          <View style={styles.guestRow}>
+            <View style={styles.guestIcon}>
+              <Ionicons name="person-circle-outline" size={26} color={colors.amberDeep} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <AppText weight="semibold" size={15}>
+                أنت تستخدم التطبيق كضيف
+              </AppText>
+              <AppText size={12} color={colors.inkSoft} style={{ marginTop: 2 }}>
+                بياناتك محفوظة على هذا الجهاز فقط — احفظها لتصل إليها من أي مكان
+              </AppText>
+            </View>
+          </View>
+          <PrimaryButton
+            title="احفظ بياناتك"
+            onPress={() => navigation.navigate('UpgradeAccount')}
+            style={{ marginTop: spacing.md }}
+          />
+          <TouchableOpacity onPress={() => navigation.navigate('Login')} style={{ alignItems: 'center', marginTop: spacing.sm }}>
+            <AppText size={13} color={colors.inkSoft}>
+              لديك حساب بالفعل؟ <AppText weight="semibold" color={colors.amberDeep}>سجّل دخولك</AppText>
+            </AppText>
+          </TouchableOpacity>
+        </Card>
+      ) : (
+        <Card style={{ marginTop: spacing.lg }}>
+          <AppText weight="semibold" size={16}>
+            {user?.name}
+          </AppText>
+          <AppText size={13} color={colors.inkSoft} style={{ marginTop: 2 }}>
+            {user?.email}
+          </AppText>
+        </Card>
+      )}
+
+      <AppText weight="bold" size={16} style={{ marginTop: spacing.xl, marginBottom: spacing.sm }}>
+        مظهر التطبيق
+      </AppText>
+      <View style={styles.themeRow}>
+        {THEME_OPTIONS.map((opt) => {
+          const active = preference === opt.value;
+          return (
+            <TouchableOpacity
+              key={opt.value}
+              style={[styles.themeOption, active && styles.themeOptionActive]}
+              onPress={() => setPreference(opt.value)}
+            >
+              <Ionicons name={opt.icon} size={20} color={active ? colors.white : colors.ink} />
+              <AppText
+                size={12.5}
+                weight="semibold"
+                color={active ? colors.white : colors.ink}
+                style={{ marginTop: 4 }}
+              >
+                {opt.label}
+              </AppText>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
 
       <AppText weight="bold" size={16} style={{ marginTop: spacing.xl, marginBottom: spacing.sm }}>
         الجنس (اختياري)
@@ -179,41 +241,62 @@ export default function SettingsScreen() {
       ) : null}
 
       <PrimaryButton title="حفظ الإعدادات" onPress={onSave} loading={saving} style={{ marginTop: spacing.lg }} />
-      <PrimaryButton title="تسجيل الخروج" onPress={logout} variant="outline" style={{ marginTop: spacing.md }} />
+      <PrimaryButton
+        title={isGuest ? 'الخروج من وضع الضيف' : 'تسجيل الخروج'}
+        onPress={logout}
+        variant="outline"
+        style={{ marginTop: spacing.md }}
+      />
     </Screen>
   );
 }
 
-const styles = StyleSheet.create({
-  chipsRow: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: spacing.sm },
-  chip: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.pill,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  chipActive: { backgroundColor: colors.ink, borderColor: colors.ink },
-  weightRow: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  weightInputWrap: { flexDirection: 'row-reverse', alignItems: 'center', gap: 6 },
-  weightInput: {
-    width: 50,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.sm,
-    paddingVertical: 4,
-    fontSize: 14,
-    color: colors.ink,
-  },
-  totalRow: { paddingTop: spacing.sm, alignItems: 'flex-end' },
-  notifRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: spacing.md },
-  divider: { height: 1, backgroundColor: colors.border, marginVertical: spacing.md },
-});
+function createStyles(colors) {
+  return StyleSheet.create({
+    guestCard: { borderColor: colors.amber, backgroundColor: colors.amberSoft },
+    guestRow: { flexDirection: 'row-reverse', alignItems: 'flex-start', gap: spacing.sm },
+    guestIcon: { marginTop: 2 },
+    themeRow: { flexDirection: 'row-reverse', gap: spacing.sm },
+    themeOption: {
+      flex: 1,
+      alignItems: 'center',
+      paddingVertical: spacing.md,
+      borderRadius: radius.md,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    themeOptionActive: { backgroundColor: colors.ink, borderColor: colors.ink },
+    chipsRow: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: spacing.sm },
+    chip: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.pill,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    chipActive: { backgroundColor: colors.ink, borderColor: colors.ink },
+    weightRow: {
+      flexDirection: 'row-reverse',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: spacing.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    weightInputWrap: { flexDirection: 'row-reverse', alignItems: 'center', gap: 6 },
+    weightInput: {
+      width: 50,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radius.sm,
+      paddingVertical: 4,
+      fontSize: 14,
+      color: colors.ink,
+    },
+    totalRow: { paddingTop: spacing.sm, alignItems: 'flex-end' },
+    notifRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: spacing.md },
+    divider: { height: 1, backgroundColor: colors.border, marginVertical: spacing.md },
+  });
+}

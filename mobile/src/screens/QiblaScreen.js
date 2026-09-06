@@ -5,7 +5,7 @@ import * as Location from 'expo-location';
 import { Magnetometer } from 'expo-sensors';
 import Screen from '../components/Screen';
 import AppText from '../components/AppText';
-import colors from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
 
 const KAABA = { latitude: 21.4225, longitude: 39.8262 };
@@ -27,6 +27,8 @@ function bearingTo(from, to) {
 }
 
 export default function QiblaScreen() {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const [qiblaBearing, setQiblaBearing] = useState(null);
   const [heading, setHeading] = useState(0);
   const [error, setError] = useState(null);
@@ -99,18 +101,20 @@ export default function QiblaScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  content: { flexGrow: 1, alignItems: 'center', paddingTop: spacing.xxl },
-  compassWrap: { alignItems: 'center' },
-  compassRing: {
-    width: 220,
-    height: 220,
-    borderRadius: radius.pill,
-    borderWidth: 3,
-    borderColor: colors.amberSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surface,
-  },
-  arrow: { alignItems: 'center', justifyContent: 'center' },
-});
+function createStyles(colors) {
+  return StyleSheet.create({
+    content: { flexGrow: 1, alignItems: 'center', paddingTop: spacing.xxl },
+    compassWrap: { alignItems: 'center' },
+    compassRing: {
+      width: 220,
+      height: 220,
+      borderRadius: radius.pill,
+      borderWidth: 3,
+      borderColor: colors.amberSoft,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.surface,
+    },
+    arrow: { alignItems: 'center', justifyContent: 'center' },
+  });
+}

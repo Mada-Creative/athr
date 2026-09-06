@@ -10,7 +10,7 @@ import SectionHeader from '../components/SectionHeader';
 import ProgressRing from '../components/ProgressRing';
 import PrayerCell from '../components/PrayerCell';
 import WeekRingStrip from '../components/WeekRingStrip';
-import colors from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
 import { todayISO, formatGregorian, formatWeekday } from '../utils/date';
 import { useAuth } from '../context/AuthContext';
@@ -73,6 +73,8 @@ const PRAYER_COLUMNS = [
 const REMAINING_ATHKAR_KEYS = ['afterPrayer', 'wakeup'];
 
 export default function TrackerScreen({ navigation }) {
+  const { colors, scheme } = useTheme();
+  const styles = createStyles(colors);
   const { user } = useAuth();
   const date = todayISO();
   const now = new Date();
@@ -213,7 +215,7 @@ export default function TrackerScreen({ navigation }) {
             onPress={() => navigation.navigate('AthkarCounter', { category: key })}
             activeOpacity={0.8}
           >
-            <View style={[styles.athkarIcon, { backgroundColor: `${meta.color}22` }]}>
+            <View style={[styles.athkarIcon, { backgroundColor: `${meta.color}${scheme === 'dark' ? '33' : '22'}` }]}>
               <Ionicons name={completed ? 'checkmark' : meta.icon} size={18} color={meta.color} />
             </View>
             <AppText weight="semibold" size={14} style={{ flex: 1 }}>
@@ -271,6 +273,8 @@ export default function TrackerScreen({ navigation }) {
 }
 
 function BucketLine({ label, bucket }) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   if (!bucket) return null;
   return (
     <View style={styles.bucketLine}>
@@ -285,6 +289,8 @@ function BucketLine({ label, bucket }) {
 }
 
 function EmptyHint({ text }) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   return (
     <View style={styles.emptyHint}>
       <AppText size={13} color={colors.inkSoft}>
@@ -294,44 +300,46 @@ function EmptyHint({ text }) {
   );
 }
 
-const styles = StyleSheet.create({
-  summaryCard: { flexDirection: 'row-reverse', alignItems: 'center', gap: spacing.md },
-  bucketLine: { marginTop: 6 },
-  bucketTrack: { height: 5, borderRadius: 3, backgroundColor: colors.backgroundAlt, marginTop: 3, overflow: 'hidden' },
-  bucketFill: { height: 5, backgroundColor: colors.amber, borderRadius: 3 },
-  excuseRow: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: '#F5F0FA',
-    borderWidth: 1,
-    borderColor: '#DCCBEE',
-    borderRadius: radius.md,
-    padding: spacing.md,
-    marginTop: spacing.md,
-  },
-  columnsRow: { flexDirection: 'row-reverse', gap: spacing.sm, alignItems: 'flex-start' },
-  column: { flex: 1 },
-  athkarRow: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
-  },
-  athkarRowDone: { borderColor: colors.sage, backgroundColor: colors.sageSoft },
-  athkarIcon: { width: 36, height: 36, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
-  emptyHint: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderStyle: 'dashed',
-    borderRadius: radius.md,
-    padding: spacing.lg,
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
-});
+function createStyles(colors) {
+  return StyleSheet.create({
+    summaryCard: { flexDirection: 'row-reverse', alignItems: 'center', gap: spacing.md },
+    bucketLine: { marginTop: 6 },
+    bucketTrack: { height: 5, borderRadius: 3, backgroundColor: colors.backgroundAlt, marginTop: 3, overflow: 'hidden' },
+    bucketFill: { height: 5, backgroundColor: colors.amber, borderRadius: 3 },
+    excuseRow: {
+      flexDirection: 'row-reverse',
+      alignItems: 'center',
+      gap: spacing.md,
+      backgroundColor: colors.surfaceMuted,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radius.md,
+      padding: spacing.md,
+      marginTop: spacing.md,
+    },
+    columnsRow: { flexDirection: 'row-reverse', gap: spacing.sm, alignItems: 'flex-start' },
+    column: { flex: 1 },
+    athkarRow: {
+      flexDirection: 'row-reverse',
+      alignItems: 'center',
+      gap: spacing.md,
+      backgroundColor: colors.surface,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: spacing.md,
+      marginBottom: spacing.sm,
+    },
+    athkarRowDone: { borderColor: colors.sage, backgroundColor: colors.sageSoft },
+    athkarIcon: { width: 36, height: 36, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
+    emptyHint: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderStyle: 'dashed',
+      borderRadius: radius.md,
+      padding: spacing.lg,
+      alignItems: 'center',
+      marginBottom: spacing.sm,
+    },
+  });
+}

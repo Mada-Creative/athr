@@ -3,7 +3,7 @@ import { ActivityIndicator, Platform, StyleSheet, TouchableOpacity, View } from 
 import * as AppleAuthentication from 'expo-apple-authentication';
 import AppText from './AppText';
 import GoogleIcon from './GoogleIcon';
-import colors from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
 import { useAuth } from '../context/AuthContext';
 import useGoogleAuth from '../hooks/useGoogleAuth';
@@ -13,6 +13,8 @@ import useGoogleAuth from '../hooks/useGoogleAuth';
 // available (iOS 13+) — Apple's guidelines require that, and it keeps the
 // button off Android/web automatically.
 export default function SocialAuthButtons({ onError }) {
+  const { colors, scheme } = useTheme();
+  const styles = createStyles(colors);
   const { loginWithGoogle, loginWithApple } = useAuth();
   const [appleAvailable, setAppleAvailable] = useState(false);
   const [busyWith, setBusyWith] = useState(null); // 'google' | 'apple' | null
@@ -99,7 +101,11 @@ export default function SocialAuthButtons({ onError }) {
       {appleAvailable ? (
         <AppleAuthentication.AppleAuthenticationButton
           buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
-          buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+          buttonStyle={
+            scheme === 'dark'
+              ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
+              : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
+          }
           cornerRadius={999}
           style={styles.appleBtn}
           onPress={onApplePress}
@@ -109,20 +115,22 @@ export default function SocialAuthButtons({ onError }) {
   );
 }
 
-const styles = StyleSheet.create({
-  wrap: { marginTop: spacing.lg, gap: spacing.sm },
-  dividerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs },
-  line: { flex: 1, height: 1, backgroundColor: colors.border },
-  googleBtn: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.pill,
-    paddingVertical: spacing.md,
-    gap: spacing.sm,
-  },
-  appleBtn: { width: '100%', height: 48 },
-});
+function createStyles(colors) {
+  return StyleSheet.create({
+    wrap: { marginTop: spacing.lg, gap: spacing.sm },
+    dividerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs },
+    line: { flex: 1, height: 1, backgroundColor: colors.border },
+    googleBtn: {
+      flexDirection: 'row-reverse',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radius.pill,
+      paddingVertical: spacing.md,
+      gap: spacing.sm,
+    },
+    appleBtn: { width: '100%', height: 48 },
+  });
+}
