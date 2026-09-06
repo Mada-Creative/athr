@@ -21,7 +21,8 @@ import { ensureAndroidNotificationChannel } from './src/hooks/usePrayerNotificat
 // open, instead of silently queuing them for the notification tray.
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
     shouldPlaySound: true,
     shouldSetBadge: false,
   }),
