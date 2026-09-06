@@ -110,6 +110,23 @@ function SessionFailedBanner() {
   );
 }
 
+// Running on the last confirmed session because the server wasn't reachable
+// just now — a normal, fully-supported state (everything still works off
+// cached data + local queueing), so this is a quiet neutral strip, never
+// the alarming red one above.
+function OfflineStrip() {
+  const { colors } = useTheme();
+  const styles = createBannerStyles(colors);
+  return (
+    <View style={[styles.banner, { backgroundColor: colors.surfaceMuted, borderBottomWidth: 1, borderBottomColor: colors.border }]}>
+      <Ionicons name="cloud-offline-outline" size={14} color={colors.inkSoft} />
+      <AppText size={11.5} color={colors.inkSoft}>
+        غير متصل بالإنترنت — التطبيق يعمل ببياناتك المحفوظة وسيتزامن عند عودة الاتصال
+      </AppText>
+    </View>
+  );
+}
+
 function createBannerStyles(colors) {
   return StyleSheet.create({
     banner: {
@@ -131,7 +148,7 @@ function createBannerStyles(colors) {
 }
 
 export default function RootNavigator() {
-  const { isBooting, sessionFailed } = useAuth();
+  const { isBooting, sessionFailed, isOffline } = useAuth();
   const { colors } = useTheme();
 
   if (isBooting) {
@@ -144,7 +161,7 @@ export default function RootNavigator() {
 
   return (
     <View style={{ flex: 1 }}>
-      {sessionFailed ? <SessionFailedBanner /> : null}
+      {sessionFailed ? <SessionFailedBanner /> : isOffline ? <OfflineStrip /> : null}
       <NavigationContainer>
         <MainStack />
       </NavigationContainer>

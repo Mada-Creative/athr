@@ -8,6 +8,7 @@ import Bounce from '../components/Bounce';
 import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
 import { api } from '../api/client';
+import { enqueueAction } from '../utils/pendingActions';
 
 export default function TasbihCounterScreen({ route, navigation }) {
   const { id, text } = route.params;
@@ -41,12 +42,19 @@ export default function TasbihCounterScreen({ route, navigation }) {
     } catch (err) {
       // haptics unavailable on this platform — ignore
     }
+    const path = `/tasbih/${id}/increment`;
     try {
-      await api.patch(`/tasbih/${id}/increment`);
+      await api.patch(path);
     } catch (err) {
-      // The tap itself still counted locally — only warn, don't revert it,
-      // so a flaky connection doesn't make counting feel broken mid-dhikr.
-      setError('العدّ محفوظ على الجهاز فقط الآن — تحقق من اتصالك بالإنترنت');
+      // The tap itself still counted locally — never revert it, so a
+      // flaky or absent connection doesn't make counting feel broken
+      // mid-dhikr. If it's just offline, queue it to sync automatically;
+      // only a real server rejection gets surfaced.
+      if (err.isNetworkError) {
+        await enqueueAction({ method: 'patch', path });
+      } else {
+        setError('تعذر حفظ العدّ على الخادم');
+      }
     }
   };
 
@@ -59,10 +67,15 @@ export default function TasbihCounterScreen({ route, navigation }) {
       // ignore
     }
     setBusy(true);
+    const path = `/tasbih/${id}/reset`;
     try {
-      await api.patch(`/tasbih/${id}/reset`);
+      await api.patch(path);
     } catch (err) {
-      setError('تعذر حفظ إعادة التصفير — تحقق من اتصالك بالإنترنت');
+      if (err.isNetworkError) {
+        await enqueueAction({ method: 'patch', path });
+      } else {
+        setError('تعذر حفظ إعادة التصفير');
+      }
     } finally {
       setBusy(false);
     }

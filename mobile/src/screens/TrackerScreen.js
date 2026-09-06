@@ -109,6 +109,8 @@ export default function TrackerScreen({ navigation }) {
     otherTasks,
     taskLogs,
     error,
+    syncNotice,
+    isOffline,
     reload,
     togglePrayer,
     toggleExcused,
@@ -165,6 +167,14 @@ export default function TrackerScreen({ navigation }) {
         <View style={styles.errorBanner}>
           <AppText size={12.5} color={colors.clay}>
             {error}
+          </AppText>
+        </View>
+      ) : null}
+
+      {!error && (isOffline || syncNotice) ? (
+        <View style={styles.noticeBanner}>
+          <AppText size={12} color={colors.inkSoft}>
+            {syncNotice || 'غير متصل — تعرض بيانات محفوظة على جهازك'}
           </AppText>
         </View>
       ) : null}
@@ -354,6 +364,14 @@ function createStyles(colors) {
       borderRadius: radius.sm,
       borderWidth: 1,
       borderColor: colors.clay,
+      padding: spacing.sm,
+      marginBottom: spacing.md,
+    },
+    noticeBanner: {
+      backgroundColor: colors.surfaceMuted,
+      borderRadius: radius.sm,
+      borderWidth: 1,
+      borderColor: colors.border,
       padding: spacing.sm,
       marginBottom: spacing.md,
     },

@@ -8,8 +8,10 @@ of worship, with a from-scratch redesigned home screen and UI.
 Deliberately different from typical blue/white prayer-time apps: a warm
 "manuscript" palette (parchment background, ink-brown primary, amber/gold
 accent, sage-green success state) inspired by the أثر pen-and-ink logo, with
-a Cairo Arabic typeface, full RTL layout, and a bottom-tab + card-based
-navigation instead of the reference app's top horizontal tab bar.
+a Cairo Arabic typeface, full RTL layout, and card-based navigation. There's
+no bottom tab bar — Home is the single landing screen and menu; everything
+else (Tracker, Athkar, prayer times, tasbih, stats, settings) is one tap
+away from it (`src/navigation/RootNavigator.js`).
 
 The palette ships in a light and a dark variant built from the same
 identity (`src/theme/palettes.js`), plus a "تلقائي" (system) option that
@@ -17,9 +19,35 @@ follows the OS setting — switchable anytime from Settings → "مظهر الت
 and persisted on-device. Every screen reads colors through `useTheme()`
 (`src/context/ThemeContext.js`) rather than importing a static palette, so
 the whole app re-renders live when the preference changes. A handful of
-surfaces (hero cards, solid buttons, the active tab) intentionally use the
+surfaces (hero cards, solid buttons, active chips) intentionally use the
 fixed `colors.accentDark` token instead and stay dark in both themes, the
 same way a filled button doesn't invert with the page around it.
+
+## Working offline
+
+The app never blocks on connectivity:
+
+- **Session**: the auth token/guest session persists locally regardless of
+  network. If the server can't be reached at boot, the app runs on the last
+  user it successfully confirmed (`src/utils/userCache.js`) instead of
+  ever treating "offline" as "logged out" — see `AuthContext.bootstrapSession`.
+- **Daily data**: every successful load of a day's prayers/athkar/Quran/
+  tasks/stats is cached to disk (`src/hooks/useDailyData.js`); if a later
+  load fails for network reasons, that cache is what renders, so a day
+  already seen once keeps working with no connection at all.
+- **Writes made offline aren't lost or reverted**: marking a prayer,
+  athkar, task, or tasbih count while offline updates the UI immediately
+  and queues the write (`src/utils/pendingActions.js`); the queue replays
+  automatically, in order, the next time anything talks to the server
+  successfully. Only a real server rejection (not just "no connection")
+  ever reverts an optimistic update.
+- **Location**: the last successfully-acquired GPS fix (plus its detected
+  city/calculation method) is cached (`src/utils/locationCache.js`) and
+  reused whenever a fresh fix isn't available — permission just revoked,
+  no GPS signal, airplane mode — instead of ever falling back to a generic
+  Makkah placeholder as long as the device has located itself at least once
+  before. `usePrayerTimes().isStaleLocation` tells the UI when that's what
+  it's showing.
 
 ## Features
 

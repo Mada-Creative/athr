@@ -24,7 +24,7 @@ function formatCountdownWithSeconds(ms) {
 export default function PrayerDetailScreen() {
   const { colors } = useTheme();
   const styles = createStyles(colors);
-  const { schedule, next, permissionDenied, locationLabel, locating, methodLabel, refreshLocation } =
+  const { schedule, next, permissionDenied, locationLabel, locating, methodLabel, isStaleLocation, refreshLocation } =
     usePrayerTimes();
   const [now, setNow] = useState(new Date());
 
@@ -42,7 +42,7 @@ export default function PrayerDetailScreen() {
         مواقيت الصلاة
       </AppText>
       <AppText color={colors.inkSoft} size={13.5} style={{ marginTop: 4, marginBottom: spacing.lg }}>
-        عرض فقط — علّم صلاتك من تبويب المتابعة
+        عرض فقط — علّم صلاتك من صفحة المتابعة
       </AppText>
 
       <Card style={styles.locationCard}>
@@ -69,7 +69,11 @@ export default function PrayerDetailScreen() {
 
         {permissionDenied ? (
           <AppText size={11.5} color={colors.clay} style={{ marginTop: spacing.sm }}>
-            إذن الموقع غير مفعّل — المواقيت المعروضة تقديرية (مكة المكرمة)
+            إذن الموقع غير مفعّل — المواقيت المعروضة حسب آخر موقع معروف أو مكة المكرمة تقديريًا
+          </AppText>
+        ) : isStaleLocation ? (
+          <AppText size={11.5} color={colors.inkSoft} style={{ marginTop: spacing.sm }}>
+            تعذّر تحديد موقعك الحالي — المواقيت المعروضة حسب آخر موقع معروف
           </AppText>
         ) : null}
       </Card>
