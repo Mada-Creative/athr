@@ -182,13 +182,20 @@ const REMINDER_PRESETS = [null, 5, 10, 15, 30, 60];
 
 async function updateSettings(req, res) {
   try {
-    const { name, city, calculationMethod, madhab, weights, prayerNotifications } = req.body;
+    const { name, city, gender, calculationMethod, madhab, weights, prayerNotifications } = req.body;
     const user = req.user;
 
     if (name !== undefined) user.name = name;
     if (city !== undefined) user.city = city;
     if (calculationMethod !== undefined) user.calculationMethod = calculationMethod;
     if (madhab !== undefined) user.madhab = madhab;
+
+    if (gender !== undefined) {
+      if (gender !== null && !['male', 'female'].includes(gender)) {
+        return res.status(400).json({ message: 'الجنس يجب أن يكون male أو female أو فارغًا' });
+      }
+      user.gender = gender;
+    }
 
     if (prayerNotifications !== undefined) {
       const merged = { ...user.prayerNotifications.toObject(), ...prayerNotifications };

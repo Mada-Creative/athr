@@ -27,9 +27,15 @@ navigation instead of the reference app's top horizontal tab bar. See
 - **Prayer notifications**: an at-adhan alert and/or a reminder a graduated
   number of minutes before each prayer (5/10/15/30/60), both toggled from
   Settings and scheduled on-device with `expo-notifications`
-- **Tracker**: full daily checklist — 5 fard prayers, 7 rawatib/qiyam/witr,
-  Quran wird, athkar categories, plus fully custom "daily deeds" / "other"
-  checklists the user can add to
+- **Tracker**: a 7-day ring strip (this week's daily completion at a glance)
+  above a per-prayer grid — each of the 5 prayers gets its own column with
+  its rawatib/witr/qiyam and the athkar naturally tied to that time of day
+  (morning under Fajr, evening under Asr, sleep under Isha) stacked under
+  it, plus Quran wird and fully custom "daily deeds" / "other" checklists.
+  Every prayer/nawafil square stays locked until that prayer's time actually
+  starts — no marking a prayer done before its time. An optional "يوم عذر
+  شرعي" (legitimate excuse) toggle, shown once gender is set to female in
+  Settings, marks a day's prayers as not obligatory instead of missed.
 - **Athkar**: 5 categories (morning, evening, after-prayer, sleep, wake-up)
   with a tap-to-count reader for each dhikr and its repeat count
 - Bonus sections: 99 Names of Allah, curated duas, a live Qibla compass

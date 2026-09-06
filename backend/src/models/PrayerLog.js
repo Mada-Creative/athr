@@ -24,6 +24,12 @@ const PrayerLogSchema = new mongoose.Schema(
       qiyam: { type: Boolean, default: false },
       witr: { type: Boolean, default: false },
     },
+
+    // A day a woman marks as a legitimate Islamic excuse (menstruation /
+    // postpartum): prayer isn't obligatory on her that day, so it's scored
+    // as fully met rather than missed, and fard/nawafil can't be toggled
+    // while it's set. Athkar is unaffected — dhikr isn't tied to this ruling.
+    excused: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

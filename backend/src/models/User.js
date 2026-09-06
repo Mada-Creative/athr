@@ -41,6 +41,9 @@ const UserSchema = new mongoose.Schema(
     googleId: { type: String, unique: true, sparse: true },
     appleId: { type: String, unique: true, sparse: true },
     city: { type: String, default: '' },
+    // Optional, self-reported, and only ever used to decide whether the
+    // "legitimate excuse" (عذر شرعي) toggle appears on the tracker.
+    gender: { type: String, enum: ['male', 'female', null], default: null },
     calculationMethod: { type: String, default: 'UmmAlQura' },
     madhab: { type: String, enum: ['shafii', 'hanafi'], default: 'shafii' },
     weights: { type: WeightsSchema, default: () => ({}) },
@@ -61,6 +64,7 @@ UserSchema.methods.toPublicJSON = function toPublicJSON() {
     email: this.email,
     authProvider: this.authProvider,
     city: this.city,
+    gender: this.gender,
     calculationMethod: this.calculationMethod,
     madhab: this.madhab,
     weights: this.weights,

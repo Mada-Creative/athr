@@ -26,10 +26,19 @@ async function computeDayScore(userId, date, weights) {
 
   const ratio = (done, total) => (total > 0 ? done / total : 0);
 
-  const fardDone = prayerLog
+  // A day marked as a legitimate Islamic excuse (menstruation/postpartum)
+  // isn't a day of missed prayers — she isn't obligated to pray it, so it
+  // counts as fully met rather than dragging her score or streak down.
+  const excused = Boolean(prayerLog?.excused);
+
+  const fardDone = excused
+    ? FARD_KEYS.length
+    : prayerLog
     ? FARD_KEYS.filter((k) => prayerLog.fard && prayerLog.fard[k]).length
     : 0;
-  const nawafilDone = prayerLog
+  const nawafilDone = excused
+    ? NAWAFIL_KEYS.length
+    : prayerLog
     ? NAWAFIL_KEYS.filter((k) => prayerLog.nawafil && prayerLog.nawafil[k]).length
     : 0;
 
@@ -56,7 +65,7 @@ async function computeDayScore(userId, date, weights) {
     percentage += bucket.ratio * bucket.weight;
   }
 
-  return { date, percentage: Math.round(percentage), buckets };
+  return { date, percentage: Math.round(percentage), excused, buckets };
 }
 
 async function getDayStats(req, res) {

@@ -50,6 +50,7 @@ export default function useDailyData(date) {
 
   const togglePrayer = useCallback(
     async (group, key) => {
+      if (prayerLog?.excused) return; // guarded again server-side, but avoid the round trip
       const currentValue = prayerLog?.[group]?.[key];
       setPrayerLog((prev) => ({
         ...prev,
@@ -64,6 +65,20 @@ export default function useDailyData(date) {
       }
     },
     [date, prayerLog, load]
+  );
+
+  const toggleExcused = useCallback(
+    async (excused) => {
+      setPrayerLog((prev) => ({ ...prev, excused }));
+      try {
+        const res = await api.patch(`/prayers/${date}/excuse`, { excused });
+        setPrayerLog(res.log);
+        load();
+      } catch (err) {
+        setPrayerLog((prev) => ({ ...prev, excused: !excused }));
+      }
+    },
+    [date, load]
   );
 
   const toggleAthkarItem = useCallback(
@@ -120,6 +135,7 @@ export default function useDailyData(date) {
     stats,
     reload: load,
     togglePrayer,
+    toggleExcused,
     toggleAthkarItem,
     toggleQuran,
     toggleTask,

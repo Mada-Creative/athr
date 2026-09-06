@@ -59,6 +59,7 @@ PUT    /api/auth/settings
 
 GET    /api/prayers/:date
 PATCH  /api/prayers/:date/toggle        { group: 'fard'|'nawafil', key, value }
+PATCH  /api/prayers/:date/excuse        { excused }                — legitimate-excuse day (see below)
 
 GET    /api/athkar/content              (public, static text bundle)
 GET    /api/athkar/:date
@@ -85,3 +86,14 @@ link to an existing account with the same email) — see `mobile/README.md`
 → "Social sign-in setup" for the client IDs / capability config each one
 needs, and set `GOOGLE_CLIENT_IDS` / `APPLE_CLIENT_ID` in `.env` before
 testing them.
+
+### Legitimate-excuse days (عذر شرعي)
+
+`PrayerLog.excused` marks a day where prayer wasn't obligatory
+(menstruation/postpartum). While set: `toggle` on that date's fard/nawafil
+is rejected, and `computeDayScore` counts the prayers and nawafil buckets
+as fully met for that day rather than missed — it isn't a fast someone
+makes up later, so it shouldn't read as a broken streak either. The mobile
+app only shows the toggle once `User.gender` is set to `'female'`
+(`PUT /api/auth/settings { gender: 'female' }`); the API itself doesn't
+gate the endpoint by gender.

@@ -44,6 +44,7 @@ export default function SettingsScreen() {
   const [atAdhan, setAtAdhan] = useState(user?.prayerNotifications?.atAdhan ?? false);
   const [reminderMinutes, setReminderMinutes] = useState(user?.prayerNotifications?.reminderMinutes ?? null);
   const [method, setMethod] = useState(user?.calculationMethod || 'UmmAlQura');
+  const [gender, setGender] = useState(user?.gender ?? null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
@@ -61,6 +62,7 @@ export default function SettingsScreen() {
     try {
       const res = await api.put('/auth/settings', {
         weights,
+        gender,
         prayerNotifications: { atAdhan, reminderMinutes },
         calculationMethod: method,
       });
@@ -87,6 +89,29 @@ export default function SettingsScreen() {
           {user?.email}
         </AppText>
       </Card>
+
+      <AppText weight="bold" size={16} style={{ marginTop: spacing.xl, marginBottom: spacing.sm }}>
+        الجنس (اختياري)
+      </AppText>
+      <AppText size={12} color={colors.inkSoft} style={{ marginBottom: spacing.sm }}>
+        يُستخدم فقط لإظهار خيار "العذر الشرعي" في صفحة المتابعة
+      </AppText>
+      <View style={styles.chipsRow}>
+        {[
+          { value: 'female', label: 'أنثى' },
+          { value: 'male', label: 'ذكر' },
+        ].map((opt) => (
+          <TouchableOpacity
+            key={opt.value}
+            style={[styles.chip, gender === opt.value && styles.chipActive]}
+            onPress={() => setGender(gender === opt.value ? null : opt.value)}
+          >
+            <AppText size={12.5} weight="semibold" color={gender === opt.value ? colors.white : colors.ink}>
+              {opt.label}
+            </AppText>
+          </TouchableOpacity>
+        ))}
+      </View>
 
       <AppText weight="bold" size={16} style={{ marginTop: spacing.xl, marginBottom: spacing.sm }}>
         طريقة حساب مواعيد الصلاة

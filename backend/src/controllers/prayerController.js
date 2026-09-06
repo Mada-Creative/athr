@@ -51,6 +51,11 @@ async function toggle(req, res) {
     return res.status(400).json({ message: `عنصر غير معروف: ${key}` });
   }
 
+  const existing = await PrayerLog.findOne({ user: req.user._id, date });
+  if (existing?.excused) {
+    return res.status(400).json({ message: 'اليوم مسجَّل كعذر شرعي — لا يمكن تعديل الصلوات فيه' });
+  }
+
   const update = { $set: { [`${group}.${key}`]: Boolean(value) } };
   let log;
   try {
@@ -73,4 +78,34 @@ async function toggle(req, res) {
   return res.json({ log });
 }
 
-module.exports = { getByDate, toggle, FARD_KEYS, NAWAFIL_KEYS };
+async function setExcused(req, res) {
+  const { date } = req.params;
+  const { excused } = req.body;
+
+  if (!isValidDateParam(date)) {
+    return res.status(400).json({ message: 'صيغة التاريخ غير صحيحة (YYYY-MM-DD)' });
+  }
+  if (typeof excused !== 'boolean') {
+    return res.status(400).json({ message: 'قيمة excused يجب أن تكون true أو false' });
+  }
+
+  const update = { $set: { excused } };
+  let log;
+  try {
+    log = await PrayerLog.findOneAndUpdate({ user: req.user._id, date }, update, {
+      upsert: true,
+      new: true,
+      setDefaultsOnInsert: true,
+    });
+  } catch (err) {
+    if (err.code === 11000) {
+      log = await PrayerLog.findOneAndUpdate({ user: req.user._id, date }, update, { new: true });
+    } else {
+      throw err;
+    }
+  }
+
+  return res.json({ log });
+}
+
+module.exports = { getByDate, toggle, setExcused, FARD_KEYS, NAWAFIL_KEYS };
