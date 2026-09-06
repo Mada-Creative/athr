@@ -1,0 +1,94 @@
+import React, { useMemo, useState } from 'react';
+import { FlatList, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import Screen from '../components/Screen';
+import AppText from '../components/AppText';
+import colors from '../theme/colors';
+import { radius, spacing } from '../theme/spacing';
+
+const SEARCHABLE = [
+  { title: 'متابعة العبادات', icon: 'checkbox-outline', route: 'Tracker' },
+  { title: 'أذكار الصباح', icon: 'partly-sunny-outline', route: 'AthkarCounter', params: { category: 'morning' } },
+  { title: 'أذكار المساء', icon: 'moon-outline', route: 'AthkarCounter', params: { category: 'evening' } },
+  { title: 'أذكار بعد الصلاة', icon: 'business-outline', route: 'AthkarCounter', params: { category: 'afterPrayer' } },
+  { title: 'أذكار النوم', icon: 'bed-outline', route: 'AthkarCounter', params: { category: 'sleep' } },
+  { title: 'أذكار الاستيقاظ', icon: 'alarm-outline', route: 'AthkarCounter', params: { category: 'wakeup' } },
+  { title: 'وِرد القرآن', icon: 'book-outline', route: 'Quran' },
+  { title: 'أسماء الله الحسنى', icon: 'sparkles-outline', route: 'Names' },
+  { title: 'أدعية مأثورة', icon: 'hand-left-outline', route: 'Duas' },
+  { title: 'اتجاه القبلة', icon: 'compass-outline', route: 'Qibla' },
+  { title: 'إحصائياتي الأسبوعية', icon: 'stats-chart-outline', route: 'WeeklyStats' },
+  { title: 'الإعدادات', icon: 'settings-outline', route: 'Settings' },
+];
+
+export default function SearchScreen({ navigation }) {
+  const [query, setQuery] = useState('');
+
+  const results = useMemo(() => {
+    if (!query.trim()) return SEARCHABLE;
+    return SEARCHABLE.filter((item) => item.title.includes(query.trim()));
+  }, [query]);
+
+  return (
+    <Screen scroll={false} contentStyle={{ flex: 1 }}>
+      <View style={styles.searchBar}>
+        <Ionicons name="search" size={18} color={colors.inkSoft} />
+        <TextInput
+          value={query}
+          onChangeText={setQuery}
+          placeholder="ابحث عن قسم..."
+          placeholderTextColor={colors.inkFaint}
+          style={styles.input}
+          textAlign="right"
+          autoFocus
+        />
+      </View>
+
+      <FlatList
+        data={results}
+        keyExtractor={(item) => item.title}
+        contentContainerStyle={{ paddingTop: spacing.lg, paddingBottom: spacing.xxl }}
+        renderItem={({ item }) => (
+          <TouchableOpacity style={styles.row} onPress={() => navigation.navigate(item.route, item.params)}>
+            <Ionicons name={item.icon} size={20} color={colors.amberDeep} />
+            <AppText size={14.5} weight="semibold" style={{ flex: 1 }}>
+              {item.title}
+            </AppText>
+            <Ionicons name="chevron-back" size={16} color={colors.inkSoft} />
+          </TouchableOpacity>
+        )}
+        ListEmptyComponent={
+          <AppText color={colors.inkSoft} size={13} style={{ textAlign: 'center', marginTop: spacing.xl }}>
+            لا توجد نتائج مطابقة
+          </AppText>
+        }
+      />
+    </Screen>
+  );
+}
+
+const styles = StyleSheet.create({
+  searchBar: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+  input: { flex: 1, fontSize: 15, color: colors.ink },
+  row: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+  },
+});

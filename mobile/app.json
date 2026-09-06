@@ -1,0 +1,37 @@
+{
+  "expo": {
+    "name": "أثر",
+    "slug": "athr",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/logo.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FAF5EC"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.athr.mobile",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "نستخدم موقعك لحساب مواعيد الصلاة واتجاه القبلة بدقة."
+      }
+    },
+    "android": {
+      "package": "app.athr.mobile",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/logo.png",
+        "backgroundColor": "#FAF5EC"
+      },
+      "permissions": ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"]
+    },
+    "web": {
+      "favicon": "./assets/logo.png"
+    },
+    "extra": {
+      "apiBaseUrl": "http://localhost:4000/api"
+    }
+  }
+}
