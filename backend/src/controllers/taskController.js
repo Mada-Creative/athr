@@ -58,11 +58,22 @@ async function toggleLog(req, res) {
   const task = await CustomTask.findOne({ _id: taskId, user: req.user._id });
   if (!task) return res.status(404).json({ message: 'العنصر غير موجود' });
 
-  const log = await CustomTaskLog.findOneAndUpdate(
-    { user: req.user._id, task: taskId, date },
-    { $set: { completed: Boolean(completed) } },
-    { upsert: true, new: true, setDefaultsOnInsert: true }
-  );
+  const filter = { user: req.user._id, task: taskId, date };
+  const update = { $set: { completed: Boolean(completed) } };
+  let log;
+  try {
+    log = await CustomTaskLog.findOneAndUpdate(filter, update, {
+      upsert: true,
+      new: true,
+      setDefaultsOnInsert: true,
+    });
+  } catch (err) {
+    // Another request created today's log for this task first — apply
+    // this toggle as a plain update instead of crashing on the duplicate
+    // {user,task,date} index.
+    if (err.code !== 11000) throw err;
+    log = await CustomTaskLog.findOneAndUpdate(filter, update, { new: true });
+  }
   return res.json({ log });
 }
 

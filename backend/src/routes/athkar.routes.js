@@ -1,13 +1,14 @@
 const express = require('express');
 const requireAuth = require('../middleware/auth');
+const asyncHandler = require('../utils/asyncHandler');
 const { getContent, getByDate, updateProgress } = require('../controllers/athkarController');
 
 const router = express.Router();
 
-router.get('/content', getContent); // public, static text bundle
+router.get('/content', getContent); // public, static text bundle, synchronous
 
 router.use(requireAuth);
-router.get('/:date', getByDate);
-router.patch('/:date/:category', updateProgress);
+router.get('/:date', asyncHandler(getByDate));
+router.patch('/:date/:category', asyncHandler(updateProgress));
 
 module.exports = router;

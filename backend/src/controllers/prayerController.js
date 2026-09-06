@@ -9,7 +9,18 @@ async function getByDate(req, res) {
 
   let log = await PrayerLog.findOne({ user: req.user._id, date });
   if (!log) {
-    log = await PrayerLog.create({ user: req.user._id, date });
+    try {
+      log = await PrayerLog.create({ user: req.user._id, date });
+    } catch (err) {
+      // Two requests racing to create today's first log both pass the
+      // findOne check above; the loser hits the unique {user,date} index
+      // instead of crashing the process — the winner's doc is what we want.
+      if (err.code === 11000) {
+        log = await PrayerLog.findOne({ user: req.user._id, date });
+      } else {
+        throw err;
+      }
+    }
   }
   return res.json({ log });
 }
@@ -41,11 +52,23 @@ async function toggle(req, res) {
   }
 
   const update = { $set: { [`${group}.${key}`]: Boolean(value) } };
-  const log = await PrayerLog.findOneAndUpdate(
-    { user: req.user._id, date },
-    update,
-    { upsert: true, new: true, setDefaultsOnInsert: true }
-  );
+  let log;
+  try {
+    log = await PrayerLog.findOneAndUpdate({ user: req.user._id, date }, update, {
+      upsert: true,
+      new: true,
+      setDefaultsOnInsert: true,
+    });
+  } catch (err) {
+    // Same race as above, this time between this upsert and another
+    // request creating today's log first — retry as a plain update now
+    // that the document is guaranteed to exist.
+    if (err.code === 11000) {
+      log = await PrayerLog.findOneAndUpdate({ user: req.user._id, date }, update, { new: true });
+    } else {
+      throw err;
+    }
+  }
 
   return res.json({ log });
 }

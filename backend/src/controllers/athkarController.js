@@ -41,6 +41,23 @@ async function updateProgress(req, res) {
   }
 
   let log = await AthkarLog.findOne({ user: req.user._id, date, category });
+
+  function applyMutation() {
+    if (typeof itemIndex === 'number') {
+      const set = new Set(log.completedItems);
+      if (set.has(itemIndex)) set.delete(itemIndex);
+      else set.add(itemIndex);
+      log.completedItems = Array.from(set).sort((a, b) => a - b);
+      log.completed = log.completedItems.length >= definition.items.length;
+    } else if (typeof completed === 'boolean') {
+      log.completed = completed;
+      log.completedItems = completed
+        ? Array.from({ length: definition.items.length }, (_, i) => i)
+        : [];
+    }
+    log.totalItems = definition.items.length;
+  }
+
   if (!log) {
     log = new AthkarLog({
       user: req.user._id,
@@ -49,23 +66,22 @@ async function updateProgress(req, res) {
       totalItems: definition.items.length,
       completedItems: [],
     });
+    applyMutation();
+    try {
+      await log.save();
+    } catch (err) {
+      // Another request created today's log for this category first —
+      // re-apply this toggle on top of that one instead of crashing on
+      // the duplicate {user,date,category} index.
+      if (err.code !== 11000) throw err;
+      log = await AthkarLog.findOne({ user: req.user._id, date, category });
+      applyMutation();
+      await log.save();
+    }
+  } else {
+    applyMutation();
+    await log.save();
   }
-
-  if (typeof itemIndex === 'number') {
-    const set = new Set(log.completedItems);
-    if (set.has(itemIndex)) set.delete(itemIndex);
-    else set.add(itemIndex);
-    log.completedItems = Array.from(set).sort((a, b) => a - b);
-    log.completed = log.completedItems.length >= definition.items.length;
-  } else if (typeof completed === 'boolean') {
-    log.completed = completed;
-    log.completedItems = completed
-      ? Array.from({ length: definition.items.length }, (_, i) => i)
-      : [];
-  }
-
-  log.totalItems = definition.items.length;
-  await log.save();
 
   return res.json({
     category,
