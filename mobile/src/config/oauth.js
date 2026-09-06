@@ -10,10 +10,12 @@
 const GOOGLE_OAUTH = {
   // "Web application" client — required even for native sign-in, since
   // expo-auth-session's proxy flow (used in Expo Go) authenticates as a web client.
-  webClientId: 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com',
+  webClientId: '342643187157-j6rtirsqn0mgq5o23t8upt5hspepql47.apps.googleusercontent.com',
   // "iOS" client — used for standalone/EAS iOS builds.
-  iosClientId: 'YOUR_IOS_CLIENT_ID.apps.googleusercontent.com',
-  // "Android" client — used for standalone/EAS Android builds.
+  iosClientId: '342643187157-tub4jcr53n16qt6hsoraf12tv4nqquga.apps.googleusercontent.com',
+  // "Android" client — not created yet; fill in once you add one (see
+  // mobile/README.md → "Social sign-in setup"), needed before Google
+  // sign-in works on an Android build.
   androidClientId: 'YOUR_ANDROID_CLIENT_ID.apps.googleusercontent.com',
 };
 
