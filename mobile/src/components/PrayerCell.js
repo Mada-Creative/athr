@@ -7,7 +7,7 @@ import { radius, spacing } from '../theme/spacing';
 
 // One small square in the tracker's per-prayer columns. Exactly one of
 // done/locked/excused should be true; plain "pending" is the default.
-export default function PrayerCell({ title, icon = 'ellipse-outline', done, locked, excused, onPress }) {
+export default function PrayerCell({ title, icon = 'ellipse-outline', done, locked, excused, onPress, onLongPress }) {
   const disabled = locked || excused || !onPress;
 
   let bg = colors.surface;
@@ -37,6 +37,7 @@ export default function PrayerCell({ title, icon = 'ellipse-outline', done, lock
       activeOpacity={disabled ? 1 : 0.75}
       disabled={disabled}
       onPress={onPress}
+      onLongPress={disabled ? undefined : onLongPress}
       style={[styles.cell, { backgroundColor: bg, borderColor }]}
     >
       <Ionicons name={displayIcon} size={16} color={iconColor} />

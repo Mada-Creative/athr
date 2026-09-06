@@ -1,14 +1,32 @@
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, StyleSheet, Animated } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import colors from '../theme/colors';
 import AppText from './AppText';
+
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 export default function ProgressRing({ size = 96, strokeWidth = 10, percentage = 0, label, sublabel }) {
   const radiusValue = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radiusValue;
   const clamped = Math.max(0, Math.min(100, percentage));
-  const dashOffset = circumference * (1 - clamped / 100);
+
+  // Animate the fill itself, not just the number — so marking a prayer
+  // reads as the ring visibly catching up, not an instant jump.
+  const progress = useRef(new Animated.Value(clamped)).current;
+
+  useEffect(() => {
+    Animated.timing(progress, {
+      toValue: clamped,
+      duration: 600,
+      useNativeDriver: false, // strokeDashoffset isn't supported by the native driver
+    }).start();
+  }, [clamped, progress]);
+
+  const dashOffset = progress.interpolate({
+    inputRange: [0, 100],
+    outputRange: [circumference, 0],
+  });
 
   return (
     <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
@@ -21,7 +39,7 @@ export default function ProgressRing({ size = 96, strokeWidth = 10, percentage =
           strokeWidth={strokeWidth}
           fill="none"
         />
-        <Circle
+        <AnimatedCircle
           cx={size / 2}
           cy={size / 2}
           r={radiusValue}

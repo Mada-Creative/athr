@@ -36,10 +36,7 @@ export default function LoginScreen({ navigation }) {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.logoWrap}>
           <Image source={require('../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
-          <AppText weight="bold" size={26} style={{ marginTop: spacing.md }}>
-            أثر
-          </AppText>
-          <AppText color={colors.inkSoft} size={14} style={{ marginTop: 4 }}>
+          <AppText color={colors.inkSoft} size={14} style={{ marginTop: spacing.md }}>
             اجعل لعبادتك أثرًا يوميًا
           </AppText>
         </View>
@@ -96,7 +93,7 @@ export default function LoginScreen({ navigation }) {
 const styles = StyleSheet.create({
   content: { flexGrow: 1, justifyContent: 'center' },
   logoWrap: { alignItems: 'center', marginBottom: spacing.xxl },
-  logo: { width: 96, height: 96 },
+  logo: { width: 128, height: 128 },
   form: { gap: 0 },
   label: { marginBottom: spacing.xs, marginTop: spacing.md },
   input: {

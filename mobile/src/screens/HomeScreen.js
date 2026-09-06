@@ -14,6 +14,7 @@ import { todayISO, formatGregorian, formatWeekday, toHijri, greetingFor } from '
 import usePrayerTimes, { formatCountdown, formatClock } from '../hooks/usePrayerTimes';
 import usePrayerNotifications from '../hooks/usePrayerNotifications';
 import useDailyData from '../hooks/useDailyData';
+import duas from '../constants/duas';
 
 const FARD_ORDER = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
 
@@ -45,9 +46,14 @@ export default function HomeScreen({ navigation }) {
   const date = todayISO();
   const now = new Date();
   const hijri = toHijri(now);
-  const { schedule, next, remainingMs } = usePrayerTimes({ methodName: user?.calculationMethod });
+  const { schedule, next, remainingMs } = usePrayerTimes();
   const { stats, prayerLog, reload } = useDailyData(date);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Rotates through the curated duas roughly once an hour — a light touch
+  // of "there's something new here" without any dedicated timer.
+  const hourBucket = Math.floor(now.getTime() / (1000 * 60 * 60));
+  const dua = duas[hourBucket % duas.length];
 
   usePrayerNotifications(schedule, user?.prayerNotifications);
 
@@ -83,6 +89,13 @@ export default function HomeScreen({ navigation }) {
       <AppText color={colors.inkSoft} size={13.5} style={{ marginTop: 4 }}>
         {formatWeekday(now)}، {formatGregorian(now)} — {hijri.day} {hijri.month} {hijri.year}هـ
       </AppText>
+
+      <TouchableOpacity activeOpacity={0.85} onPress={() => navigation.navigate('Duas')} style={styles.duaStrip}>
+        <Ionicons name="hand-left-outline" size={14} color={colors.amberDeep} />
+        <AppText size={12.5} weight="semibold" color={colors.amberDeep} style={{ flex: 1 }} numberOfLines={1}>
+          {dua.text}
+        </AppText>
+      </TouchableOpacity>
 
       <TouchableOpacity activeOpacity={0.9} onPress={() => navigation.navigate('PrayerDetail')}>
         <Card style={styles.heroCard}>
@@ -224,10 +237,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  duaStrip: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    gap: spacing.xs,
+    backgroundColor: colors.amberSoft,
+    borderRadius: radius.pill,
+    paddingVertical: spacing.xs + 2,
+    paddingHorizontal: spacing.md,
+    marginTop: spacing.md,
+  },
   heroCard: {
     backgroundColor: colors.ink,
     borderColor: colors.ink,
-    marginTop: spacing.xl,
+    marginTop: spacing.lg,
   },
   heroTop: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'flex-start' },
   countdownBadge: {

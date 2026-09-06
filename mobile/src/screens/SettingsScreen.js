@@ -19,14 +19,6 @@ const WEIGHT_LABELS = {
   other: 'أخرى',
 };
 
-const METHODS = [
-  { key: 'UmmAlQura', label: 'أم القرى' },
-  { key: 'MuslimWorldLeague', label: 'رابطة العالم الإسلامي' },
-  { key: 'Egyptian', label: 'الهيئة المصرية' },
-  { key: 'Karachi', label: 'كراتشي' },
-  { key: 'NorthAmerica', label: 'أمريكا الشمالية' },
-];
-
 // Graduated presets, shortest to longest — matches how far ahead someone
 // actually plans to stop what they're doing for a prayer.
 const REMINDER_OPTIONS = [
@@ -43,7 +35,6 @@ export default function SettingsScreen() {
   const [weights, setWeights] = useState(() => ({ ...user?.weights }));
   const [atAdhan, setAtAdhan] = useState(user?.prayerNotifications?.atAdhan ?? false);
   const [reminderMinutes, setReminderMinutes] = useState(user?.prayerNotifications?.reminderMinutes ?? null);
-  const [method, setMethod] = useState(user?.calculationMethod || 'UmmAlQura');
   const [gender, setGender] = useState(user?.gender ?? null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -64,7 +55,6 @@ export default function SettingsScreen() {
         weights,
         gender,
         prayerNotifications: { atAdhan, reminderMinutes },
-        calculationMethod: method,
       });
       updateUser(res.user);
       setSuccess(true);
@@ -108,23 +98,6 @@ export default function SettingsScreen() {
           >
             <AppText size={12.5} weight="semibold" color={gender === opt.value ? colors.white : colors.ink}>
               {opt.label}
-            </AppText>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      <AppText weight="bold" size={16} style={{ marginTop: spacing.xl, marginBottom: spacing.sm }}>
-        طريقة حساب مواعيد الصلاة
-      </AppText>
-      <View style={styles.chipsRow}>
-        {METHODS.map((m) => (
-          <TouchableOpacity
-            key={m.key}
-            style={[styles.chip, method === m.key && styles.chipActive]}
-            onPress={() => setMethod(m.key)}
-          >
-            <AppText size={12.5} weight="semibold" color={method === m.key ? colors.white : colors.ink}>
-              {m.label}
             </AppText>
           </TouchableOpacity>
         ))}

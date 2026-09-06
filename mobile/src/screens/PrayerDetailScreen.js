@@ -6,7 +6,6 @@ import AppText from '../components/AppText';
 import Card from '../components/Card';
 import colors from '../theme/colors';
 import { radius, spacing } from '../theme/spacing';
-import { useAuth } from '../context/AuthContext';
 import usePrayerTimes, { formatClock } from '../hooks/usePrayerTimes';
 
 function formatCountdownWithSeconds(ms) {
@@ -22,10 +21,9 @@ function formatCountdownWithSeconds(ms) {
 // Purely informational — this screen never marks a prayer as prayed.
 // Marking happens on the Tracker tab; this one is for "when, and based on
 // what location" only, which is why it carries the location/method controls.
-export default function PrayerDetailScreen({ navigation }) {
-  const { user } = useAuth();
+export default function PrayerDetailScreen() {
   const { schedule, next, permissionDenied, locationLabel, locating, methodLabel, refreshLocation } =
-    usePrayerTimes({ methodName: user?.calculationMethod });
+    usePrayerTimes();
   const [now, setNow] = useState(new Date());
 
   useEffect(() => {
@@ -53,7 +51,7 @@ export default function PrayerDetailScreen({ navigation }) {
               {locating ? 'جارٍ تحديد الموقع...' : locationLabel || 'الموقع الحالي'}
             </AppText>
             <AppText size={11.5} color={colors.inkSoft} style={{ marginTop: 2 }}>
-              طريقة الحساب: {methodLabel}
+              طريقة الحساب (تلقائية حسب موقعك): {methodLabel}
             </AppText>
           </View>
         </View>
@@ -63,12 +61,6 @@ export default function PrayerDetailScreen({ navigation }) {
             <Ionicons name="refresh-outline" size={14} color={colors.ink} />
             <AppText size={12.5} weight="semibold" style={{ marginRight: 4 }}>
               تحديث الموقع
-            </AppText>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.locationBtn} onPress={() => navigation.navigate('Settings')}>
-            <Ionicons name="options-outline" size={14} color={colors.ink} />
-            <AppText size={12.5} weight="semibold" style={{ marginRight: 4 }}>
-              تغيير طريقة الحساب
             </AppText>
           </TouchableOpacity>
         </View>

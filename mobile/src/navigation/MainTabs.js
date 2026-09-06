@@ -18,10 +18,17 @@ const TAB_ICONS = {
   More: 'grid',
 };
 
+// Plain icon + label, tinted together — no background box behind the icon,
+// so nothing shifts position when a tab becomes active. A small dot under
+// the label is the only extra feedback for "this one's selected".
 function TabIcon({ name, focused }) {
   return (
-    <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
-      <Ionicons name={`${TAB_ICONS[name]}${focused ? '' : '-outline'}`} size={20} color={focused ? colors.white : colors.inkSoft} />
+    <View style={styles.iconWrap}>
+      <Ionicons
+        name={`${TAB_ICONS[name]}${focused ? '' : '-outline'}`}
+        size={23}
+        color={focused ? colors.ink : colors.inkFaint}
+      />
     </View>
   );
 }
@@ -33,9 +40,10 @@ export default function MainTabs() {
         headerShown: false,
         tabBarShowLabel: true,
         tabBarActiveTintColor: colors.ink,
-        tabBarInactiveTintColor: colors.inkSoft,
+        tabBarInactiveTintColor: colors.inkFaint,
         tabBarStyle: styles.tabBar,
-        tabBarLabelStyle: { fontFamily: typography.fontMedium, fontSize: 11, marginBottom: 4 },
+        tabBarItemStyle: styles.tabItem,
+        tabBarLabelStyle: { fontFamily: typography.fontMedium, fontSize: 11 },
         tabBarIcon: ({ focused }) => <TabIcon name={route.name} focused={focused} />,
       })}
     >
@@ -51,15 +59,9 @@ const styles = StyleSheet.create({
   tabBar: {
     backgroundColor: colors.surface,
     borderTopColor: colors.border,
-    height: 72,
-    paddingTop: 8,
+    height: 64,
+    paddingTop: 6,
   },
-  iconWrap: {
-    width: 34,
-    height: 34,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconWrapActive: { backgroundColor: colors.ink },
+  tabItem: { paddingVertical: 2 },
+  iconWrap: { alignItems: 'center', justifyContent: 'center', height: 26 },
 });

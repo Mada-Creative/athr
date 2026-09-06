@@ -48,6 +48,7 @@ export default function SearchScreen({ navigation }) {
       <FlatList
         data={results}
         keyExtractor={(item) => item.title}
+        keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ paddingTop: spacing.lg, paddingBottom: spacing.xxl }}
         renderItem={({ item }) => (
           <TouchableOpacity style={styles.row} onPress={() => navigation.navigate(item.route, item.params)}>

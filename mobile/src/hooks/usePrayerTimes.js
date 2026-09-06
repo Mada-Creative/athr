@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import * as Location from 'expo-location';
 import { Coordinates, CalculationMethod, PrayerTimes } from 'adhan';
+import { methodForCountry, METHOD_LABELS } from '../utils/methodForCountry';
 
 // Falls back to the coordinates of Makkah when location permission is
 // declined, so the app always has something sensible to show.
@@ -15,14 +16,6 @@ const PRAYER_LABELS = {
   isha: 'العشاء',
 };
 
-const METHOD_LABELS = {
-  UmmAlQura: 'أم القرى',
-  MuslimWorldLeague: 'رابطة العالم الإسلامي',
-  Egyptian: 'الهيئة المصرية',
-  Karachi: 'كراتشي',
-  NorthAmerica: 'أمريكا الشمالية',
-};
-
 function resolveMethod(name) {
   const map = {
     UmmAlQura: CalculationMethod.UmmAlQura,
@@ -34,10 +27,14 @@ function resolveMethod(name) {
   return (map[name] || CalculationMethod.UmmAlQura)();
 }
 
-export default function usePrayerTimes({ methodName = 'UmmAlQura' } = {}) {
+export default function usePrayerTimes() {
   const [coords, setCoords] = useState(null);
   const [permissionDenied, setPermissionDenied] = useState(false);
   const [locationLabel, setLocationLabel] = useState(null);
+  // Derived from the detected country — not a setting anyone picks by hand,
+  // since getting it "right" means knowing conventions most people never
+  // think about. Defaults to the most widely-used convention until located.
+  const [methodName, setMethodName] = useState('MuslimWorldLeague');
   const [locating, setLocating] = useState(false);
   const [now, setNow] = useState(new Date());
 
@@ -49,6 +46,7 @@ export default function usePrayerTimes({ methodName = 'UmmAlQura' } = {}) {
         setPermissionDenied(true);
         setCoords((prev) => prev || FALLBACK_COORDS);
         setLocationLabel('مكة المكرمة (تقديري — الموقع غير مُفعّل)');
+        setMethodName('UmmAlQura');
         return;
       }
       setPermissionDenied(false);
@@ -61,6 +59,7 @@ export default function usePrayerTimes({ methodName = 'UmmAlQura' } = {}) {
         const place = places?.[0];
         const label = [place?.city || place?.subregion, place?.country].filter(Boolean).join('، ');
         setLocationLabel(label || null);
+        setMethodName(methodForCountry(place?.isoCountryCode));
       } catch (geocodeErr) {
         setLocationLabel(null);
       }
@@ -68,6 +67,7 @@ export default function usePrayerTimes({ methodName = 'UmmAlQura' } = {}) {
       setPermissionDenied(true);
       setCoords((prev) => prev || FALLBACK_COORDS);
       setLocationLabel('مكة المكرمة (تقديري — تعذّر تحديد الموقع)');
+      setMethodName('UmmAlQura');
     } finally {
       setLocating(false);
     }

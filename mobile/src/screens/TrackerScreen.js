@@ -76,7 +76,7 @@ export default function TrackerScreen({ navigation }) {
   const { user } = useAuth();
   const date = todayISO();
   const now = new Date();
-  const { schedule } = usePrayerTimes({ methodName: user?.calculationMethod });
+  const { schedule } = usePrayerTimes();
   const {
     stats,
     prayerLog,
@@ -88,6 +88,7 @@ export default function TrackerScreen({ navigation }) {
     reload,
     togglePrayer,
     toggleExcused,
+    toggleAthkarComplete,
     toggleQuran,
     toggleTask,
   } = useDailyData(date);
@@ -175,7 +176,9 @@ export default function TrackerScreen({ navigation }) {
                     />
                   );
                 }
-                // athkar cell
+                // athkar cell — one tap marks the whole category done; a
+                // long-press still opens the counter for those who want to
+                // actually read/count through it.
                 const progress = athkar?.[cell.category];
                 return (
                   <PrayerCell
@@ -184,7 +187,8 @@ export default function TrackerScreen({ navigation }) {
                     icon={cell.icon}
                     done={Boolean(progress?.completed)}
                     locked={locked}
-                    onPress={() => navigation.navigate('AthkarCounter', { category: cell.category })}
+                    onPress={() => toggleAthkarComplete(cell.category)}
+                    onLongPress={() => navigation.navigate('AthkarCounter', { category: cell.category })}
                   />
                 );
               })}
@@ -193,7 +197,7 @@ export default function TrackerScreen({ navigation }) {
         })}
       </View>
       <AppText size={11} color={colors.inkSoft} style={{ marginTop: spacing.xs, marginBottom: spacing.lg }}>
-        كل مربع يُفتح بعد دخول وقت صلاته
+        كل مربع يُفتح بعد دخول وقت صلاته — اضغط مطوّلًا على مربع الأذكار لفتح العدّاد
       </AppText>
 
       <SectionHeader title="الأذكار" actionLabel="فتح الكل" onAction={() => navigation.navigate('AthkarList')} />

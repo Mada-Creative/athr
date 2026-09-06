@@ -94,6 +94,21 @@ export default function useDailyData(date) {
     [date, load]
   );
 
+  const toggleAthkarComplete = useCallback(
+    async (category) => {
+      const current = Boolean(athkar?.[category]?.completed);
+      setAthkar((prev) => ({ ...prev, [category]: { ...prev?.[category], completed: !current } }));
+      try {
+        const res = await api.patch(`/athkar/${date}/${category}`, { completed: !current });
+        setAthkar((prev) => ({ ...prev, [category]: res }));
+        load();
+      } catch (err) {
+        setAthkar((prev) => ({ ...prev, [category]: { ...prev?.[category], completed: current } }));
+      }
+    },
+    [date, athkar, load]
+  );
+
   const toggleQuran = useCallback(async () => {
     const currentValue = quran?.completed;
     setQuran((prev) => ({ ...prev, completed: !currentValue }));
@@ -137,6 +152,7 @@ export default function useDailyData(date) {
     togglePrayer,
     toggleExcused,
     toggleAthkarItem,
+    toggleAthkarComplete,
     toggleQuran,
     toggleTask,
   };
