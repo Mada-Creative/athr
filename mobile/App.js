@@ -3,6 +3,7 @@ import React, { useCallback, useEffect } from 'react';
 import { I18nManager, LogBox, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
+import * as Notifications from 'expo-notifications';
 import {
   useFonts,
   Cairo_400Regular,
@@ -14,6 +15,17 @@ import {
 import { AuthProvider } from './src/context/AuthContext';
 import RootNavigator from './src/navigation/RootNavigator';
 import colors from './src/theme/colors';
+import { ensureAndroidNotificationChannel } from './src/hooks/usePrayerNotifications';
+
+// Show prayer-time notifications as a banner + sound even while the app is
+// open, instead of silently queuing them for the notification tray.
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
 
 // The whole app is Arabic-first, so force RTL layout direction once at boot.
 if (!I18nManager.isRTL) {
@@ -46,6 +58,10 @@ export default function App() {
       SplashScreen.hideAsync().catch(() => {});
     }
   }, [fontsLoaded]);
+
+  useEffect(() => {
+    ensureAndroidNotificationChannel().catch(() => {});
+  }, []);
 
   if (!fontsLoaded) {
     return <View style={{ flex: 1, backgroundColor: colors.background }} />;

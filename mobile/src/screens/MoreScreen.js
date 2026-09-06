@@ -8,6 +8,7 @@ import { radius, spacing } from '../theme/spacing';
 import { useAuth } from '../context/AuthContext';
 
 const ITEMS = [
+  { title: 'مواقيت الصلاة', subtitle: 'التفاصيل، الموقع، والعدّاد', icon: 'time-outline', route: 'PrayerDetail', color: colors.amberDeep },
   { title: 'وِرد القرآن', subtitle: 'تتبع قراءتك اليومية', icon: 'book-outline', route: 'Quran', color: colors.amberDeep },
   { title: 'أسماء الله الحسنى', subtitle: 'الأسماء التسعة والتسعون', icon: 'sparkles-outline', route: 'Names', color: colors.sage },
   { title: 'أدعية مأثورة', subtitle: 'من القرآن والسنة', icon: 'hand-left-outline', route: 'Duas', color: colors.clay },

@@ -178,16 +178,25 @@ async function me(req, res) {
   return res.json({ user: req.user.toPublicJSON() });
 }
 
+const REMINDER_PRESETS = [null, 5, 10, 15, 30, 60];
+
 async function updateSettings(req, res) {
   try {
-    const { name, city, calculationMethod, madhab, weights, notificationsEnabled } = req.body;
+    const { name, city, calculationMethod, madhab, weights, prayerNotifications } = req.body;
     const user = req.user;
 
     if (name !== undefined) user.name = name;
     if (city !== undefined) user.city = city;
     if (calculationMethod !== undefined) user.calculationMethod = calculationMethod;
     if (madhab !== undefined) user.madhab = madhab;
-    if (notificationsEnabled !== undefined) user.notificationsEnabled = notificationsEnabled;
+
+    if (prayerNotifications !== undefined) {
+      const merged = { ...user.prayerNotifications.toObject(), ...prayerNotifications };
+      if (!REMINDER_PRESETS.includes(merged.reminderMinutes)) {
+        return res.status(400).json({ message: 'قيمة التذكير قبل الصلاة غير صالحة' });
+      }
+      user.prayerNotifications = merged;
+    }
 
     if (weights !== undefined) {
       const merged = { ...user.weights.toObject(), ...weights };

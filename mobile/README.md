@@ -16,10 +16,17 @@ navigation instead of the reference app's top horizontal tab bar. See
 
 - Email/password auth against the أثر API, plus **Sign in with Google** and
   **Sign in with Apple** (`src/context/AuthContext.js`, `src/components/SocialAuthButtons.js`)
-- **Home**: greeting + Hijri/Gregorian date, live next-prayer countdown with
-  tap-to-mark prayer chips (calculated on-device from GPS via `adhan`, no
-  server round-trip needed), a "today's imprint" weighted score ring, and a
-  quick-access grid to every section
+- **Home**: a live ticking clock, greeting + Hijri/Gregorian date, a
+  read-only next-prayer countdown (calculated on-device from GPS via
+  `adhan`, no server round-trip needed — marking a prayer prayed only
+  happens on the Tracker tab, never from Home), a "today's imprint"
+  weighted score ring, and organized link sections instead of a flat icon grid
+- **Prayer times detail**: the full day's schedule stacked vertically with a
+  live per-second countdown to the next one, plus which city/coordinates and
+  calculation method are being used and a one-tap way to refresh the location
+- **Prayer notifications**: an at-adhan alert and/or a reminder a graduated
+  number of minutes before each prayer (5/10/15/30/60), both toggled from
+  Settings and scheduled on-device with `expo-notifications`
 - **Tracker**: full daily checklist — 5 fard prayers, 7 rawatib/qiyam/witr,
   Quran wird, athkar categories, plus fully custom "daily deeds" / "other"
   checklists the user can add to

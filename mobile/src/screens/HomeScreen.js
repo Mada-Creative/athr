@@ -6,26 +6,38 @@ import Screen from '../components/Screen';
 import AppText from '../components/AppText';
 import Card from '../components/Card';
 import ProgressRing from '../components/ProgressRing';
+import LiveClock from '../components/LiveClock';
 import colors from '../theme/colors';
 import { radius, spacing } from '../theme/spacing';
 import { useAuth } from '../context/AuthContext';
 import { todayISO, formatGregorian, formatWeekday, toHijri, greetingFor } from '../utils/date';
 import usePrayerTimes, { formatCountdown, formatClock } from '../hooks/usePrayerTimes';
+import usePrayerNotifications from '../hooks/usePrayerNotifications';
 import useDailyData from '../hooks/useDailyData';
 
 const FARD_ORDER = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
 
-const QUICK_LINKS = [
-  { key: 'morning', title: 'أذكار الصباح', icon: 'partly-sunny-outline', color: colors.amber, route: 'AthkarCounter', params: { category: 'morning' } },
-  { key: 'evening', title: 'أذكار المساء', icon: 'moon-outline', color: colors.clay, route: 'AthkarCounter', params: { category: 'evening' } },
-  { key: 'afterPrayer', title: 'أذكار بعد الصلاة', icon: 'business-outline', color: colors.sage, route: 'AthkarCounter', params: { category: 'afterPrayer' } },
-  { key: 'sleep', title: 'أذكار النوم', icon: 'bed-outline', color: '#7C6A9C', route: 'AthkarCounter', params: { category: 'sleep' } },
-  { key: 'wakeup', title: 'أذكار الاستيقاظ', icon: 'alarm-outline', color: '#4E7FA8', route: 'AthkarCounter', params: { category: 'wakeup' } },
-  { key: 'quran', title: 'وِرد القرآن', icon: 'book-outline', color: colors.amberDeep, route: 'Quran' },
-  { key: 'names', title: 'أسماء الله الحسنى', icon: 'sparkles-outline', color: colors.sage, route: 'Names' },
-  { key: 'duas', title: 'أدعية مأثورة', icon: 'hand-left-outline', color: colors.clay, route: 'Duas' },
-  { key: 'qibla', title: 'اتجاه القبلة', icon: 'compass-outline', color: colors.ink, route: 'Qibla' },
-  { key: 'weekly', title: 'إحصائياتي', icon: 'stats-chart-outline', color: colors.amber, route: 'WeeklyStats' },
+// Prayer times, Qibla and stats are grouped together right under the hero
+// card — the three things you'd reach for right after checking prayer
+// times — instead of buried in the section grid below.
+const PRAYER_MENU = [
+  { key: 'times', title: 'مواقيت الصلاة', icon: 'time-outline', route: 'PrayerDetail' },
+  { key: 'qibla', title: 'القبلة', icon: 'compass-outline', route: 'Qibla' },
+  { key: 'stats', title: 'إحصائياتي', icon: 'stats-chart-outline', route: 'WeeklyStats' },
+];
+
+const ATHKAR_LINKS = [
+  { key: 'morning', title: 'أذكار الصباح', subtitle: 'حصنك اليوم', icon: 'partly-sunny-outline', color: colors.amber, params: { category: 'morning' } },
+  { key: 'evening', title: 'أذكار المساء', subtitle: 'قبل غروب الشمس', icon: 'moon-outline', color: colors.clay, params: { category: 'evening' } },
+  { key: 'afterPrayer', title: 'أذكار بعد الصلاة', subtitle: 'بعد كل صلاة مفروضة', icon: 'business-outline', color: colors.sage, params: { category: 'afterPrayer' } },
+  { key: 'sleep', title: 'أذكار النوم', subtitle: 'قبل أن تنام', icon: 'bed-outline', color: '#7C6A9C', params: { category: 'sleep' } },
+  { key: 'wakeup', title: 'أذكار الاستيقاظ', subtitle: 'أول ما تفتح عينيك', icon: 'alarm-outline', color: '#4E7FA8', params: { category: 'wakeup' } },
+];
+
+const MORE_LINKS = [
+  { key: 'quran', title: 'وِرد القرآن', subtitle: 'ورد يومي من القرآن الكريم', icon: 'book-outline', color: colors.amberDeep, route: 'Quran' },
+  { key: 'names', title: 'أسماء الله الحسنى', subtitle: 'الأسماء التسعة والتسعون', icon: 'sparkles-outline', color: colors.sage, route: 'Names' },
+  { key: 'duas', title: 'أدعية مأثورة', subtitle: 'من القرآن والسنة', icon: 'hand-left-outline', color: colors.clay, route: 'Duas' },
 ];
 
 export default function HomeScreen({ navigation }) {
@@ -34,8 +46,10 @@ export default function HomeScreen({ navigation }) {
   const now = new Date();
   const hijri = toHijri(now);
   const { schedule, next, remainingMs } = usePrayerTimes({ methodName: user?.calculationMethod });
-  const { loading, stats, prayerLog, togglePrayer, reload } = useDailyData(date);
+  const { stats, prayerLog, reload } = useDailyData(date);
   const [refreshing, setRefreshing] = useState(false);
+
+  usePrayerNotifications(schedule, user?.prayerNotifications);
 
   useFocusEffect(
     useCallback(() => {
@@ -52,15 +66,15 @@ export default function HomeScreen({ navigation }) {
   return (
     <Screen refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.amber} />}>
       <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => navigation.navigate('Settings')} style={styles.iconBtn}>
-          <Ionicons name="settings-outline" size={20} color={colors.ink} />
-        </TouchableOpacity>
-        <AppText weight="bold" size={20}>
-          أثر
-        </AppText>
-        <TouchableOpacity onPress={() => navigation.navigate('Search')} style={styles.iconBtn}>
-          <Ionicons name="search-outline" size={20} color={colors.ink} />
-        </TouchableOpacity>
+        <LiveClock size={17} />
+        <View style={styles.topBarIcons}>
+          <TouchableOpacity onPress={() => navigation.navigate('Search')} style={styles.iconBtn}>
+            <Ionicons name="search-outline" size={19} color={colors.ink} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.navigate('Settings')} style={styles.iconBtn}>
+            <Ionicons name="settings-outline" size={19} color={colors.ink} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <AppText weight="bold" size={22} style={{ marginTop: spacing.lg }}>
@@ -70,46 +84,64 @@ export default function HomeScreen({ navigation }) {
         {formatWeekday(now)}، {formatGregorian(now)} — {hijri.day} {hijri.month} {hijri.year}هـ
       </AppText>
 
-      <Card style={styles.heroCard}>
-        <View style={styles.heroTop}>
-          <View>
-            <AppText color={colors.amberSoft} size={12.5}>
-              الصلاة القادمة
-            </AppText>
-            <AppText weight="bold" size={22} color={colors.white} style={{ marginTop: 2 }}>
-              {next?.label || '—'}
-            </AppText>
+      <TouchableOpacity activeOpacity={0.9} onPress={() => navigation.navigate('PrayerDetail')}>
+        <Card style={styles.heroCard}>
+          <View style={styles.heroTop}>
+            <View>
+              <AppText color={colors.amberSoft} size={12.5}>
+                الصلاة القادمة
+              </AppText>
+              <AppText weight="bold" size={22} color={colors.white} style={{ marginTop: 2 }}>
+                {next?.label || '—'}
+              </AppText>
+            </View>
+            <View style={styles.countdownBadge}>
+              <Ionicons name="time-outline" size={14} color={colors.ink} />
+              <AppText weight="semibold" size={15} style={{ marginRight: 4 }}>
+                {formatCountdown(remainingMs)}
+              </AppText>
+            </View>
           </View>
-          <View style={styles.countdownBadge}>
-            <Ionicons name="time-outline" size={14} color={colors.ink} />
-            <AppText weight="semibold" size={15} style={{ marginRight: 4 }}>
-              {formatCountdown(remainingMs)}
-            </AppText>
-          </View>
-        </View>
 
-        <View style={styles.prayerRow}>
-          {FARD_ORDER.map((key) => {
-            const info = schedule.find((s) => s.key === key);
-            const done = Boolean(prayerLog?.fard?.[key]);
-            return (
-              <TouchableOpacity
-                key={key}
-                style={[styles.prayerChip, done && styles.prayerChipDone]}
-                onPress={() => togglePrayer('fard', key)}
-              >
-                {done ? <Ionicons name="checkmark-circle" size={16} color={colors.sage} /> : null}
-                <AppText size={12.5} weight="semibold" color={done ? colors.sage : colors.amberSoft}>
-                  {info?.label || key}
-                </AppText>
-                <AppText size={11} color={done ? colors.sage : colors.amberSoft}>
-                  {info ? formatClock(info.time) : '--:--'}
-                </AppText>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      </Card>
+          <View style={styles.prayerRow}>
+            {FARD_ORDER.map((key) => {
+              const info = schedule.find((s) => s.key === key);
+              const done = Boolean(prayerLog?.fard?.[key]);
+              return (
+                <View key={key} style={[styles.prayerChip, done && styles.prayerChipDone]}>
+                  {done ? <Ionicons name="checkmark-circle" size={16} color={colors.sage} /> : null}
+                  <AppText size={12.5} weight="semibold" color={done ? colors.sage : colors.amberSoft}>
+                    {info?.label || key}
+                  </AppText>
+                  <AppText size={11} color={done ? colors.sage : colors.amberSoft}>
+                    {info ? formatClock(info.time) : '--:--'}
+                  </AppText>
+                </View>
+              );
+            })}
+          </View>
+
+          <AppText size={11} color={colors.amberSoft} style={{ marginTop: spacing.md, textAlign: 'center' }}>
+            علّم صلاتك من تبويب المتابعة — اضغط هنا للتفاصيل
+          </AppText>
+        </Card>
+      </TouchableOpacity>
+
+      <View style={styles.prayerMenuRow}>
+        {PRAYER_MENU.map((item) => (
+          <TouchableOpacity
+            key={item.key}
+            style={styles.prayerMenuItem}
+            activeOpacity={0.8}
+            onPress={() => navigation.navigate(item.route)}
+          >
+            <Ionicons name={item.icon} size={20} color={colors.ink} />
+            <AppText weight="semibold" size={12} style={{ marginTop: 6, textAlign: 'center' }}>
+              {item.title}
+            </AppText>
+          </TouchableOpacity>
+        ))}
+      </View>
 
       <TouchableOpacity activeOpacity={0.85} onPress={() => navigation.navigate('Tracker')}>
         <Card style={styles.scoreCard}>
@@ -126,33 +158,62 @@ export default function HomeScreen({ navigation }) {
         </Card>
       </TouchableOpacity>
 
-      <AppText weight="bold" size={18} style={{ marginTop: spacing.xl, marginBottom: spacing.md }}>
-        الأقسام
+      <AppText weight="bold" size={16} style={{ marginTop: spacing.xl, marginBottom: spacing.sm }}>
+        الأذكار
       </AppText>
-
-      <View style={styles.grid}>
-        {QUICK_LINKS.map((item) => (
-          <TouchableOpacity
-            key={item.key}
-            style={styles.gridItem}
-            activeOpacity={0.8}
-            onPress={() => navigation.navigate(item.route, item.params)}
-          >
-            <View style={[styles.gridIcon, { backgroundColor: `${item.color}22` }]}>
-              <Ionicons name={item.icon} size={22} color={item.color} />
-            </View>
-            <AppText weight="semibold" size={13} style={{ marginTop: spacing.sm, textAlign: 'center' }}>
+      {ATHKAR_LINKS.map((item) => (
+        <TouchableOpacity
+          key={item.key}
+          style={styles.linkRow}
+          activeOpacity={0.8}
+          onPress={() => navigation.navigate('AthkarCounter', item.params)}
+        >
+          <View style={[styles.linkIcon, { backgroundColor: `${item.color}22` }]}>
+            <Ionicons name={item.icon} size={19} color={item.color} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <AppText weight="semibold" size={14}>
               {item.title}
             </AppText>
-          </TouchableOpacity>
-        ))}
-      </View>
+            <AppText size={11.5} color={colors.inkSoft} style={{ marginTop: 1 }}>
+              {item.subtitle}
+            </AppText>
+          </View>
+          <Ionicons name="chevron-back" size={16} color={colors.inkSoft} />
+        </TouchableOpacity>
+      ))}
+
+      <AppText weight="bold" size={16} style={{ marginTop: spacing.lg, marginBottom: spacing.sm }}>
+        أخرى
+      </AppText>
+      {MORE_LINKS.map((item) => (
+        <TouchableOpacity
+          key={item.key}
+          style={styles.linkRow}
+          activeOpacity={0.8}
+          onPress={() => navigation.navigate(item.route)}
+        >
+          <View style={[styles.linkIcon, { backgroundColor: `${item.color}22` }]}>
+            <Ionicons name={item.icon} size={19} color={item.color} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <AppText weight="semibold" size={14}>
+              {item.title}
+            </AppText>
+            <AppText size={11.5} color={colors.inkSoft} style={{ marginTop: 1 }}>
+              {item.subtitle}
+            </AppText>
+          </View>
+          <Ionicons name="chevron-back" size={16} color={colors.inkSoft} />
+        </TouchableOpacity>
+      ))}
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   topBar: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between' },
+  topBarIcons: { flexDirection: 'row-reverse', gap: spacing.sm },
   iconBtn: {
     width: 38,
     height: 38,
@@ -191,28 +252,36 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   prayerChipDone: { backgroundColor: 'rgba(95,132,103,0.18)' },
+  prayerMenuRow: {
+    flexDirection: 'row-reverse',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  prayerMenuItem: {
+    flex: 1,
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    paddingVertical: spacing.md,
+  },
   scoreCard: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
     gap: spacing.md,
     marginTop: spacing.lg,
   },
-  grid: { flexDirection: 'row-reverse', flexWrap: 'wrap', justifyContent: 'space-between' },
-  gridItem: {
-    width: '48%',
+  linkRow: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    gap: spacing.md,
     backgroundColor: colors.surface,
-    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
-    paddingVertical: spacing.lg,
-    alignItems: 'center',
-    marginBottom: spacing.md,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
   },
-  gridIcon: {
-    width: 46,
-    height: 46,
-    borderRadius: radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  linkIcon: { width: 40, height: 40, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
 });

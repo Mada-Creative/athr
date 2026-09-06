@@ -16,6 +16,7 @@ import QuranScreen from '../screens/QuranScreen';
 import NamesScreen from '../screens/NamesScreen';
 import DuasScreen from '../screens/DuasScreen';
 import QiblaScreen from '../screens/QiblaScreen';
+import PrayerDetailScreen from '../screens/PrayerDetailScreen';
 import WeeklyStatsScreen from '../screens/WeeklyStatsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import AddTaskScreen from '../screens/AddTaskScreen';
@@ -52,6 +53,7 @@ function MainStack() {
       <Stack.Screen name="Names" component={NamesScreen} options={{ title: 'أسماء الله الحسنى' }} />
       <Stack.Screen name="Duas" component={DuasScreen} options={{ title: 'أدعية' }} />
       <Stack.Screen name="Qibla" component={QiblaScreen} options={{ title: 'القبلة' }} />
+      <Stack.Screen name="PrayerDetail" component={PrayerDetailScreen} options={{ title: 'مواقيت الصلاة' }} />
       <Stack.Screen name="WeeklyStats" component={WeeklyStatsScreen} options={{ title: 'الإحصائيات' }} />
       <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'الإعدادات' }} />
       <Stack.Screen

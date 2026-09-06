@@ -27,10 +27,22 @@ const METHODS = [
   { key: 'NorthAmerica', label: 'أمريكا الشمالية' },
 ];
 
+// Graduated presets, shortest to longest — matches how far ahead someone
+// actually plans to stop what they're doing for a prayer.
+const REMINDER_OPTIONS = [
+  { value: null, label: 'بدون' },
+  { value: 5, label: '5 دقائق' },
+  { value: 10, label: '10 دقائق' },
+  { value: 15, label: '15 دقيقة' },
+  { value: 30, label: '30 دقيقة' },
+  { value: 60, label: 'ساعة' },
+];
+
 export default function SettingsScreen() {
   const { user, updateUser, logout } = useAuth();
   const [weights, setWeights] = useState(() => ({ ...user?.weights }));
-  const [notifications, setNotifications] = useState(user?.notificationsEnabled ?? true);
+  const [atAdhan, setAtAdhan] = useState(user?.prayerNotifications?.atAdhan ?? false);
+  const [reminderMinutes, setReminderMinutes] = useState(user?.prayerNotifications?.reminderMinutes ?? null);
   const [method, setMethod] = useState(user?.calculationMethod || 'UmmAlQura');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -49,7 +61,7 @@ export default function SettingsScreen() {
     try {
       const res = await api.put('/auth/settings', {
         weights,
-        notificationsEnabled: notifications,
+        prayerNotifications: { atAdhan, reminderMinutes },
         calculationMethod: method,
       });
       updateUser(res.user);
@@ -121,12 +133,41 @@ export default function SettingsScreen() {
         </View>
       </Card>
 
-      <View style={styles.notifRow}>
-        <Switch value={notifications} onValueChange={setNotifications} trackColor={{ true: colors.amber }} />
-        <AppText size={14} weight="semibold">
-          تنبيهات مواعيد الصلاة والأذكار
+      <AppText weight="bold" size={16} style={{ marginTop: spacing.xl, marginBottom: spacing.sm }}>
+        تنبيهات الصلاة
+      </AppText>
+      <Card>
+        <View style={styles.notifRow}>
+          <Switch value={atAdhan} onValueChange={setAtAdhan} trackColor={{ true: colors.amber }} />
+          <View style={{ flex: 1 }}>
+            <AppText size={14} weight="semibold">
+              تنبيه في وقت الأذان
+            </AppText>
+            <AppText size={11.5} color={colors.inkSoft} style={{ marginTop: 2 }}>
+              إشعار فور دخول وقت كل صلاة
+            </AppText>
+          </View>
+        </View>
+
+        <View style={styles.divider} />
+
+        <AppText size={14} weight="semibold" style={{ marginBottom: spacing.sm }}>
+          تذكير قبل الصلاة
         </AppText>
-      </View>
+        <View style={styles.chipsRow}>
+          {REMINDER_OPTIONS.map((opt) => (
+            <TouchableOpacity
+              key={String(opt.value)}
+              style={[styles.chip, reminderMinutes === opt.value && styles.chipActive]}
+              onPress={() => setReminderMinutes(opt.value)}
+            >
+              <AppText size={12.5} weight="semibold" color={reminderMinutes === opt.value ? colors.white : colors.ink}>
+                {opt.label}
+              </AppText>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </Card>
 
       {error ? (
         <AppText color={colors.clay} size={13} style={{ marginTop: spacing.md }}>
@@ -175,5 +216,6 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   totalRow: { paddingTop: spacing.sm, alignItems: 'flex-end' },
-  notifRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: spacing.md, marginTop: spacing.xl },
+  notifRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: spacing.md },
+  divider: { height: 1, backgroundColor: colors.border, marginVertical: spacing.md },
 });

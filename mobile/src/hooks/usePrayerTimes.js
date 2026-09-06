@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import * as Location from 'expo-location';
 import { Coordinates, CalculationMethod, PrayerTimes } from 'adhan';
 
@@ -15,6 +15,14 @@ const PRAYER_LABELS = {
   isha: 'العشاء',
 };
 
+const METHOD_LABELS = {
+  UmmAlQura: 'أم القرى',
+  MuslimWorldLeague: 'رابطة العالم الإسلامي',
+  Egyptian: 'الهيئة المصرية',
+  Karachi: 'كراتشي',
+  NorthAmerica: 'أمريكا الشمالية',
+};
+
 function resolveMethod(name) {
   const map = {
     UmmAlQura: CalculationMethod.UmmAlQura,
@@ -29,24 +37,46 @@ function resolveMethod(name) {
 export default function usePrayerTimes({ methodName = 'UmmAlQura' } = {}) {
   const [coords, setCoords] = useState(null);
   const [permissionDenied, setPermissionDenied] = useState(false);
+  const [locationLabel, setLocationLabel] = useState(null);
+  const [locating, setLocating] = useState(false);
   const [now, setNow] = useState(new Date());
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-          setPermissionDenied(true);
-          setCoords(FALLBACK_COORDS);
-          return;
-        }
-        const position = await Location.getCurrentPositionAsync({});
-        setCoords({ latitude: position.coords.latitude, longitude: position.coords.longitude });
-      } catch (err) {
+  const refreshLocation = useCallback(async () => {
+    setLocating(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
         setPermissionDenied(true);
-        setCoords(FALLBACK_COORDS);
+        setCoords((prev) => prev || FALLBACK_COORDS);
+        setLocationLabel('مكة المكرمة (تقديري — الموقع غير مُفعّل)');
+        return;
       }
-    })();
+      setPermissionDenied(false);
+      const position = await Location.getCurrentPositionAsync({});
+      const nextCoords = { latitude: position.coords.latitude, longitude: position.coords.longitude };
+      setCoords(nextCoords);
+
+      try {
+        const places = await Location.reverseGeocodeAsync(nextCoords);
+        const place = places?.[0];
+        const label = [place?.city || place?.subregion, place?.country].filter(Boolean).join('، ');
+        setLocationLabel(label || null);
+      } catch (geocodeErr) {
+        setLocationLabel(null);
+      }
+    } catch (err) {
+      setPermissionDenied(true);
+      setCoords((prev) => prev || FALLBACK_COORDS);
+      setLocationLabel('مكة المكرمة (تقديري — تعذّر تحديد الموقع)');
+    } finally {
+      setLocating(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshLocation();
+    // Only ever runs automatically once, on mount — refreshLocation() is
+    // exposed so the UI can trigger it again (e.g. an "update location" button).
   }, []);
 
   useEffect(() => {
@@ -86,6 +116,10 @@ export default function usePrayerTimes({ methodName = 'UmmAlQura' } = {}) {
   return {
     coords,
     permissionDenied,
+    locating,
+    locationLabel,
+    methodLabel: METHOD_LABELS[methodName] || methodName,
+    refreshLocation,
     loading: !coords,
     schedule: fardOnly,
     next,

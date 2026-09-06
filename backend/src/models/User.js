@@ -1,6 +1,16 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
+const PrayerNotificationsSchema = new mongoose.Schema(
+  {
+    atAdhan: { type: Boolean, default: false },
+    // Minutes before each prayer to send a reminder; null means off.
+    // Graduated presets only — enforced in the controller, not here.
+    reminderMinutes: { type: Number, default: null },
+  },
+  { _id: false }
+);
+
 const WeightsSchema = new mongoose.Schema(
   {
     prayers: { type: Number, default: 50 },
@@ -34,7 +44,7 @@ const UserSchema = new mongoose.Schema(
     calculationMethod: { type: String, default: 'UmmAlQura' },
     madhab: { type: String, enum: ['shafii', 'hanafi'], default: 'shafii' },
     weights: { type: WeightsSchema, default: () => ({}) },
-    notificationsEnabled: { type: Boolean, default: true },
+    prayerNotifications: { type: PrayerNotificationsSchema, default: () => ({}) },
   },
   { timestamps: true }
 );
@@ -54,7 +64,7 @@ UserSchema.methods.toPublicJSON = function toPublicJSON() {
     calculationMethod: this.calculationMethod,
     madhab: this.madhab,
     weights: this.weights,
-    notificationsEnabled: this.notificationsEnabled,
+    prayerNotifications: this.prayerNotifications,
     createdAt: this.createdAt,
   };
 };

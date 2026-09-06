@@ -8,6 +8,7 @@ import { radius, spacing } from '../theme/spacing';
 
 const SEARCHABLE = [
   { title: 'متابعة العبادات', icon: 'checkbox-outline', route: 'Tracker' },
+  { title: 'مواقيت الصلاة', icon: 'time-outline', route: 'PrayerDetail' },
   { title: 'أذكار الصباح', icon: 'partly-sunny-outline', route: 'AthkarCounter', params: { category: 'morning' } },
   { title: 'أذكار المساء', icon: 'moon-outline', route: 'AthkarCounter', params: { category: 'evening' } },
   { title: 'أذكار بعد الصلاة', icon: 'business-outline', route: 'AthkarCounter', params: { category: 'afterPrayer' } },
