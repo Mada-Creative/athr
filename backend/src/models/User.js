@@ -17,7 +17,19 @@ const UserSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-    passwordHash: { type: String, required: true },
+    // Local accounts always have a password; social accounts (Google/Apple)
+    // never set one — they authenticate by verified provider token instead.
+    passwordHash: {
+      type: String,
+      required: function requiresPassword() {
+        return this.authProvider === 'local';
+      },
+    },
+    authProvider: { type: String, enum: ['local', 'google', 'apple'], default: 'local' },
+    // Left unset (not null) for local accounts so the sparse unique index
+    // below doesn't collide across users who never signed in with that provider.
+    googleId: { type: String, unique: true, sparse: true },
+    appleId: { type: String, unique: true, sparse: true },
     city: { type: String, default: '' },
     calculationMethod: { type: String, default: 'UmmAlQura' },
     madhab: { type: String, enum: ['shafii', 'hanafi'], default: 'shafii' },
@@ -28,6 +40,7 @@ const UserSchema = new mongoose.Schema(
 );
 
 UserSchema.methods.comparePassword = function comparePassword(candidate) {
+  if (!this.passwordHash) return Promise.resolve(false);
   return bcrypt.compare(candidate, this.passwordHash);
 };
 
@@ -36,6 +49,7 @@ UserSchema.methods.toPublicJSON = function toPublicJSON() {
     id: this._id,
     name: this.name,
     email: this.email,
+    authProvider: this.authProvider,
     city: this.city,
     calculationMethod: this.calculationMethod,
     madhab: this.madhab,

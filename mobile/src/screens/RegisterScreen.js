@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import AppText from '../components/AppText';
 import PrimaryButton from '../components/PrimaryButton';
+import SocialAuthButtons from '../components/SocialAuthButtons';
 import colors from '../theme/colors';
 import { spacing, radius } from '../theme/spacing';
 import { useAuth } from '../context/AuthContext';
@@ -85,6 +86,8 @@ export default function RegisterScreen({ navigation }) {
         ) : null}
 
         <PrimaryButton title="إنشاء الحساب" onPress={onSubmit} loading={loading} style={{ marginTop: spacing.lg }} />
+
+        <SocialAuthButtons onError={setError} />
       </KeyboardAvoidingView>
     </Screen>
   );

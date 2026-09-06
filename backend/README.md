@@ -6,7 +6,8 @@ Express + MongoDB REST API powering the أثر prayer & athkar tracking app.
 
 - Node.js / Express
 - MongoDB via Mongoose
-- JWT authentication (`jsonwebtoken` + `bcryptjs`)
+- JWT authentication (`jsonwebtoken` + `bcryptjs`), plus Sign in with Google
+  (`google-auth-library`) and Sign in with Apple (`apple-signin-auth`)
 
 ## Getting started
 
@@ -28,7 +29,7 @@ npm run seed
 
 | Collection      | Purpose                                                              |
 | ---------------- | --------------------------------------------------------------------- |
-| `users`          | Account, calculation method, madhab, and the six score weights       |
+| `users`          | Account, auth provider, calculation method, madhab, and the six score weights |
 | `prayerlogs`     | One doc/day: 5 fard prayers + 7 rawatib/qiyam/witr ("nawafil")       |
 | `athkarlogs`     | One doc per day/category tracking which dhikr items are done        |
 | `quranlogs`      | Daily Quran wird checkbox + optional pages read                      |
@@ -51,6 +52,8 @@ other). Each user can rebalance the weights (must total 100) via
 ```
 POST   /api/auth/register
 POST   /api/auth/login
+POST   /api/auth/google                 { idToken }               — verifies against GOOGLE_CLIENT_IDS
+POST   /api/auth/apple                  { identityToken, name? }  — verifies against APPLE_CLIENT_ID
 GET    /api/auth/me
 PUT    /api/auth/settings
 
@@ -74,5 +77,11 @@ GET    /api/stats/day/:date
 GET    /api/stats/week?endDate=YYYY-MM-DD
 ```
 
-All routes except `register`, `login` and `athkar/content` require
-`Authorization: Bearer <token>`.
+All routes except `register`, `login`, `google`, `apple` and `athkar/content`
+require `Authorization: Bearer <token>`.
+
+Google and Apple sign-in create an account automatically on first use (or
+link to an existing account with the same email) — see `mobile/README.md`
+→ "Social sign-in setup" for the client IDs / capability config each one
+needs, and set `GOOGLE_CLIENT_IDS` / `APPLE_CLIENT_ID` in `.env` before
+testing them.

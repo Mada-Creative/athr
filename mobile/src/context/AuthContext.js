@@ -40,6 +40,22 @@ export function AuthProvider({ children }) {
     return data.user;
   }, []);
 
+  const loginWithGoogle = useCallback(async (idToken) => {
+    setAuthError(null);
+    const data = await api.post('/auth/google', { idToken }, { auth: false });
+    await setToken(data.token);
+    setUser(data.user);
+    return data.user;
+  }, []);
+
+  const loginWithApple = useCallback(async (identityToken, name) => {
+    setAuthError(null);
+    const data = await api.post('/auth/apple', { identityToken, name }, { auth: false });
+    await setToken(data.token);
+    setUser(data.user);
+    return data.user;
+  }, []);
+
   const logout = useCallback(async () => {
     await setToken(null);
     setUser(null);
@@ -56,8 +72,20 @@ export function AuthProvider({ children }) {
   }, []);
 
   const value = useMemo(
-    () => ({ user, isBooting, authError, setAuthError, login, register, logout, updateUser, refreshUser }),
-    [user, isBooting, authError, login, register, logout, updateUser, refreshUser]
+    () => ({
+      user,
+      isBooting,
+      authError,
+      setAuthError,
+      login,
+      register,
+      loginWithGoogle,
+      loginWithApple,
+      logout,
+      updateUser,
+      refreshUser,
+    }),
+    [user, isBooting, authError, login, register, loginWithGoogle, loginWithApple, logout, updateUser, refreshUser]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

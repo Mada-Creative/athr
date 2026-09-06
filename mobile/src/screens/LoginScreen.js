@@ -3,6 +3,7 @@ import { Image, KeyboardAvoidingView, Platform, StyleSheet, TextInput, Touchable
 import Screen from '../components/Screen';
 import AppText from '../components/AppText';
 import PrimaryButton from '../components/PrimaryButton';
+import SocialAuthButtons from '../components/SocialAuthButtons';
 import colors from '../theme/colors';
 import { spacing, radius } from '../theme/spacing';
 import { useAuth } from '../context/AuthContext';
@@ -78,6 +79,8 @@ export default function LoginScreen({ navigation }) {
           ) : null}
 
           <PrimaryButton title="تسجيل الدخول" onPress={onSubmit} loading={loading} style={{ marginTop: spacing.sm }} />
+
+          <SocialAuthButtons onError={setError} />
 
           <TouchableOpacity onPress={() => navigation.navigate('Register')} style={styles.switchLink}>
             <AppText size={13.5} color={colors.inkSoft}>

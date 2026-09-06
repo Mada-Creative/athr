@@ -2,6 +2,7 @@
   "expo": {
     "name": "أثر",
     "slug": "athr",
+    "scheme": "athr",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/logo.png",
@@ -15,6 +16,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "app.athr.mobile",
+      "usesAppleSignIn": true,
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "نستخدم موقعك لحساب مواعيد الصلاة واتجاه القبلة بدقة."
       }
