@@ -50,8 +50,24 @@ export default function ProgressRing({ size = 96, strokeWidth = 10, percentage =
       {/* Explicit viewBox pins the SVG's internal coordinate space to
           exactly its own pixel box, regardless of platform-specific
           default-viewBox behavior — one less thing that can make the
-          painted circle disagree with the declared width/height. */}
-      <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+          painted circle disagree with the declared width/height.
+          The ring needs to start its fill at 12 o'clock, not SVG's
+          default 3 o'clock — that used to be `rotation`/`origin` props
+          on the AnimatedCircle itself, but those silently don't apply
+          when paired with an Animated-driven strokeDashoffset (the
+          actual cause of every "ring looks wrong" report so far: the
+          fill was always sweeping from 3 o'clock, so partial progress
+          drew as a bottom-hugging arc instead of a proper clockwise
+          ring from the top). Rotating the whole `<Svg>` with a normal
+          RN transform instead sidesteps that entirely — a square
+          rotated -90° around its own center keeps the exact same
+          bounding box, so nothing else about the layout changes. */}
+      <Svg
+        width={size}
+        height={size}
+        viewBox={`0 0 ${size} ${size}`}
+        style={{ transform: [{ rotate: '-90deg' }] }}
+      >
         <Circle
           cx={size / 2}
           cy={size / 2}
@@ -70,8 +86,6 @@ export default function ProgressRing({ size = 96, strokeWidth = 10, percentage =
           strokeDasharray={circumference}
           strokeDashoffset={dashOffset}
           strokeLinecap="round"
-          rotation="-90"
-          origin={`${size / 2}, ${size / 2}`}
         />
       </Svg>
       <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
