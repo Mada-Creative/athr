@@ -90,7 +90,12 @@ export default function TasbihCounterScreen({ route, navigation }) {
       </View>
 
       <Bounce scaleTo={0.92} onPress={onTap} style={styles.dial}>
-        <AppText weight="bold" size={64} color={colors.accentDark}>
+        {/* `ink` (not the fixed `accentDark`) on purpose: the dial's own
+            background is `amberSoft`, which flips from pale tan to a dark
+            brown in dark mode — a fixed dark text color would (and did)
+            all but disappear against it there. `ink` flips the opposite
+            way, so it reads clearly against amberSoft in both themes. */}
+        <AppText weight="bold" size={64} color={colors.ink}>
           {count}
         </AppText>
         <AppText size={13} color={colors.inkSoft} style={{ marginTop: spacing.xs }}>

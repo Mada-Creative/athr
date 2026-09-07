@@ -1,59 +1,32 @@
 import React, { useRef } from 'react';
-import { Animated, Pressable, StyleSheet } from 'react-native';
+import { Animated, Pressable } from 'react-native';
 
-// Which style keys govern how *this component* sizes itself inside
-// whatever flex container it's placed in, as opposed to how it paints or
-// lays out its own children. That split matters because Bounce is really
-// two nested nodes (Pressable, then an Animated.View for the scale
-// transform) and each of those two concerns has to land on a different
-// one of them:
-//
-// - Sizing (flex, width, alignSelf, ...) has to be on the Pressable — a
-//   flex item's sizing only takes effect on whichever node is the
-//   *direct* child of the flex container it's laid out in. A caller's
-//   flex:1 (e.g. Home's 5-equal-column menu row) landing one level too
-//   deep meant every cell shrank to its own content size instead of
-//   sharing the row evenly.
-// - Everything else (background, border, padding, and the row's own
-//   flexDirection/alignItems/gap for laying out `children`) has to stay
-//   on the Animated.View, and *only* there — putting it on both would
-//   paint the same background/border twice (a visible doubled border,
-//   very slightly offset) for no reason, since Animated.View already
-//   gets `flex:1` unconditionally below to fill 100% of Pressable
-//   regardless of Pressable's own layout direction.
-//
-// `aspectRatio` is deliberately *not* here even though it's a sizing
-// property: it needs to stay on the same node as any margin the caller
-// set (PrayerCell's marginBottom), because a fixed-size parent shrinks a
-// margined child's box to fit, while an auto-sized one — Pressable, with
-// only `width` moved out — just grows to include the margin as trailing
-// space. Leaving it on Animated.View reproduces the exact original
-// behavior; `flex:1` there is a no-op anyway once its parent (Pressable)
-// has no defined main-axis size of its own to hand out.
-const SIZING_KEYS = [
-  'flex',
-  'flexGrow',
-  'flexShrink',
-  'flexBasis',
-  'width',
-  'height',
-  'minWidth',
-  'maxWidth',
-  'minHeight',
-  'maxHeight',
-  'alignSelf',
-];
-
-function splitStyle(style) {
-  const flat = StyleSheet.flatten(style) || {};
-  const sizing = {};
-  const rest = {};
-  for (const key of Object.keys(flat)) {
-    if (SIZING_KEYS.includes(key)) sizing[key] = flat[key];
-    else rest[key] = flat[key];
-  }
-  return [sizing, rest];
-}
+// Animating Pressable directly — instead of wrapping it around a separate
+// Animated.View for the scale transform — means there is only ever ONE
+// node carrying the caller's `style`. That single-node shape is what
+// actually matters here: every previous version of this component (first
+// putting `style` only on the inner node, then on both, then splitting it
+// by key) kept breaking a *different* case, because a real flex item's
+// sizing, its own children's layout, and how it centers/stretches inside
+// its parent all have to agree on being the same node, not something
+// spread across two. Concretely, this is what a second node cost:
+// - `style`'s flex:1/width only reaching the inner node meant a flex
+//   item's sizing never reached the actual flex-participating Pressable
+//   (Home's menu row never distributed evenly).
+// - A blanket `alignSelf: 'stretch'` fallback on Pressable, needed for
+//   plain full-width rows with no sizing of their own, overrode a
+//   *parent's* `alignItems: 'center'` for anything with an explicit
+//   width/height instead (the tasbih dial rendered pinned to one side
+//   instead of centered).
+// - The inner node's forced `flex: 1` (to fill Pressable) could collapse
+//   to zero instead of falling back to content size when the parent had
+//   no defined space to hand out (a reset button with no sizing of its
+//   own rendering as an empty outline, content-less).
+// With one node, the caller's `style` behaves exactly as it would on a
+// plain `<View style={style}>` — sizing, children layout, and how it sits
+// in its own parent all come from the same place, the way every other
+// component in this app already works.
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 // A small, consistent press-feedback wrapper: scales down slightly on
 // press-in and springs back on release/cancel — used anywhere a tap should
@@ -61,7 +34,6 @@ function splitStyle(style) {
 // rows, the tasbih dial). Pass everything Pressable accepts through props.
 export default function Bounce({ children, style, scaleTo = 0.94, disabled, ...pressableProps }) {
   const scale = useRef(new Animated.Value(1)).current;
-  const [sizingStyle, restStyle] = splitStyle(style);
 
   const animateTo = (toValue) => {
     Animated.spring(scale, {
@@ -73,19 +45,14 @@ export default function Bounce({ children, style, scaleTo = 0.94, disabled, ...p
   };
 
   return (
-    <Pressable
+    <AnimatedPressable
       disabled={disabled}
       onPressIn={() => !disabled && animateTo(scaleTo)}
       onPressOut={() => !disabled && animateTo(1)}
-      style={[styles.stretch, sizingStyle]}
+      style={[style, { transform: [{ scale }] }]}
       {...pressableProps}
     >
-      <Animated.View style={[styles.fill, restStyle, { transform: [{ scale }] }]}>{children}</Animated.View>
-    </Pressable>
+      {children}
+    </AnimatedPressable>
   );
 }
-
-const styles = StyleSheet.create({
-  stretch: { alignSelf: 'stretch' },
-  fill: { flex: 1 },
-});
