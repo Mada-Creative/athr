@@ -30,38 +30,31 @@ export default function ProgressRing({ size = 96, strokeWidth = 10, percentage =
   });
 
   return (
-    // `overflow: 'hidden'` here is scoped to exactly this ring's own
-    // declared size, not its surroundings — so it clips any stray render
-    // of the ring itself to its own box (whatever the earlier "ring
-    // spills past its card" bug's actual cause is) without ever being
-    // able to clip a *sibling* the way Card's old wrapper-level
-    // overflow:hidden did.
+    // No `overflow: 'hidden'` here — it was added as a self-clip to stop
+    // the ring bleeding past its card, but real device screenshots showed
+    // it actually broke every ring instance the same way (including
+    // WeekRingStrip's, which had never been reported broken at all):
+    // showing only the bottom half, uniformly, regardless of percentage —
+    // an interaction between overflow:hidden and the Svg's viewBox under
+    // this RN/Fabric setup, not the thing it was meant to fix. Removed;
+    // see HomeScreen/TrackerScreen for where the actual card-specific
+    // bleed is handled instead (a `minHeight` on the row, nothing here).
     <View
       style={{
         width: size,
         height: size,
         flexShrink: 0,
-        flexGrow: 0,
-        overflow: 'hidden',
         alignItems: 'center',
         justifyContent: 'center',
       }}
     >
-      {/* Explicit viewBox pins the SVG's internal coordinate space to
-          exactly its own pixel box, regardless of platform-specific
-          default-viewBox behavior — one less thing that can make the
-          painted circle disagree with the declared width/height.
-          The ring needs to start its fill at 12 o'clock, not SVG's
-          default 3 o'clock — that used to be `rotation`/`origin` props
-          on the AnimatedCircle itself, but those silently don't apply
-          when paired with an Animated-driven strokeDashoffset (the
-          actual cause of every "ring looks wrong" report so far: the
-          fill was always sweeping from 3 o'clock, so partial progress
-          drew as a bottom-hugging arc instead of a proper clockwise
-          ring from the top). Rotating the whole `<Svg>` with a normal
-          RN transform instead sidesteps that entirely — a square
-          rotated -90° around its own center keeps the exact same
-          bounding box, so nothing else about the layout changes. */}
+      {/* viewBox pins the SVG's internal coordinate space to exactly its
+          own pixel box. The ring needs to start its fill at 12 o'clock,
+          not SVG's default 3 o'clock — rotating the whole `<Svg>` via a
+          normal RN transform (rather than the `rotation`/`origin` props
+          on AnimatedCircle, unreliable paired with an Animated-driven
+          strokeDashoffset) does that without touching layout: a square
+          rotated 90° about its own center keeps the same bounding box. */}
       <Svg
         width={size}
         height={size}

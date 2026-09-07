@@ -458,7 +458,9 @@ function createStyles(colors) {
       marginTop: spacing.xs,
       marginBottom: spacing.sm,
     },
-    summaryCard: { flexDirection: 'row-reverse', alignItems: 'center', gap: spacing.md },
+    // minHeight guarantees the row is never computed shorter than the
+    // ring itself (size=72 below).
+    summaryCard: { flexDirection: 'row-reverse', alignItems: 'center', gap: spacing.md, minHeight: 72 },
     bucketLine: { marginTop: 6 },
     bucketTrack: { height: 5, borderRadius: 3, backgroundColor: colors.backgroundAlt, marginTop: 3, overflow: 'hidden' },
     bucketFill: { height: 5, backgroundColor: colors.amber, borderRadius: 3 },

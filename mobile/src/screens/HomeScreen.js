@@ -392,6 +392,10 @@ function createStyles(colors) {
     scoreCard: {
       flexDirection: 'row-reverse',
       alignItems: 'center',
+      // Guarantees the row is never computed shorter than the ring
+      // itself (size=78 below) — belt-and-suspenders against whatever
+      // was making this row's auto-height come out too small for it.
+      minHeight: 78,
       gap: spacing.md,
       marginTop: spacing.lg,
     },
