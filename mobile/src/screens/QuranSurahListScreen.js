@@ -5,12 +5,14 @@ import Screen from '../components/Screen';
 import AppText from '../components/AppText';
 import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
+import typography from '../theme/typography';
 import quranSurahs from '../constants/quranText.json';
 
 const TYPE_LABEL = { meccan: 'مكية', medinan: 'مدنية' };
 
-// The full mushaf, bundled with the app so it opens instantly and works
-// offline like everything else — no network round-trip just to read a page.
+// The full mushaf — official King Fahd Complex Uthmani (Hafs) text,
+// bundled with the app so it opens instantly and works offline like
+// everything else, no network round-trip just to read a page.
 export default function QuranSurahListScreen({ navigation }) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
@@ -67,10 +69,8 @@ export default function QuranSurahListScreen({ navigation }) {
               </AppText>
             </View>
             <View style={{ flex: 1 }}>
-              <AppText weight="semibold" size={16}>
-                {item.name}
-              </AppText>
-              <AppText size={11.5} color={colors.inkSoft} style={{ marginTop: 2 }}>
+              <AppText style={styles.surahName}>{item.name}</AppText>
+              <AppText size={11.5} color={colors.inkSoft} style={{ marginTop: 3 }}>
                 {item.transliteration} · {TYPE_LABEL[item.type] || item.type} · {item.total_verses} آية
               </AppText>
             </View>
@@ -115,5 +115,8 @@ function createStyles(colors) {
       alignItems: 'center',
       justifyContent: 'center',
     },
+    // The mushaf's own calligraphic name, not the app's UI font — reads
+    // like an actual surah heading rather than a generic list label.
+    surahName: { fontFamily: typography.fontQuran, fontSize: 21, color: colors.ink, textAlign: 'right' },
   });
 }

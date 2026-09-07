@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import ProgressRing from './ProgressRing';
 import AppText from './AppText';
@@ -18,7 +18,12 @@ const WEEKDAY_SHORT = ['أحد', 'اثنين', 'ثلاثاء', 'أربعاء', '
 // the Tracker screen's `stats` object) — refetching only on screen focus
 // meant today's ring stayed stale after marking something while already on
 // the screen, so it never looked like it was animating at all.
-export default function WeekRingStrip({ refreshSignal }) {
+//
+// `selectedDate`/`onSelectDate` are optional: pass them (Tracker does) to
+// make each day tappable and highlight whichever one is currently shown
+// instead of always highlighting today — Home leaves them out and gets
+// the old read-only, today-highlighted behavior unchanged.
+export default function WeekRingStrip({ refreshSignal, selectedDate, onSelectDate }) {
   const { colors } = useTheme();
   const [days, setDays] = useState([]);
   const today = todayISO();
@@ -49,8 +54,14 @@ export default function WeekRingStrip({ refreshSignal }) {
       {days.map((day) => {
         const date = new Date(`${day.date}T00:00:00`);
         const isToday = day.date === today;
+        const isSelected = selectedDate ? day.date === selectedDate : isToday;
+        const ItemWrapper = onSelectDate ? TouchableOpacity : View;
         return (
-          <View key={day.date} style={styles.item}>
+          <ItemWrapper
+            key={day.date}
+            style={styles.item}
+            {...(onSelectDate ? { activeOpacity: 0.7, onPress: () => onSelectDate(day.date) } : {})}
+          >
             <ProgressRing
               size={40}
               strokeWidth={3.5}
@@ -59,13 +70,13 @@ export default function WeekRingStrip({ refreshSignal }) {
             />
             <AppText
               size={10.5}
-              weight={isToday ? 'bold' : 'regular'}
-              color={isToday ? colors.amberDeep : colors.inkSoft}
+              weight={isSelected ? 'bold' : 'regular'}
+              color={isSelected ? colors.amberDeep : colors.inkSoft}
               style={{ marginTop: 4 }}
             >
               {WEEKDAY_SHORT[date.getDay()]}
             </AppText>
-          </View>
+          </ItemWrapper>
         );
       })}
     </View>

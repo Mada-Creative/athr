@@ -11,6 +11,11 @@ import {
   Cairo_600SemiBold,
   Cairo_700Bold,
 } from '@expo-google-fonts/cairo';
+// A proper Uthmani Quran-script font — Cairo (a modern UI sans-serif) has
+// no glyphs for the special Quranic marks (open tanween, etc.) the
+// official mushaf text below actually uses, so the Quran reader needs its
+// own typeface rather than sharing the app's UI font.
+import { AmiriQuran_400Regular } from '@expo-google-fonts/amiri-quran';
 
 import { AuthProvider } from './src/context/AuthContext';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
@@ -69,6 +74,7 @@ export default function App() {
     Cairo_500Medium,
     Cairo_600SemiBold,
     Cairo_700Bold,
+    AmiriQuran_400Regular,
   });
 
   const onLayoutRootView = useCallback(async () => {

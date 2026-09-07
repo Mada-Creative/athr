@@ -1,5 +1,15 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, LayoutAnimation, Platform, RefreshControl, StyleSheet, Switch, UIManager, View } from 'react-native';
+import {
+  Animated,
+  LayoutAnimation,
+  Platform,
+  RefreshControl,
+  StyleSheet,
+  Switch,
+  TouchableOpacity,
+  UIManager,
+  View,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import Screen from '../components/Screen';
@@ -13,7 +23,7 @@ import WeekRingStrip from '../components/WeekRingStrip';
 import Bounce from '../components/Bounce';
 import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
-import { todayISO, formatGregorian, formatWeekday } from '../utils/date';
+import { todayISO, addDays, formatGregorian, formatWeekday } from '../utils/date';
 import { useAuth } from '../context/AuthContext';
 import usePrayerTimes from '../hooks/usePrayerTimes';
 import useDailyData from '../hooks/useDailyData';
@@ -90,7 +100,14 @@ export default function TrackerScreen({ navigation }) {
   const { colors, scheme } = useTheme();
   const styles = createStyles(colors);
   const { user } = useAuth();
-  const date = todayISO();
+  // Which day this screen is showing — defaults to today, but every toggle
+  // and stat here is already keyed off `date` end to end (useDailyData,
+  // the backend routes), so stepping this back is the whole "view a
+  // previous day" feature: nothing downstream needs to know it moved.
+  const [selectedDate, setSelectedDate] = useState(todayISO());
+  const date = selectedDate;
+  const isToday = date === todayISO();
+  const displayDate = new Date(`${date}T00:00:00`);
   // Ticks so a prayer cell unlocks itself the moment its time starts,
   // instead of staying locked-looking until something else re-renders the
   // screen (a pull-to-refresh, navigating away and back, ...).
@@ -157,11 +174,37 @@ export default function TrackerScreen({ navigation }) {
       <AppText weight="bold" size={22}>
         متابعة العبادات
       </AppText>
-      <AppText color={colors.inkSoft} size={13.5} style={{ marginTop: 4, marginBottom: spacing.lg }}>
-        {formatWeekday(now)}، {formatGregorian(now)}
-      </AppText>
 
-      <WeekRingStrip refreshSignal={stats} />
+      <View style={styles.dateNavRow}>
+        <TouchableOpacity onPress={() => setSelectedDate((d) => addDays(d, -1))} style={styles.dateNavBtn}>
+          <Ionicons name="chevron-forward" size={18} color={colors.ink} />
+        </TouchableOpacity>
+        <View style={{ flex: 1, alignItems: 'center' }}>
+          <AppText weight="semibold" size={14}>
+            {isToday ? 'اليوم' : formatWeekday(displayDate)}
+          </AppText>
+          <AppText size={11.5} color={colors.inkSoft} style={{ marginTop: 1 }}>
+            {formatGregorian(displayDate)}
+          </AppText>
+        </View>
+        <TouchableOpacity
+          onPress={() => setSelectedDate((d) => addDays(d, 1))}
+          disabled={isToday}
+          style={[styles.dateNavBtn, isToday && styles.dateNavBtnDisabled]}
+        >
+          <Ionicons name="chevron-back" size={18} color={colors.ink} />
+        </TouchableOpacity>
+      </View>
+      {!isToday ? (
+        <TouchableOpacity onPress={() => setSelectedDate(todayISO())} style={styles.backToTodayBtn}>
+          <Ionicons name="refresh-outline" size={13} color={colors.amberDeep} />
+          <AppText size={12} weight="semibold" color={colors.amberDeep} style={{ marginRight: 4 }}>
+            الرجوع لليوم
+          </AppText>
+        </TouchableOpacity>
+      ) : null}
+
+      <WeekRingStrip refreshSignal={stats} selectedDate={date} onSelectDate={setSelectedDate} />
 
       {error ? (
         <View style={styles.errorBanner}>
@@ -213,7 +256,10 @@ export default function TrackerScreen({ navigation }) {
       <View style={styles.columnsRow}>
         {PRAYER_COLUMNS.map((column) => {
           const prayerTime = schedule.find((s) => s.key === column.key)?.time;
-          const locked = !prayerTime || now < prayerTime;
+          // Locking (a cell only opens once its prayer's time starts) is a
+          // same-day concept — `schedule` is always *today's* times, so on
+          // a past day everything is simply open for backfilling.
+          const locked = isToday && (!prayerTime || now < prayerTime);
 
           return (
             <View key={column.key} style={styles.column}>
@@ -387,6 +433,30 @@ function createStyles(colors) {
       borderColor: colors.border,
       padding: spacing.sm,
       marginBottom: spacing.md,
+    },
+    dateNavRow: {
+      flexDirection: 'row-reverse',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginTop: spacing.md,
+      marginBottom: spacing.sm,
+    },
+    dateNavBtn: {
+      width: 34,
+      height: 34,
+      borderRadius: radius.pill,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    dateNavBtnDisabled: { opacity: 0.35 },
+    backToTodayBtn: {
+      flexDirection: 'row-reverse',
+      alignSelf: 'center',
+      alignItems: 'center',
+      marginTop: spacing.xs,
+      marginBottom: spacing.sm,
     },
     summaryCard: { flexDirection: 'row-reverse', alignItems: 'center', gap: spacing.md },
     bucketLine: { marginTop: 6 },

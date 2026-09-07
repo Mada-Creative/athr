@@ -5,6 +5,7 @@ import Screen from '../components/Screen';
 import AppText from '../components/AppText';
 import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
+import typography from '../theme/typography';
 import quranSurahs from '../constants/quranText.json';
 
 const TYPE_LABEL = { meccan: 'مكية', medinan: 'مدنية' };
@@ -20,7 +21,7 @@ export default function QuranReaderScreen({ route, navigation }) {
   const surah = useMemo(() => quranSurahs.find((s) => s.id === surahId), [surahId]);
 
   useLayoutEffect(() => {
-    navigation.setOptions({ title: surah?.name || 'القرآن الكريم' });
+    navigation.setOptions({ title: surah?.transliteration || 'القرآن الكريم' });
   }, [navigation, surah]);
 
   const goTo = (id) => {
@@ -44,15 +45,18 @@ export default function QuranReaderScreen({ route, navigation }) {
         contentContainerStyle={{ paddingBottom: spacing.xxl }}
         ListHeaderComponent={
           <View style={styles.header}>
-            <AppText weight="bold" size={24} style={{ textAlign: 'center' }}>
-              {surah.name}
-            </AppText>
-            <AppText size={12.5} color={colors.inkSoft} style={{ marginTop: 4, textAlign: 'center' }}>
-              {surah.transliteration} · {TYPE_LABEL[surah.type] || surah.type} · {surah.total_verses} آية
+            <View style={styles.banner}>
+              <View style={styles.bannerRule} />
+              <AppText style={styles.surahName}>{surah.name}</AppText>
+              <View style={styles.bannerRule} />
+            </View>
+            <AppText size={12} color={colors.inkSoft} style={{ marginTop: spacing.sm, textAlign: 'center' }}>
+              {surah.transliteration} · {TYPE_LABEL[surah.type] || surah.type} · {surah.total_verses} آية · الجزء{' '}
+              {surah.verses[0].juz}
             </AppText>
             {!NO_BISMILLAH_HEADER.has(surah.id) ? (
-              <AppText weight="bold" size={19} style={{ marginTop: spacing.lg, textAlign: 'center' }}>
-                بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
+              <AppText style={[styles.bismillah, { marginTop: spacing.lg }]}>
+                بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ
               </AppText>
             ) : null}
           </View>
@@ -64,9 +68,17 @@ export default function QuranReaderScreen({ route, navigation }) {
                 {item.id}
               </AppText>
             </View>
-            <AppText size={20} style={styles.verseText}>
-              {item.text}
-            </AppText>
+            <View style={{ flex: 1 }}>
+              <AppText style={styles.verseText}>{item.text}</AppText>
+              {item.sajda ? (
+                <View style={styles.sajdaTag}>
+                  <Ionicons name="body-outline" size={11} color={colors.clay} />
+                  <AppText size={10.5} weight="semibold" color={colors.clay} style={{ marginRight: 4 }}>
+                    سجدة
+                  </AppText>
+                </View>
+              ) : null}
+            </View>
           </View>
         )}
         ListFooterComponent={
@@ -100,24 +112,44 @@ export default function QuranReaderScreen({ route, navigation }) {
 
 function createStyles(colors) {
   return StyleSheet.create({
-    header: {
+    header: { alignItems: 'center', paddingBottom: spacing.lg, marginBottom: spacing.lg },
+    // A simple framed banner (rule — name — rule) standing in for the
+    // mushaf's ornamental surah header, in the same warm gold as the rest
+    // of the app's accents rather than a plain list-style title.
+    banner: {
+      alignSelf: 'stretch',
       alignItems: 'center',
-      paddingBottom: spacing.lg,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border,
-      marginBottom: spacing.lg,
+      borderWidth: 1.5,
+      borderColor: colors.gold,
+      borderRadius: radius.md,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.lg,
+      backgroundColor: colors.amberSoft,
     },
+    bannerRule: { height: 1, alignSelf: 'stretch', backgroundColor: colors.gold, opacity: 0.4, marginVertical: 6 },
+    surahName: { fontFamily: typography.fontQuran, fontSize: 26, color: colors.amberDeep, textAlign: 'center' },
+    bismillah: { fontFamily: typography.fontQuran, fontSize: 22, color: colors.ink, textAlign: 'center' },
     verseRow: { flexDirection: 'row-reverse', alignItems: 'flex-start', gap: spacing.sm, marginBottom: spacing.lg },
     verseNum: {
-      width: 22,
-      height: 22,
+      width: 24,
+      height: 24,
       borderRadius: radius.pill,
       backgroundColor: colors.amberSoft,
       alignItems: 'center',
       justifyContent: 'center',
+      marginTop: 6,
+    },
+    verseText: { fontFamily: typography.fontQuran, fontSize: 23, lineHeight: 46, color: colors.ink, textAlign: 'right' },
+    sajdaTag: {
+      flexDirection: 'row-reverse',
+      alignSelf: 'flex-end',
+      alignItems: 'center',
+      backgroundColor: colors.claySoft,
+      borderRadius: radius.pill,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 2,
       marginTop: 4,
     },
-    verseText: { flex: 1, lineHeight: 38, textAlign: 'right' },
     navRow: {
       flexDirection: 'row-reverse',
       justifyContent: 'space-between',

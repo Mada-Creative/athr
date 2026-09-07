@@ -6,10 +6,6 @@ import { radius, spacing } from '../theme/spacing';
 export default function Card({ children, onPress, style, padded = true }) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
-  // Shadow and corner-clipping can't both live on the same node (RN clips
-  // the shadow itself along with the content) — the outer view carries the
-  // shadow, the inner one clips anything (like a fixed-size ring) that
-  // would otherwise bleed past the rounded corner.
   const content = (
     <View style={styles.shadowWrap}>
       <View style={[styles.card, padded && styles.padded, style]}>{children}</View>
@@ -35,12 +31,20 @@ function createStyles(colors) {
       elevation: 2,
       borderRadius: radius.md,
     },
+    // No `overflow: 'hidden'` here on purpose — it was clipping
+    // ProgressRing (a fixed-size SVG child) whenever this row's
+    // cross-axis height came out even a little off from the ring's own
+    // height during layout: instead of the ring bleeding a few pixels
+    // past the rounded corner (a minor cosmetic slip nothing here
+    // actually triggers, since padding already keeps content clear of
+    // the corners), it was hard-guillotining half the ring off entirely.
+    // Losing visible data is strictly worse than a corner nobody sees
+    // bled into, so this card doesn't clip its content at all.
     card: {
       backgroundColor: colors.surface,
       borderRadius: radius.md,
       borderWidth: 1,
       borderColor: colors.border,
-      overflow: 'hidden',
     },
     padded: { padding: spacing.lg },
   });

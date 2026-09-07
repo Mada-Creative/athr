@@ -6,6 +6,9 @@ const typography = {
   fontMedium: 'Cairo_500Medium',
   fontSemiBold: 'Cairo_600SemiBold',
   fontBold: 'Cairo_700Bold',
+  // Only for actual Quran text (verses, surah headers) — the official
+  // mushaf text uses Uthmani-script marks Cairo has no glyphs for.
+  fontQuran: 'AmiriQuran_400Regular',
 
   h1: 28,
   h2: 22,
