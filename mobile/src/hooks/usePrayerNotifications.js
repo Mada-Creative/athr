@@ -65,7 +65,7 @@ export default function usePrayerNotifications(schedule, settings) {
               body: `حان الآن وقت صلاة ${PRAYER_LABELS[prayer.key] || prayer.label}`,
               sound: true,
             },
-            trigger: { date: prayer.time },
+            trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: prayer.time },
           });
         }
 
@@ -79,7 +79,7 @@ export default function usePrayerNotifications(schedule, settings) {
                 body: `تبقّى ${reminderMinutes} دقيقة على صلاة ${PRAYER_LABELS[prayer.key] || prayer.label}`,
                 sound: true,
               },
-              trigger: { date: reminderTime },
+              trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: reminderTime },
             });
           }
         }

@@ -73,6 +73,10 @@ export default function WeekRingStrip({ refreshSignal }) {
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row-reverse', justifyContent: 'space-between', marginBottom: spacing.lg },
+  // Plain 'row' (not 'row-reverse') so the week reads chronologically
+  // forward as the eye scans right-to-left under RTL: the oldest day is
+  // first (right), today is last (left) — 'row-reverse' flips that
+  // under RTL and made today land on the wrong side.
+  row: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.lg },
   item: { alignItems: 'center' },
 });

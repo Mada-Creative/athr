@@ -44,7 +44,9 @@ function MainStack() {
     headerTintColor: colors.ink,
     headerTitleStyle: { fontFamily: typography.fontSemiBold, fontSize: 16 },
     headerShadowVisible: false,
-    headerBackTitleVisible: false,
+    // v7 renamed the old `headerBackTitleVisible: false` to this — icon-only
+    // back button everywhere, never falling back to an English route name.
+    headerBackButtonDisplayMode: 'minimal',
   };
 
   return (

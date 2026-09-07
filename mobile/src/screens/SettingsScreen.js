@@ -39,7 +39,7 @@ const THEME_OPTIONS = [
   { value: 'system', label: 'تلقائي', icon: 'phone-portrait-outline' },
 ];
 
-export default function SettingsScreen({ navigation }) {
+export default function SettingsScreen() {
   const { colors, preference, setPreference } = useTheme();
   const styles = createStyles(colors);
   const { user, isGuest, updateUser, logout } = useAuth();
@@ -73,43 +73,6 @@ export default function SettingsScreen({ navigation }) {
       <AppText weight="bold" size={22}>
         الإعدادات
       </AppText>
-
-      {isGuest ? (
-        <Card style={[{ marginTop: spacing.lg }, styles.guestCard]}>
-          <View style={styles.guestRow}>
-            <View style={styles.guestIcon}>
-              <Ionicons name="person-circle-outline" size={26} color={colors.amberDeep} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <AppText weight="semibold" size={15}>
-                أنت تستخدم التطبيق كضيف
-              </AppText>
-              <AppText size={12} color={colors.inkSoft} style={{ marginTop: 2 }}>
-                بياناتك محفوظة على هذا الجهاز فقط — احفظها لتصل إليها من أي مكان
-              </AppText>
-            </View>
-          </View>
-          <PrimaryButton
-            title="احفظ بياناتك"
-            onPress={() => navigation.navigate('UpgradeAccount')}
-            style={{ marginTop: spacing.md }}
-          />
-          <TouchableOpacity onPress={() => navigation.navigate('Login')} style={{ alignItems: 'center', marginTop: spacing.sm }}>
-            <AppText size={13} color={colors.inkSoft}>
-              لديك حساب بالفعل؟ <AppText weight="semibold" color={colors.amberDeep}>سجّل دخولك</AppText>
-            </AppText>
-          </TouchableOpacity>
-        </Card>
-      ) : (
-        <Card style={{ marginTop: spacing.lg }}>
-          <AppText weight="semibold" size={16}>
-            {user?.name}
-          </AppText>
-          <AppText size={13} color={colors.inkSoft} style={{ marginTop: 2 }}>
-            {user?.email}
-          </AppText>
-        </Card>
-      )}
 
       <AppText weight="bold" size={16} style={{ marginTop: spacing.xl, marginBottom: spacing.sm }}>
         مظهر التطبيق
@@ -234,9 +197,6 @@ export default function SettingsScreen({ navigation }) {
 
 function createStyles(colors) {
   return StyleSheet.create({
-    guestCard: { borderColor: colors.amber, backgroundColor: colors.amberSoft },
-    guestRow: { flexDirection: 'row-reverse', alignItems: 'flex-start', gap: spacing.sm },
-    guestIcon: { marginTop: 2 },
     themeRow: { flexDirection: 'row-reverse', gap: spacing.sm },
     themeOption: {
       flex: 1,

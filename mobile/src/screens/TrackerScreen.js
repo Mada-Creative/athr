@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { LayoutAnimation, Platform, RefreshControl, StyleSheet, Switch, UIManager, View } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Animated, LayoutAnimation, Platform, RefreshControl, StyleSheet, Switch, UIManager, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import Screen from '../components/Screen';
@@ -332,6 +332,17 @@ export default function TrackerScreen({ navigation }) {
 function BucketLine({ label, bucket }) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
+  const percent = bucket ? Math.round(bucket.ratio * 100) : 0;
+  const width = useRef(new Animated.Value(percent)).current;
+
+  useEffect(() => {
+    Animated.timing(width, {
+      toValue: percent,
+      duration: 600,
+      useNativeDriver: false, // width isn't supported by the native driver
+    }).start();
+  }, [percent, width]);
+
   if (!bucket) return null;
   return (
     <View style={styles.bucketLine}>
@@ -339,7 +350,9 @@ function BucketLine({ label, bucket }) {
         {label} {bucket.done}/{bucket.total}
       </AppText>
       <View style={styles.bucketTrack}>
-        <View style={[styles.bucketFill, { width: `${Math.round(bucket.ratio * 100)}%` }]} />
+        <Animated.View
+          style={[styles.bucketFill, { width: width.interpolate({ inputRange: [0, 100], outputRange: ['0%', '100%'] }) }]}
+        />
       </View>
     </View>
   );

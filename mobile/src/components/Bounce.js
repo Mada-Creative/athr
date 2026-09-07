@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { Animated, Pressable } from 'react-native';
+import { Animated, Pressable, StyleSheet } from 'react-native';
 
 // A small, consistent press-feedback wrapper: scales down slightly on
 // press-in and springs back on release/cancel — used anywhere a tap should
@@ -24,7 +24,13 @@ export default function Bounce({ children, style, scaleTo = 0.94, disabled, ...p
       onPressOut={() => !disabled && animateTo(1)}
       {...pressableProps}
     >
-      <Animated.View style={[style, { transform: [{ scale }] }]}>{children}</Animated.View>
+      {/* `stretch` first so it's the default, not a floor — any width/flexBasis
+          in `style` (menu grid items, fixed-size icon buttons, ...) still wins. */}
+      <Animated.View style={[styles.stretch, style, { transform: [{ scale }] }]}>{children}</Animated.View>
     </Pressable>
   );
 }
+
+const styles = StyleSheet.create({
+  stretch: { alignSelf: 'stretch' },
+});

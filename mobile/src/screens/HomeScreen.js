@@ -268,8 +268,11 @@ function createStyles(colors) {
       paddingVertical: 6,
       borderRadius: radius.pill,
     },
+    // Plain 'row' (not 'row-reverse') so it reads chronologically forward
+    // as the eye scans right-to-left under RTL: fajr first (right), isha
+    // last (left) — 'row-reverse' would visually flip that under RTL.
     prayerRow: {
-      flexDirection: 'row-reverse',
+      flexDirection: 'row',
       justifyContent: 'space-between',
       marginTop: spacing.lg,
     },
@@ -282,21 +285,22 @@ function createStyles(colors) {
       flex: 1,
     },
     prayerChipDone: { backgroundColor: 'rgba(95,132,103,0.18)' },
+    // One row, every item the same size — no wrap, so nothing is ever left
+    // stranded alone on a shorter second row.
     prayerMenuRow: {
       flexDirection: 'row-reverse',
-      flexWrap: 'wrap',
-      gap: spacing.sm,
+      gap: spacing.xs,
       marginTop: spacing.md,
     },
     prayerMenuItem: {
-      flexBasis: '31%',
-      flexGrow: 1,
+      flex: 1,
       alignItems: 'center',
       backgroundColor: colors.surface,
       borderWidth: 1,
       borderColor: colors.border,
       borderRadius: radius.md,
       paddingVertical: spacing.md,
+      paddingHorizontal: 2,
     },
     scoreCard: {
       flexDirection: 'row-reverse',
