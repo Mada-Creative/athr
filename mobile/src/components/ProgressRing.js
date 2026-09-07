@@ -30,10 +30,28 @@ export default function ProgressRing({ size = 96, strokeWidth = 10, percentage =
   });
 
   return (
+    // `overflow: 'hidden'` here is scoped to exactly this ring's own
+    // declared size, not its surroundings — so it clips any stray render
+    // of the ring itself to its own box (whatever the earlier "ring
+    // spills past its card" bug's actual cause is) without ever being
+    // able to clip a *sibling* the way Card's old wrapper-level
+    // overflow:hidden did.
     <View
-      style={{ width: size, height: size, flexShrink: 0, alignItems: 'center', justifyContent: 'center' }}
+      style={{
+        width: size,
+        height: size,
+        flexShrink: 0,
+        flexGrow: 0,
+        overflow: 'hidden',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
     >
-      <Svg width={size} height={size}>
+      {/* Explicit viewBox pins the SVG's internal coordinate space to
+          exactly its own pixel box, regardless of platform-specific
+          default-viewBox behavior — one less thing that can make the
+          painted circle disagree with the declared width/height. */}
+      <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
         <Circle
           cx={size / 2}
           cy={size / 2}
