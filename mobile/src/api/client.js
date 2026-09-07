@@ -1,7 +1,21 @@
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+// In dev (Expo Go / a dev client), derive the API host from the same
+// host:port that's already serving the JS bundle — `hostUri` — instead of
+// a hardcoded LAN IP in app.json that goes stale every time the computer's
+// router hands out a new address. The backend runs on a different port
+// (4000) on that same machine, so only the port changes.
+function devApiBaseUrl() {
+  const hostUri = Constants.expoConfig?.hostUri || Constants.manifest2?.extra?.expoClient?.hostUri;
+  if (!hostUri) return null;
+  const host = hostUri.split(':')[0];
+  if (!host) return null;
+  return `http://${host}:4000/api`;
+}
+
 const BASE_URL =
+  (__DEV__ && devApiBaseUrl()) ||
   Constants.expoConfig?.extra?.apiBaseUrl ||
   Constants.manifest?.extra?.apiBaseUrl ||
   'http://localhost:4000/api';
