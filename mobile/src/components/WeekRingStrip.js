@@ -4,7 +4,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import ProgressRing from './ProgressRing';
 import AppText from './AppText';
 import { useTheme } from '../context/ThemeContext';
-import { spacing } from '../theme/spacing';
+import { radius, spacing } from '../theme/spacing';
 import { api } from '../api/client';
 import { todayISO } from '../utils/date';
 
@@ -25,6 +25,7 @@ const WEEKDAY_SHORT = ['أحد', 'اثنين', 'ثلاثاء', 'أربعاء', '
 // the old read-only, today-highlighted behavior unchanged.
 export default function WeekRingStrip({ refreshSignal, selectedDate, onSelectDate }) {
   const { colors } = useTheme();
+  const styles = createStyles(colors);
   const [days, setDays] = useState([]);
   const today = todayISO();
 
@@ -59,7 +60,11 @@ export default function WeekRingStrip({ refreshSignal, selectedDate, onSelectDat
         return (
           <ItemWrapper
             key={day.date}
-            style={styles.item}
+            // Same padding+border box for every day, transparent unless
+            // selected — so the currently-viewed day gets an outlined cell
+            // (not just bold text) without the row jumping as selection
+            // moves from day to day.
+            style={[styles.item, isSelected && styles.itemSelected]}
             {...(onSelectDate ? { activeOpacity: 0.7, onPress: () => onSelectDate(day.date) } : {})}
           >
             <ProgressRing
@@ -83,10 +88,20 @@ export default function WeekRingStrip({ refreshSignal, selectedDate, onSelectDat
   );
 }
 
-const styles = StyleSheet.create({
-  // 'row-reverse' reads right-to-left (oldest day first/rightmost, today
-  // last/leftmost) — correct given RTL never actually activates inside
-  // Expo Go (see App.js), so this is doing the RTL-reading job manually.
-  row: { flexDirection: 'row-reverse', justifyContent: 'space-between', marginBottom: spacing.lg },
-  item: { alignItems: 'center' },
-});
+function createStyles(colors) {
+  return StyleSheet.create({
+    // 'row-reverse' reads right-to-left (oldest day first/rightmost, today
+    // last/leftmost) — correct given RTL never actually activates inside
+    // Expo Go (see App.js), so this is doing the RTL-reading job manually.
+    row: { flexDirection: 'row-reverse', justifyContent: 'space-between', marginBottom: spacing.lg },
+    item: {
+      alignItems: 'center',
+      paddingVertical: 6,
+      paddingHorizontal: 4,
+      borderRadius: radius.md,
+      borderWidth: 1.5,
+      borderColor: 'transparent',
+    },
+    itemSelected: { borderColor: colors.amber },
+  });
+}

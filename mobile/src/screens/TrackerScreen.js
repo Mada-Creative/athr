@@ -136,6 +136,14 @@ export default function TrackerScreen({ navigation }) {
     toggleTask,
   } = useDailyData(date);
   const [refreshing, setRefreshing] = useState(false);
+  const [showWeights, setShowWeights] = useState(false);
+
+  // "x/y" next to a section's own title — a section header shows its own
+  // completion at a glance instead of only the items underneath it.
+  const bucketCount = (bucket) => (bucket ? `${bucket.done}/${bucket.total}` : null);
+  const prayersCount = stats
+    ? `${stats.buckets.prayers.done + stats.buckets.nawafil.done}/${stats.buckets.prayers.total + stats.buckets.nawafil.total}`
+    : null;
 
   useFocusEffect(
     useCallback(() => {
@@ -252,7 +260,7 @@ export default function TrackerScreen({ navigation }) {
         </View>
       ) : null}
 
-      <SectionHeader title="الصلوات والنوافل" />
+      <SectionHeader title="الصلوات والنوافل" count={prayersCount} />
       <View style={styles.columnsRow}>
         {PRAYER_COLUMNS.map((column) => {
           const prayerTime = schedule.find((s) => s.key === column.key)?.time;
@@ -305,12 +313,17 @@ export default function TrackerScreen({ navigation }) {
         كل مربع يُفتح بعد دخول وقت صلاته — اضغط مطوّلًا على مربع الأذكار لفتح العدّاد
       </AppText>
 
-      <SectionHeader title="الأذكار" actionLabel="فتح الكل" onAction={() => navigation.navigate('AthkarList')} />
+      <SectionHeader
+        title="الأذكار"
+        count={bucketCount(stats?.buckets.athkar)}
+        actionLabel="فتح الكل"
+        onAction={() => navigation.navigate('AthkarList')}
+      />
       {REMAINING_ATHKAR_KEYS.map((key) => {
         const meta = ATHKAR_META[key];
         const progress = athkar?.[key];
         const completed = progress?.completed;
-        const ratio = progress ? `${progress.completedItems.length}/${progress.totalItems}` : '';
+        const pct = progress?.totalItems ? Math.round((progress.completedItems.length / progress.totalItems) * 100) : 0;
         return (
           <Bounce
             key={key}
@@ -324,9 +337,11 @@ export default function TrackerScreen({ navigation }) {
             <AppText weight="semibold" size={14} style={{ flex: 1 }}>
               {meta.title}
             </AppText>
-            <AppText size={12.5} color={colors.inkSoft}>
-              {ratio}
-            </AppText>
+            <View style={[styles.pctBadge, completed && styles.pctBadgeDone]}>
+              <AppText size={11} weight="bold" color={completed ? colors.white : colors.inkSoft}>
+                {pct}%
+              </AppText>
+            </View>
           </Bounce>
         );
       })}
@@ -340,7 +355,12 @@ export default function TrackerScreen({ navigation }) {
         icon="book-outline"
       />
 
-      <SectionHeader title="عبادات يومية" actionLabel="إضافة" onAction={() => navigation.navigate('AddTask', { group: 'dailyDeeds' })} />
+      <SectionHeader
+        title="عبادات يومية"
+        count={dailyDeedTasks.length ? bucketCount(stats?.buckets.dailyDeeds) : null}
+        actionLabel="إضافة"
+        onAction={() => navigation.navigate('AddTask', { group: 'dailyDeeds' })}
+      />
       {dailyDeedTasks.length === 0 ? (
         <EmptyHint text="لا توجد عبادات مضافة بعد" />
       ) : (
@@ -356,7 +376,12 @@ export default function TrackerScreen({ navigation }) {
         ))
       )}
 
-      <SectionHeader title="أخرى" actionLabel="إضافة" onAction={() => navigation.navigate('AddTask', { group: 'other' })} />
+      <SectionHeader
+        title="أخرى"
+        count={otherTasks.length ? bucketCount(stats?.buckets.other) : null}
+        actionLabel="إضافة"
+        onAction={() => navigation.navigate('AddTask', { group: 'other' })}
+      />
       {otherTasks.length === 0 ? (
         <EmptyHint text="أضف عبادات أو أعمالًا خاصة بك لتتبعها" />
       ) : (
@@ -371,7 +396,43 @@ export default function TrackerScreen({ navigation }) {
           />
         ))
       )}
+
+      {stats ? (
+        <>
+          <TouchableOpacity onPress={() => setShowWeights((s) => !s)} style={styles.weightsToggle}>
+            <Ionicons name={showWeights ? 'chevron-up' : 'chevron-down'} size={13} color={colors.amberDeep} />
+            <AppText size={12.5} weight="semibold" color={colors.amberDeep} style={{ marginRight: 4 }}>
+              كيف يُحسب الإنجاز؟
+            </AppText>
+          </TouchableOpacity>
+          {showWeights ? (
+            <View style={styles.weightsCard}>
+              <WeightPill label="الصلوات" value={stats.buckets.prayers.weight} />
+              <WeightPill label="النوافل" value={stats.buckets.nawafil.weight} />
+              <WeightPill label="الأذكار" value={stats.buckets.athkar.weight} />
+              <WeightPill label="القرآن" value={stats.buckets.quran.weight} />
+              <WeightPill label="عبادات يومية" value={stats.buckets.dailyDeeds.weight} />
+              <WeightPill label="أخرى" value={stats.buckets.other.weight} />
+            </View>
+          ) : null}
+        </>
+      ) : null}
     </Screen>
+  );
+}
+
+function WeightPill({ label, value }) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
+  return (
+    <View style={styles.weightPill}>
+      <AppText size={11.5} weight="bold" color={colors.amberDeep}>
+        {value}%
+      </AppText>
+      <AppText size={11.5} color={colors.inkSoft} style={{ marginRight: 4 }}>
+        {label}
+      </AppText>
+    </View>
   );
 }
 
@@ -490,6 +551,47 @@ function createStyles(colors) {
     },
     athkarRowDone: { borderColor: colors.sage, backgroundColor: colors.sageSoft },
     athkarIcon: { width: 36, height: 36, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
+    // A plain static badge on purpose, not the animated ProgressRing — a
+    // small percentage number in a circle reads the same at this size
+    // without the extra machinery.
+    pctBadge: {
+      width: 38,
+      height: 38,
+      borderRadius: radius.pill,
+      borderWidth: 1.5,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    pctBadgeDone: { backgroundColor: colors.sage, borderColor: colors.sage },
+    weightsToggle: {
+      flexDirection: 'row-reverse',
+      alignSelf: 'center',
+      alignItems: 'center',
+      marginTop: spacing.xl,
+      paddingVertical: spacing.sm,
+    },
+    weightsCard: {
+      flexDirection: 'row-reverse',
+      flexWrap: 'wrap',
+      gap: spacing.sm,
+      backgroundColor: colors.surfaceMuted,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: spacing.md,
+    },
+    weightPill: {
+      flexDirection: 'row-reverse',
+      alignItems: 'center',
+      backgroundColor: colors.surface,
+      borderRadius: radius.pill,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 4,
+    },
     emptyHint: {
       borderWidth: 1,
       borderColor: colors.border,
