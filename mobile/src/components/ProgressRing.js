@@ -30,7 +30,9 @@ export default function ProgressRing({ size = 96, strokeWidth = 10, percentage =
   });
 
   return (
-    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+    <View
+      style={{ width: size, height: size, flexShrink: 0, alignItems: 'center', justifyContent: 'center' }}
+    >
       <Svg width={size} height={size}>
         <Circle
           cx={size / 2}

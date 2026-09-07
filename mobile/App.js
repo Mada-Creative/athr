@@ -29,11 +29,16 @@ Notifications.setNotificationHandler({
 });
 
 // The whole app is Arabic-first, so force RTL layout direction once at boot.
+// This flag only actually takes visual effect after the *native* app
+// process restarts (a real device install, TestFlight, or a custom dev
+// client) — Expo Go is a single shared host app that can't restart itself
+// per-project on a JS reload, so RTL never visually activates there no
+// matter how many times the bundle reloads. It's still correct to set
+// this now: a real build reads it at native launch and renders properly
+// RTL from the first frame.
 if (!I18nManager.isRTL) {
   I18nManager.allowRTL(true);
   I18nManager.forceRTL(true);
-  // A full reload is normally required for forceRTL to take effect on a
-  // real device; Expo Go / dev builds pick it up on the next refresh.
 }
 
 LogBox.ignoreLogs(['new NativeEventEmitter']);

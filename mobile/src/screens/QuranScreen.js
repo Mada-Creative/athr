@@ -1,17 +1,18 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import AppText from '../components/AppText';
 import Card from '../components/Card';
+import Bounce from '../components/Bounce';
 import PrimaryButton from '../components/PrimaryButton';
 import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
 import { api } from '../api/client';
 import { todayISO } from '../utils/date';
 
-export default function QuranScreen() {
+export default function QuranScreen({ navigation }) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
   const date = todayISO();
@@ -67,20 +68,42 @@ export default function QuranScreen() {
         وَرَتِّلِ الْقُرْآنَ تَرْتِيلًا
       </AppText>
 
-      <Card style={styles.card}>
-        <View style={[styles.iconWrap, log?.completed && styles.iconWrapDone]}>
-          <Ionicons name={log?.completed ? 'checkmark' : 'book-outline'} size={26} color={log?.completed ? colors.white : colors.amberDeep} />
+      <Card style={styles.heroCard}>
+        <View style={[styles.heroIconWrap, { backgroundColor: log?.completed ? colors.sage : colors.gold }]}>
+          <Ionicons
+            name={log?.completed ? 'checkmark' : 'book-outline'}
+            size={28}
+            color={log?.completed ? colors.white : colors.accentDark}
+          />
         </View>
-        <AppText weight="semibold" size={16} style={{ marginTop: spacing.md }}>
+        <AppText weight="bold" size={16.5} color={colors.white} style={{ marginTop: spacing.md, textAlign: 'center' }}>
           {log?.completed ? 'أتممت وردك اليوم، بارك الله فيك' : 'هل قرأت وردك اليوم؟'}
+        </AppText>
+        <AppText size={12} color={colors.accentSoft} style={{ marginTop: 4, textAlign: 'center' }}>
+          احرص على ورد يومي ولو آيات يسيرة
         </AppText>
         <PrimaryButton
           title={log?.completed ? 'إلغاء التحديد' : 'تم القراءة'}
           onPress={toggleCompleted}
-          variant={log?.completed ? 'outline' : 'solid'}
+          variant={log?.completed ? 'outlineInverted' : 'inverted'}
           style={{ marginTop: spacing.lg, alignSelf: 'stretch' }}
         />
       </Card>
+
+      <Bounce scaleTo={0.98} onPress={() => navigation.navigate('QuranSurahList')} style={styles.readCta}>
+        <View style={styles.readCtaIcon}>
+          <Ionicons name="book" size={22} color={colors.white} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <AppText weight="bold" size={15} color={colors.white}>
+            اقرأ القرآن الكريم
+          </AppText>
+          <AppText size={11.5} color="rgba(255,255,255,0.85)" style={{ marginTop: 2 }}>
+            تصفّح السور الـ 114 وابدأ القراءة الآن
+          </AppText>
+        </View>
+        <Ionicons name="chevron-back" size={18} color={colors.white} />
+      </Bounce>
 
       <Card style={{ marginTop: spacing.lg }}>
         <AppText weight="semibold" size={14} style={{ marginBottom: spacing.sm }}>
@@ -108,16 +131,39 @@ export default function QuranScreen() {
 
 function createStyles(colors) {
   return StyleSheet.create({
-    card: { alignItems: 'center' },
-    iconWrap: {
+    heroCard: {
+      alignItems: 'center',
+      // Fixed dark ink surface — deliberately doesn't invert with the
+      // theme, same family as Home's hero card.
+      backgroundColor: colors.accentDark,
+      borderColor: colors.accentDark,
+    },
+    heroIconWrap: {
       width: 64,
       height: 64,
       borderRadius: radius.pill,
-      backgroundColor: colors.amberSoft,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    iconWrapDone: { backgroundColor: colors.sage },
+    // A distinct green accent (as opposed to the app's usual ink/amber) so
+    // this reads as its own standout feature, not just another list row.
+    readCta: {
+      flexDirection: 'row-reverse',
+      alignItems: 'center',
+      gap: spacing.md,
+      backgroundColor: colors.sage,
+      borderRadius: radius.md,
+      padding: spacing.lg,
+      marginTop: spacing.lg,
+    },
+    readCtaIcon: {
+      width: 44,
+      height: 44,
+      borderRadius: radius.pill,
+      backgroundColor: 'rgba(255,255,255,0.2)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     pagesRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: spacing.md },
     input: {
       width: 90,

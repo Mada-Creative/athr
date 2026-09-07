@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import * as Location from 'expo-location';
-import { Coordinates, CalculationMethod, PrayerTimes } from 'adhan';
+import { Coordinates, CalculationMethod, PrayerTimes, SunnahTimes } from 'adhan';
 import { methodForCountry, METHOD_LABELS } from '../utils/methodForCountry';
 import { getLastLocation, setLastLocation } from '../utils/locationCache';
 
@@ -155,6 +155,25 @@ export default function usePrayerTimes() {
     }));
   }, [times]);
 
+  // `SunnahTimes` builds tomorrow's `PrayerTimes` internally to measure the
+  // night span correctly (today's Maghrib → tomorrow's Fajr), so this is
+  // the whole calculation for "middle/last third of the night" — no manual
+  // date math needed on top of what `adhan` already does.
+  const sunnah = useMemo(() => (times ? new SunnahTimes(times) : null), [times]);
+
+  // Which part of the day we're in, by actual prayer times rather than a
+  // fixed clock guess — drives Home's athkar-priority reordering and the
+  // night-only "woke up at night" dua. Nothing is ever hidden by this;
+  // every category stays reachable, this only changes what's surfaced first.
+  const dayPeriod = useMemo(() => {
+    if (!times) return 'day';
+    if (now < times.fajr) return 'night'; // after midnight, before fajr
+    if (now < times.dhuhr) return 'morning';
+    if (now < times.asr) return 'day';
+    if (now < times.isha) return 'evening';
+    return 'night'; // after isha, until midnight
+  }, [times, now]);
+
   // "Next prayer" only ever counts down to one of the 5 obligatory prayers —
   // sunrise is kept in `schedule` above just because `adhan` returns it
   // alongside the others, not because it's a prayer to countdown to.
@@ -180,6 +199,9 @@ export default function usePrayerTimes() {
     schedule: fardOnly,
     next,
     remainingMs: remainingMs && remainingMs < 0 ? remainingMs + 24 * 60 * 60 * 1000 : remainingMs,
+    dayPeriod,
+    lastThirdOfNight: sunnah?.lastThirdOfTheNight ?? null,
+    middleOfNight: sunnah?.middleOfTheNight ?? null,
   };
 }
 
@@ -189,6 +211,19 @@ export function formatCountdown(ms) {
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+}
+
+// Same as `formatCountdown` but with a live seconds digit — for the
+// screens that tick every second (Home's hero card, the prayer-detail
+// list) rather than the hook's own 30-second `now` resolution.
+export function formatCountdownWithSeconds(ms) {
+  if (ms == null) return '—';
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+  const pad = (n) => String(n).padStart(2, '0');
+  return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
 }
 
 export function formatClock(date) {

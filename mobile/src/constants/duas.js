@@ -1,3 +1,13 @@
+// Shown instead of the rotating dua below during night hours (after Isha,
+// before Fajr) — the Prophet ﷺ's own dua for someone who wakes in the
+// night, same idea as the dedicated morning/evening duas, just timed to
+// when someone would actually wake up at night.
+export const nightWakeDua = {
+  title: 'دعاء من تعارّ من الليل',
+  text: 'لَا إِلَٰهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ، وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ، الْحَمْدُ لِلَّهِ، وَسُبْحَانَ اللَّهِ، وَلَا إِلَٰهَ إِلَّا اللَّهُ، وَاللَّهُ أَكْبَرُ، وَلَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللَّهِ، اللَّهُمَّ اغْفِرْ لِي',
+  source: 'صحيح البخاري',
+};
+
 // A short curated set of duas from the Qur'an and authentic Sunnah.
 export default [
   {

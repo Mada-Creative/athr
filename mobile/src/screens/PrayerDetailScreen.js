@@ -6,17 +6,7 @@ import AppText from '../components/AppText';
 import Card from '../components/Card';
 import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
-import usePrayerTimes, { formatClock } from '../hooks/usePrayerTimes';
-
-function formatCountdownWithSeconds(ms) {
-  if (ms == null) return '—';
-  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
-  const h = Math.floor(totalSeconds / 3600);
-  const m = Math.floor((totalSeconds % 3600) / 60);
-  const s = totalSeconds % 60;
-  const pad = (n) => String(n).padStart(2, '0');
-  return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
-}
+import usePrayerTimes, { formatClock, formatCountdownWithSeconds } from '../hooks/usePrayerTimes';
 
 // Purely informational — this screen never marks a prayer as prayed.
 // Marking happens on the Tracker tab; this one is for "when, and based on
@@ -24,8 +14,17 @@ function formatCountdownWithSeconds(ms) {
 export default function PrayerDetailScreen() {
   const { colors } = useTheme();
   const styles = createStyles(colors);
-  const { schedule, next, permissionDenied, locationLabel, locating, methodLabel, isStaleLocation, refreshLocation } =
-    usePrayerTimes();
+  const {
+    schedule,
+    next,
+    permissionDenied,
+    locationLabel,
+    locating,
+    methodLabel,
+    isStaleLocation,
+    refreshLocation,
+    lastThirdOfNight,
+  } = usePrayerTimes();
   const [now, setNow] = useState(new Date());
 
   useEffect(() => {
@@ -106,6 +105,27 @@ export default function PrayerDetailScreen() {
           </View>
         );
       })}
+
+      {lastThirdOfNight ? (
+        <Card style={styles.qiyamCard}>
+          <View style={styles.qiyamRow}>
+            <View style={styles.qiyamIcon}>
+              <Ionicons name="moon-outline" size={18} color={colors.amberDeep} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <AppText weight="semibold" size={14}>
+                الثلث الأخير من الليل
+              </AppText>
+              <AppText size={11.5} color={colors.inkSoft} style={{ marginTop: 2 }}>
+                وقت مستحب لقيام الليل والدعاء، الليلة
+              </AppText>
+            </View>
+            <AppText weight="bold" size={17} style={{ direction: 'ltr' }}>
+              {formatClock(lastThirdOfNight)}
+            </AppText>
+          </View>
+        </Card>
+      ) : null}
     </Screen>
   );
 }
@@ -139,5 +159,15 @@ function createStyles(colors) {
   // theme, so the white text/time on it never washes out in dark mode.
   rowActive: { backgroundColor: colors.accentDark, borderColor: colors.accentDark },
   rowMain: { flex: 1 },
+  qiyamCard: { marginTop: spacing.md },
+  qiyamRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: spacing.md },
+  qiyamIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: radius.pill,
+    backgroundColor: colors.amberSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   });
 }

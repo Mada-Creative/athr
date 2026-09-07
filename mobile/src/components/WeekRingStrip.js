@@ -73,10 +73,9 @@ export default function WeekRingStrip({ refreshSignal }) {
 }
 
 const styles = StyleSheet.create({
-  // Plain 'row' (not 'row-reverse') so the week reads chronologically
-  // forward as the eye scans right-to-left under RTL: the oldest day is
-  // first (right), today is last (left) — 'row-reverse' flips that
-  // under RTL and made today land on the wrong side.
-  row: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.lg },
+  // 'row-reverse' reads right-to-left (oldest day first/rightmost, today
+  // last/leftmost) — correct given RTL never actually activates inside
+  // Expo Go (see App.js), so this is doing the RTL-reading job manually.
+  row: { flexDirection: 'row-reverse', justifyContent: 'space-between', marginBottom: spacing.lg },
   item: { alignItems: 'center' },
 });
