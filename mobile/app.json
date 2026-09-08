@@ -12,7 +12,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#FAF5EC"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "app.athr.mobile",
@@ -27,7 +29,10 @@
         "foregroundImage": "./assets/logo.png",
         "backgroundColor": "#FAF5EC"
       },
-      "permissions": ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"]
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "favicon": "./assets/logo.png"
