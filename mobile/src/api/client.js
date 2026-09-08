@@ -1,11 +1,13 @@
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// In dev (Expo Go / a dev client), derive the API host from the same
-// host:port that's already serving the JS bundle — `hostUri` — instead of
-// a hardcoded LAN IP in app.json that goes stale every time the computer's
-// router hands out a new address. The backend runs on a different port
-// (4000) on that same machine, so only the port changes.
+// In dev (Expo Go / a dev client) with no real apiBaseUrl configured yet,
+// derive the API host from the same host:port that's already serving the
+// JS bundle — `hostUri` — instead of a hardcoded LAN IP in app.json that
+// goes stale every time the computer's router hands out a new address.
+// The backend runs on a different port (4000) on that same machine, so
+// only the port changes. Once app.json points at a real deployed API,
+// that value always wins — see below.
 function devApiBaseUrl() {
   const hostUri = Constants.expoConfig?.hostUri || Constants.manifest2?.extra?.expoClient?.hostUri;
   if (!hostUri) return null;
@@ -14,10 +16,17 @@ function devApiBaseUrl() {
   return `http://${host}:4000/api`;
 }
 
+// An explicit apiBaseUrl in app.json (a real deployed API host) always wins
+// — that's a deliberate choice, not a placeholder to work around. The
+// LAN-IP auto-derivation is a dev-only convenience for when apiBaseUrl is
+// still the localhost default, i.e. no one has pointed it anywhere real yet.
+const configuredApiBaseUrl = Constants.expoConfig?.extra?.apiBaseUrl || Constants.manifest?.extra?.apiBaseUrl;
+const isLocalPlaceholder = !configuredApiBaseUrl || /^https?:\/\/(localhost|127\.0\.0\.1)/.test(configuredApiBaseUrl);
+
 const BASE_URL =
+  (!isLocalPlaceholder && configuredApiBaseUrl) ||
   (__DEV__ && devApiBaseUrl()) ||
-  Constants.expoConfig?.extra?.apiBaseUrl ||
-  Constants.manifest?.extra?.apiBaseUrl ||
+  configuredApiBaseUrl ||
   'http://localhost:4000/api';
 
 const TOKEN_KEY = 'athr_token';
