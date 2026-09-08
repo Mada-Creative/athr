@@ -38,7 +38,7 @@
       "favicon": "./assets/logo.png"
     },
     "extra": {
-      "apiBaseUrl": "http://192.168.1.13:4000/api"
+      "apiBaseUrl": "https://safe-citadel-95574-87a79d0291e7.herokuapp.com/api"
     }
   }
 }
