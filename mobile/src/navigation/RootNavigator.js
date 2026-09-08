@@ -1,5 +1,5 @@
 import React from 'react';
-import { ActivityIndicator, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -7,6 +7,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import AppText from '../components/AppText';
+import BootSplash from '../components/BootSplash';
 import { spacing } from '../theme/spacing';
 import typography from '../theme/typography';
 
@@ -155,14 +156,9 @@ function createBannerStyles(colors) {
 
 export default function RootNavigator() {
   const { isBooting, sessionFailed, isOffline } = useAuth();
-  const { colors } = useTheme();
 
   if (isBooting) {
-    return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }}>
-        <ActivityIndicator color={colors.amber} size="large" />
-      </View>
-    );
+    return <BootSplash />;
   }
 
   return (
