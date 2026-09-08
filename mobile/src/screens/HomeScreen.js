@@ -161,7 +161,10 @@ export default function HomeScreen({ navigation }) {
             {!isGuest && user?.name ? `، ${user.name.split(' ')[0]}` : ''}
           </AppText>
           <AppText color={colors.inkSoft} size={13.5} style={{ marginTop: 4 }}>
-            {formatWeekday(now)}، {formatGregorian(now)} — {hijri.day} {hijri.month} {hijri.year}هـ
+            {formatWeekday(now)}، {formatGregorian(now)} — {hijri.day} {hijri.month} {hijri.year}هـ{' '}
+            <AppText color={colors.inkFaint} size={11.5}>
+              (تقريبي)
+            </AppText>
           </AppText>
         </View>
       </View>
