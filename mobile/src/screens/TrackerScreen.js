@@ -341,7 +341,8 @@ export default function TrackerScreen({ navigation }) {
             key={key}
             scaleTo={0.97}
             style={[styles.athkarRow, completed && styles.athkarRowDone]}
-            onPress={() => navigation.navigate('AthkarCounter', { category: key })}
+            onPress={() => onToggleAthkar(key)}
+            onLongPress={() => navigation.navigate('AthkarCounter', { category: key })}
           >
             <View style={[styles.athkarIcon, { backgroundColor: `${meta.color}${scheme === 'dark' ? '33' : '22'}` }]}>
               <Ionicons name={completed ? 'checkmark' : meta.icon} size={18} color={meta.color} />
@@ -357,6 +358,9 @@ export default function TrackerScreen({ navigation }) {
           </Bounce>
         );
       })}
+      <AppText size={11} color={colors.inkSoft} style={{ marginTop: spacing.xs, marginBottom: spacing.lg }}>
+        اضغط لتعليم الذكر مكتملًا — اضغط مطوّلًا لفتح العدّاد والعدّ فيه دِكرًا دِكرًا
+      </AppText>
 
       <SectionHeader title="القرآن الكريم" />
       <CheckRow
