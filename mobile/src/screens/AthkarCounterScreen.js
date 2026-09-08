@@ -87,9 +87,19 @@ export default function AthkarCounterScreen({ route }) {
         return (
           <TouchableOpacity key={index} activeOpacity={0.8} onPress={() => onTapItem(index)}>
             <Card style={[styles.itemCard, done && styles.itemCardDone]}>
+              {item.label ? (
+                <AppText size={11.5} weight="bold" color={colors.amberDeep} style={styles.itemLabel}>
+                  {item.label}
+                </AppText>
+              ) : null}
               <AppText size={16} weight="semibold" style={styles.itemText}>
                 {item.text}
               </AppText>
+              {item.source ? (
+                <AppText size={11.5} color={colors.inkSoft} style={styles.itemSource}>
+                  {item.source}
+                </AppText>
+              ) : null}
               <View style={styles.itemFooter}>
                 <View style={[styles.counterBadge, done && styles.counterBadgeDone]}>
                   {done ? (
@@ -118,7 +128,9 @@ function createStyles(colors) {
     headerIcon: { width: 56, height: 56, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
     itemCard: { marginBottom: spacing.md },
     itemCardDone: { borderColor: colors.sage, backgroundColor: colors.sageSoft },
+    itemLabel: { marginBottom: 4 },
     itemText: { lineHeight: 26 },
+    itemSource: { marginTop: spacing.sm, lineHeight: 17 },
     itemFooter: {
       flexDirection: 'row-reverse',
       alignItems: 'center',

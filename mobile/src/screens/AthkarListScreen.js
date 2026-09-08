@@ -8,6 +8,7 @@ import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
 import { api } from '../api/client';
 import { todayISO } from '../utils/date';
+import { enqueueAction } from '../utils/pendingActions';
 import ATHKAR_META from '../constants/athkarMeta';
 import athkarContent from '../constants/athkarContent';
 
@@ -39,13 +40,46 @@ export default function AthkarListScreen({ navigation }) {
     setRefreshing(false);
   };
 
+  // Same "tap = done, no need to open the counter and go item by item"
+  // shortcut as the Tracker screen — someone who already read these on
+  // their own, or from a different source entirely, shouldn't be forced to
+  // re-tap through every single line just to mark the category complete.
+  // Long-press still opens the counter for whoever wants to go through it
+  // dhikr by dhikr.
+  const onToggleComplete = useCallback(
+    async (key) => {
+      const current = Boolean(categories[key]?.completed);
+      const total = categories[key]?.totalItems ?? athkarContent[key].items.length;
+      setCategories((prev) => ({
+        ...prev,
+        [key]: {
+          ...prev[key],
+          completed: !current,
+          completedItems: !current ? Array.from({ length: total }, (_, i) => i) : [],
+        },
+      }));
+      const path = `/athkar/${date}/${key}`;
+      const body = { completed: !current };
+      try {
+        await api.patch(path, body);
+      } catch (err) {
+        if (err.isNetworkError) {
+          await enqueueAction({ method: 'patch', path, body });
+        } else {
+          setCategories((prev) => ({ ...prev, [key]: { ...prev[key], completed: current } }));
+        }
+      }
+    },
+    [categories, date]
+  );
+
   return (
     <Screen refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.amber} />}>
       <AppText weight="bold" size={22}>
         الأذكار
       </AppText>
       <AppText color={colors.inkSoft} size={13.5} style={{ marginTop: 4, marginBottom: spacing.lg }}>
-        اختر الأذكار لعرضها والعد فيها
+        اضغط على أي تصنيف لتعليمه مكتملًا — اضغط مطوّلًا لفتحه والعدّ فيه دِكرًا دِكرًا
       </AppText>
 
       {Object.keys(ATHKAR_META).map((key) => {
@@ -60,7 +94,8 @@ export default function AthkarListScreen({ navigation }) {
             key={key}
             style={[styles.card, isDone && styles.cardDone]}
             activeOpacity={0.85}
-            onPress={() => navigation.navigate('AthkarCounter', { category: key })}
+            onPress={() => onToggleComplete(key)}
+            onLongPress={() => navigation.navigate('AthkarCounter', { category: key })}
           >
             <View style={[styles.iconWrap, { backgroundColor: `${meta.color}22` }]}>
               <Ionicons name={isDone ? 'checkmark' : meta.icon} size={22} color={meta.color} />
