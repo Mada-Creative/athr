@@ -99,7 +99,7 @@ function createStyles(colors) {
       paddingVertical: 6,
       paddingHorizontal: 4,
       borderRadius: radius.md,
-      borderWidth: 1.5,
+      borderWidth: 0,
       borderColor: 'transparent',
     },
     itemSelected: { borderColor: colors.amber },

@@ -500,7 +500,7 @@ function createStyles(colors) {
       alignItems: 'center',
       justifyContent: 'space-between',
       marginTop: spacing.md,
-      marginBottom: spacing.sm,
+      marginBottom: 50,
     },
     dateNavBtn: {
       width: 34,
@@ -517,7 +517,7 @@ function createStyles(colors) {
       alignSelf: 'center',
       alignItems: 'center',
       marginTop: spacing.xs,
-      marginBottom: spacing.sm,
+      marginBottom: 30,
     },
     // minHeight guarantees the row is never computed shorter than the
     // ring itself (size=72 below).
