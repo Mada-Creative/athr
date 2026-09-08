@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Image, RefreshControl, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Image, RefreshControl, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import Screen from '../components/Screen';
@@ -58,7 +58,14 @@ export default function HomeScreen({ navigation }) {
   }, []);
   const hijri = toHijri(now);
   const { schedule, next, dayPeriod } = usePrayerTimes();
-  const { stats, prayerLog, reload } = useDailyData(date);
+  const { stats, prayerLog, loading, reload } = useDailyData(date);
+  // Only true for a genuine first load with nothing cached yet from a
+  // previous successful fetch — a slow-but-normal request (a cold Heroku
+  // dyno, a weak connection) shows this instead of a misleading "0%" ring.
+  // A refetch that already has cached or previously-loaded data never hits
+  // this branch, so revisiting Home never flashes a spinner over real
+  // content — see useDailyData's cache-first offline fallback.
+  const showingFirstLoad = loading && !stats;
   const [refreshing, setRefreshing] = useState(false);
 
   const remainingToNext = next ? next.time.getTime() - now.getTime() : null;
@@ -233,7 +240,13 @@ export default function HomeScreen({ navigation }) {
       </View>
 
       <Card style={styles.scoreCard} onPress={() => navigation.navigate('Tracker')}>
-        <ProgressRing percentage={stats?.percentage ?? 0} size={78} strokeWidth={9} />
+        {showingFirstLoad ? (
+          <View style={styles.scoreRingLoading}>
+            <ActivityIndicator color={colors.amber} />
+          </View>
+        ) : (
+          <ProgressRing percentage={stats?.percentage ?? 0} size={78} strokeWidth={9} />
+        )}
         <View style={{ flex: 1, marginRight: spacing.md }}>
           <AppText weight="bold" size={16}>
             بصمتك اليوم
@@ -398,6 +411,14 @@ function createStyles(colors) {
       minHeight: 180,
       gap: spacing.md,
       marginTop: spacing.lg,
+    },
+    // Same footprint as the ring it stands in for, so the card never
+    // reflows once real data (or a cached snapshot) replaces it.
+    scoreRingLoading: {
+      width: 78,
+      height: 78,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     linkRow: {
       flexDirection: 'row-reverse',

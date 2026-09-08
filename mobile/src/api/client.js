@@ -40,6 +40,12 @@ async function setToken(token) {
   else await AsyncStorage.removeItem(TOKEN_KEY);
 }
 
+// A cold Heroku eco dyno can take a good while to wake up on the first
+// request after being idle — generous, but still bounded, so a request
+// that's genuinely stuck (not just slow) fails into the same offline/cached
+// fallback as a real network error, instead of hanging forever.
+const REQUEST_TIMEOUT_MS = 25000;
+
 async function request(path, { method = 'GET', body, auth = true } = {}) {
   const headers = { 'Content-Type': 'application/json' };
 
@@ -48,17 +54,23 @@ async function request(path, { method = 'GET', body, auth = true } = {}) {
     if (token) headers.Authorization = `Bearer ${token}`;
   }
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
   let response;
   try {
     response = await fetch(`${BASE_URL}${path}`, {
       method,
       headers,
       body: body ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
     });
   } catch (networkError) {
     const err = new Error('تعذر الاتصال بالخادم. تحقق من الإنترنت أو عنوان الخادم.');
     err.isNetworkError = true;
     throw err;
+  } finally {
+    clearTimeout(timeoutId);
   }
 
   const isJson = response.headers.get('content-type')?.includes('application/json');

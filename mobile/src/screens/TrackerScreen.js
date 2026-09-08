@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Animated,
   LayoutAnimation,
   Platform,
@@ -128,6 +129,7 @@ export default function TrackerScreen({ navigation }) {
     error,
     syncNotice,
     isOffline,
+    loading,
     reload,
     togglePrayer,
     toggleExcused,
@@ -137,6 +139,10 @@ export default function TrackerScreen({ navigation }) {
   } = useDailyData(date);
   const [refreshing, setRefreshing] = useState(false);
   const [showWeights, setShowWeights] = useState(false);
+  // Same reasoning as Home's score ring: only true for a genuine first
+  // load with nothing cached yet — a normal refetch on focus never shows
+  // this over data that's already on screen.
+  const showingFirstLoad = loading && !stats;
 
   // "x/y" next to a section's own title — a section header shows its own
   // completion at a glance instead of only the items underneath it.
@@ -231,7 +237,13 @@ export default function TrackerScreen({ navigation }) {
       ) : null}
 
       <Card style={styles.summaryCard}>
-        <ProgressRing percentage={stats?.percentage ?? 0} size={72} strokeWidth={8} />
+        {showingFirstLoad ? (
+          <View style={styles.summaryRingLoading}>
+            <ActivityIndicator color={colors.amber} />
+          </View>
+        ) : (
+          <ProgressRing percentage={stats?.percentage ?? 0} size={72} strokeWidth={8} />
+        )}
         <View style={{ flex: 1, marginRight: spacing.md }}>
           <AppText weight="bold" size={15}>
             إنجاز اليوم
@@ -522,6 +534,9 @@ function createStyles(colors) {
     // minHeight guarantees the row is never computed shorter than the
     // ring itself (size=72 below).
     summaryCard: { flexDirection: 'row-reverse', alignItems: 'center', gap: spacing.md, minHeight: 72 },
+    // Same footprint as the ring it stands in for, so the card never
+    // reflows once real data (or a cached snapshot) replaces it.
+    summaryRingLoading: { width: 72, height: 72, alignItems: 'center', justifyContent: 'center' },
     bucketLine: { marginTop: 6 },
     bucketTrack: { height: 5, borderRadius: 3, backgroundColor: colors.backgroundAlt, marginTop: 3, overflow: 'hidden' },
     bucketFill: { height: 5, backgroundColor: colors.amber, borderRadius: 3 },
