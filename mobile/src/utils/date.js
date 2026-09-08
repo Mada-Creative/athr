@@ -51,16 +51,32 @@ function formatWeekday(date = new Date()) {
 }
 
 // Kuwaiti-algorithm style tabular Hijri conversion — a well known, dependency
-// free approximation (accurate to within a day around month boundaries,
-// which is expected for any tabular calendar not synced to local moon sighting).
+// free approximation (accurate to within a day or two around month
+// boundaries, which is expected for any tabular calendar not synced to
+// local moon sighting).
 function toHijri(date = new Date()) {
-  let jd = Math.floor(
-    (1461 * (date.getFullYear() + 4800 + (date.getMonth() - 14) / 12)) / 4 +
-      (367 * (date.getMonth() - 2 - 12 * Math.floor((date.getMonth() - 14) / 12))) / 12 -
-      (3 * Math.floor((date.getFullYear() + 4900 + (date.getMonth() - 14) / 12) / 100)) / 4 +
-      date.getDate() -
-      32075
-  );
+  const gregYear = date.getFullYear();
+  // The reference Julian-day formula this is built on (Fliegel & Van
+  // Flandern) takes the calendar month as 1-12 — JS's own getMonth() is
+  // 0-indexed (January = 0), so this always needs the +1. Passing
+  // getMonth() straight through here (as an earlier version of this
+  // function did) silently ran every date one calendar month behind,
+  // compounding into several months of drift by late in the year.
+  const gregMonth = date.getMonth() + 1;
+  const gregDay = date.getDate();
+
+  // Every division in the reference formula is an integer (floored)
+  // division, including this shared (month - 14) / 12 term — flooring it
+  // only where it appeared later in the expression (as an earlier version
+  // did) left it as a fraction in this first term instead of the intended
+  // -1/0, throwing the whole calculation off by months.
+  const monthShift = Math.floor((gregMonth - 14) / 12);
+  const jd =
+    Math.floor((1461 * (gregYear + 4800 + monthShift)) / 4) +
+    Math.floor((367 * (gregMonth - 2 - 12 * monthShift)) / 12) -
+    Math.floor((3 * Math.floor((gregYear + 4900 + monthShift) / 100)) / 4) +
+    gregDay -
+    32075;
 
   const l = jd - 1948440 + 10632;
   const n = Math.floor((l - 1) / 10631);
