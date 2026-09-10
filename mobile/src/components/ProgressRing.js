@@ -39,15 +39,7 @@ export default function ProgressRing({ size = 96, strokeWidth = 10, percentage =
     // this RN/Fabric setup, not the thing it was meant to fix. Removed;
     // see HomeScreen/TrackerScreen for where the actual card-specific
     // bleed is handled instead (a `minHeight` on the row, nothing here).
-    <View
-      style={{
-        width: size,
-        height: size,
-        flexShrink: 0,
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
+    <View style={{ width: size, height: size, flexShrink: 0 }}>
       {/* viewBox pins the SVG's internal coordinate space to exactly its
           own pixel box. The ring needs to start its fill at 12 o'clock,
           not SVG's default 3 o'clock — rotating the whole `<Svg>` via a
@@ -81,22 +73,26 @@ export default function ProgressRing({ size = 96, strokeWidth = 10, percentage =
           strokeLinecap="round"
         />
       </Svg>
-      <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
-        <View style={styles.center}>
-          <AppText weight="bold" size={size * 0.22} color={colors.ink}>
-            {label ?? `${clamped}%`}
+      {/* Sits directly on top of the Svg via negative margin, not
+          `position: 'absolute'` — an absoluteFill label layer here used to
+          render outside/below the ring instead of overlaid on it (see
+          AthkarCountRing.js, which hit the exact same bug and switched to
+          this same plain box-model stacking instead of relying on any
+          ancestor's positioning context). */}
+      <View style={[styles.center, { width: size, height: size, marginTop: -size }]} pointerEvents="none">
+        <AppText weight="bold" size={size * 0.22} color={colors.ink}>
+          {label ?? `${clamped}%`}
+        </AppText>
+        {sublabel ? (
+          <AppText size={size * 0.09} color={colors.inkSoft}>
+            {sublabel}
           </AppText>
-          {sublabel ? (
-            <AppText size={size * 0.09} color={colors.inkSoft}>
-              {sublabel}
-            </AppText>
-          ) : null}
-        </View>
+        ) : null}
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  center: { alignItems: 'center', justifyContent: 'center' },
 });
