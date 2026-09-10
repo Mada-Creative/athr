@@ -19,7 +19,7 @@ import usePrayerTimes, { formatCountdownWithSeconds, formatClock } from '../hook
 import usePrayerNotifications from '../hooks/usePrayerNotifications';
 import useDailyData from '../hooks/useDailyData';
 import duas, { nightWakeDua } from '../constants/duas';
-import ATHKAR_META, { ATHKAR_ORDER } from '../constants/athkarMeta';
+import ATHKAR_META, { ATHKAR_ORDER, ATHKAR_UNLOCK_PRAYER } from '../constants/athkarMeta';
 import athkarContent from '../constants/athkarContent';
 
 const FARD_ORDER = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
@@ -254,6 +254,12 @@ export default function HomeScreen({ navigation }) {
           const progress = athkar?.[key];
           const total = progress?.totalItems ?? athkarContent[key].items.length;
           const done = progress?.completedItems?.length ?? 0;
+          // Same "opens once its time starts" gating as TrackerScreen's
+          // prayer columns — Home used to let you open/mark afterPrayer or
+          // evening/morning/sleep athkar before their time even arrived.
+          const unlockPrayerKey = ATHKAR_UNLOCK_PRAYER[key];
+          const unlockPrayer = unlockPrayerKey ? schedule.find((s) => s.key === unlockPrayerKey) : null;
+          const locked = Boolean(unlockPrayerKey) && (!unlockPrayer || now < unlockPrayer.time);
           return (
             <AthkarTile
               key={key}
@@ -264,6 +270,8 @@ export default function HomeScreen({ navigation }) {
               completed={progress?.completed}
               completedCount={done}
               totalCount={total}
+              locked={locked}
+              lockNote={unlockPrayer ? `يفتح بعد صلاة ${unlockPrayer.label}` : undefined}
               onPress={() => onToggleAthkarComplete(key)}
               onLongPress={() => navigation.navigate('AthkarCounter', { category: key })}
             />

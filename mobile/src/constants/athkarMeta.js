@@ -38,4 +38,23 @@ export const ATHKAR_ORDER = [
   'sleep',
 ];
 
+// Which prayer's arrival unlocks each athkar category — mirrors the column
+// each one sits under in TrackerScreen's "الصلوات والنوافل" grid (morning
+// under fajr, evening under asr, sleep under isha, each "بعد الصلاة" slot
+// under its own prayer). Single source of truth so Home applies the exact
+// same "opens once its time starts" gating instead of just Tracker.
+// `null` (wakeup) means never time-gated — there's no fixed clock moment
+// for "just woke up".
+export const ATHKAR_UNLOCK_PRAYER = {
+  wakeup: null,
+  morning: 'fajr',
+  [afterPrayerCategory('fajr')]: 'fajr',
+  [afterPrayerCategory('dhuhr')]: 'dhuhr',
+  [afterPrayerCategory('asr')]: 'asr',
+  evening: 'asr',
+  [afterPrayerCategory('maghrib')]: 'maghrib',
+  [afterPrayerCategory('isha')]: 'isha',
+  sleep: 'isha',
+};
+
 export default ATHKAR_META;

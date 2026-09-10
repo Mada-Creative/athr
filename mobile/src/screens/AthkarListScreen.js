@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Dimensions, RefreshControl, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import Screen from '../components/Screen';
@@ -9,8 +9,9 @@ import { spacing } from '../theme/spacing';
 import { api } from '../api/client';
 import { todayISO } from '../utils/date';
 import { enqueueAction } from '../utils/pendingActions';
-import ATHKAR_META, { ATHKAR_ORDER } from '../constants/athkarMeta';
+import ATHKAR_META, { ATHKAR_ORDER, ATHKAR_UNLOCK_PRAYER } from '../constants/athkarMeta';
 import athkarContent from '../constants/athkarContent';
+import usePrayerTimes from '../hooks/usePrayerTimes';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const TILE_GAP = spacing.sm;
@@ -20,9 +21,18 @@ const TILE_WIDTH = (SCREEN_WIDTH - spacing.lg * 2 - TILE_GAP * 2) / 3;
 
 export default function AthkarListScreen({ navigation }) {
   const { colors } = useTheme();
+  const { schedule } = usePrayerTimes();
   const date = todayISO();
   const [categories, setCategories] = useState({});
   const [refreshing, setRefreshing] = useState(false);
+  // Not live-countdown precision (this screen shows no clock) — just
+  // frequent enough that a locked tile unlocks itself within half a
+  // minute of its prayer's time actually arriving.
+  const [now, setNow] = useState(new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 30000);
+    return () => clearInterval(id);
+  }, []);
 
   const load = useCallback(async () => {
     try {
@@ -90,6 +100,11 @@ export default function AthkarListScreen({ navigation }) {
           const progress = categories[key];
           const total = progress?.totalItems ?? athkarContent[key].items.length;
           const done = progress?.completedItems?.length ?? 0;
+          // Same "opens once its time starts" gating as TrackerScreen's
+          // prayer columns and Home's athkar grid.
+          const unlockPrayerKey = ATHKAR_UNLOCK_PRAYER[key];
+          const unlockPrayer = unlockPrayerKey ? schedule.find((s) => s.key === unlockPrayerKey) : null;
+          const locked = Boolean(unlockPrayerKey) && (!unlockPrayer || now < unlockPrayer.time);
 
           return (
             <AthkarTile
@@ -101,6 +116,8 @@ export default function AthkarListScreen({ navigation }) {
               completed={progress?.completed}
               completedCount={done}
               totalCount={total}
+              locked={locked}
+              lockNote={unlockPrayer ? `يفتح بعد صلاة ${unlockPrayer.label}` : undefined}
               onPress={() => onToggleComplete(key)}
               onLongPress={() => navigation.navigate('AthkarCounter', { category: key })}
             />
