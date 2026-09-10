@@ -83,7 +83,10 @@ export default function HomeScreen({ navigation }) {
   // Quran carries real daily progress (one "وِرد" done/not-done); Names and
   // Duas are pure reference screens with no daily-completion concept, so
   // they're left without progress fields — AthkarTile renders them as plain
-  // icon+title tiles instead of a 0-of-0 bar.
+  // icon+title tiles instead of a 0-of-0 bar. Quran has no meaningful item
+  // count of its own (it's one daily wird, done or not) — just `completed`,
+  // no totalCount/completedCount, so AthkarTile shows a plain "تم"/"لم يتم"
+  // instead of a confusing "0 من 1".
   const MORE_LINKS = useMemo(
     () => [
       {
@@ -92,8 +95,6 @@ export default function HomeScreen({ navigation }) {
         icon: 'book-outline',
         color: colors.amberDeep,
         completed: quran?.completed,
-        totalCount: 1,
-        completedCount: quran?.completed ? 1 : 0,
         onPress: () => navigation.navigate('Quran'),
       },
       { key: 'names', title: 'أسماء الله الحسنى', icon: 'sparkles-outline', color: colors.sage, onPress: () => navigation.navigate('Names') },

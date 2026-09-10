@@ -58,12 +58,19 @@ export default function AthkarTile({
         <AppText weight="bold" size={11} numberOfLines={2} style={styles.title}>
           {title}
         </AppText>
-        <View style={styles.barTrack}>
-          <View style={[styles.barFill, { width: `${pct}%`, backgroundColor: done ? colors.sage : color }]} />
-        </View>
-        <AppText size={9.5} weight={done ? 'bold' : 'regular'} color={done ? colors.sage : colors.inkFaint}>
-          {done ? 'تم' : `${completedCount} من ${totalCount}`}
-        </AppText>
+        {hasProgress ? (
+          <>
+            <View style={styles.barTrack}>
+              <View style={[styles.barFill, { width: `${pct}%`, backgroundColor: done ? colors.sage : color }]} />
+            </View>
+            <AppText size={9.5} weight={done ? 'bold' : 'regular'} color={done ? colors.sage : colors.inkFaint}>
+              {/* totalCount can be 0 for a plain done/not-done item (no real
+                  item count to speak of, e.g. the Quran wird) — "0 من 0"
+                  reads like a bug, so it falls back to a plain label. */}
+              {done ? 'تم' : totalCount > 0 ? `${completedCount} من ${totalCount}` : 'لم يتم'}
+            </AppText>
+          </>
+        ) : null}
       </Animated.View>
     </Bounce>
   );

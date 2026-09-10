@@ -27,13 +27,17 @@ export default function NamesScreen() {
         contentContainerStyle={{ paddingBottom: spacing.xxl }}
         renderItem={({ item, index }) => (
           <View style={styles.card}>
-            <AppText size={11} color={colors.amberDeep} weight="semibold">
-              {index + 1}
-            </AppText>
-            <AppText size={19} style={{ marginTop: 4, fontFamily: typography.fontDhikr }}>
-              {item.ar}
-            </AppText>
-            <AppText size={11.5} color={colors.inkSoft} style={{ marginTop: 4, textAlign: 'center' }}>
+            <View style={styles.badge}>
+              <AppText size={12} color={colors.amberDeep} weight="bold">
+                {index + 1}
+              </AppText>
+            </View>
+            <View style={styles.nameWrap}>
+              <AppText size={24} style={{ textAlign: 'center', fontFamily: typography.fontDhikr }}>
+                {item.ar}
+              </AppText>
+            </View>
+            <AppText size={12} color={colors.inkSoft} style={{ textAlign: 'center' }}>
               {item.meaning}
             </AppText>
           </View>
@@ -45,16 +49,30 @@ export default function NamesScreen() {
 
 function createStyles(colors) {
   return StyleSheet.create({
+    // Tall/portrait — two per row, same spirit as the athkar tile grid —
+    // rather than short squarish boxes, so the name itself gets real room
+    // to breathe in the middle of the card.
     card: {
       width: '48%',
+      aspectRatio: 3 / 4,
       backgroundColor: colors.surface,
-      borderRadius: radius.md,
+      borderRadius: radius.lg,
       borderWidth: 1,
       borderColor: colors.border,
-      paddingVertical: spacing.md,
+      paddingVertical: spacing.lg,
       paddingHorizontal: spacing.sm,
       alignItems: 'center',
+      justifyContent: 'space-between',
       marginBottom: spacing.md,
     },
+    badge: {
+      width: 26,
+      height: 26,
+      borderRadius: radius.pill,
+      backgroundColor: colors.amberSoft,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    nameWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   });
 }
