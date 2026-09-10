@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Dimensions, Image, StyleSheet, View } from 'react-native';
+import { Animated, Dimensions, StyleSheet, View } from 'react-native';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
 import Screen from '../components/Screen';
@@ -7,6 +7,7 @@ import AppText from '../components/AppText';
 import AthkarCountRing from '../components/AthkarCountRing';
 import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
+import typography from '../theme/typography';
 import { api } from '../api/client';
 import { todayISO } from '../utils/date';
 import athkarContent from '../constants/athkarContent';
@@ -274,19 +275,13 @@ function CardBody({ item, count, meta, colors, styles, onPress, onComplete }) {
   const done = count >= item.repeat;
   return (
     <>
-      <Image
-        source={require('../../assets/logo.png')}
-        style={styles.watermark}
-        resizeMode="contain"
-        pointerEvents="none"
-      />
       <View style={[styles.tag, { backgroundColor: `${meta.color}22` }]}>
         <AppText size={12} weight="bold" color={meta.color}>
           {item.label || meta.title}
         </AppText>
       </View>
       <View style={styles.textWrap}>
-        <AppText size={19} weight="bold" color={colors.ink} style={styles.cardText}>
+        <AppText size={20} color={colors.ink} style={styles.cardText}>
           {item.text}
         </AppText>
       </View>
@@ -340,19 +335,6 @@ function createStyles(colors) {
     },
     cardFront: { zIndex: 2 },
     cardBack: { zIndex: 1 },
-    // Centered behind everything else in the card (painted first, so the
-    // tag/text/ring below it naturally sit on top) — a quiet brand mark
-    // rather than a loud logo placement.
-    watermark: {
-      position: 'absolute',
-      top: '50%',
-      left: '50%',
-      width: 170,
-      height: 170,
-      marginTop: -85,
-      marginLeft: -85,
-      opacity: 0.05,
-    },
     tag: {
       alignSelf: 'center',
       borderRadius: radius.pill,
@@ -360,7 +342,7 @@ function createStyles(colors) {
       paddingVertical: 5,
     },
     textWrap: { flex: 1, justifyContent: 'center', marginTop: spacing.lg },
-    cardText: { textAlign: 'center', lineHeight: 30 },
+    cardText: { textAlign: 'center', lineHeight: 34, fontFamily: typography.fontDhikr },
     source: { textAlign: 'center', marginTop: spacing.sm },
     footer: { alignItems: 'center', marginTop: spacing.lg },
     swipeHint: { textAlign: 'center', marginTop: spacing.sm, marginBottom: spacing.xs },

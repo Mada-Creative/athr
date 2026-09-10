@@ -9,7 +9,7 @@ import { spacing } from '../theme/spacing';
 import { api } from '../api/client';
 import { todayISO } from '../utils/date';
 import { enqueueAction } from '../utils/pendingActions';
-import ATHKAR_META from '../constants/athkarMeta';
+import ATHKAR_META, { ATHKAR_ORDER } from '../constants/athkarMeta';
 import athkarContent from '../constants/athkarContent';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -85,7 +85,7 @@ export default function AthkarListScreen({ navigation }) {
       </AppText>
 
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: TILE_GAP }}>
-        {Object.keys(ATHKAR_META).map((key) => {
+        {ATHKAR_ORDER.map((key) => {
           const meta = ATHKAR_META[key];
           const progress = categories[key];
           const total = progress?.totalItems ?? athkarContent[key].items.length;

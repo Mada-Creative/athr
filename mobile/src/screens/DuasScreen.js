@@ -5,6 +5,7 @@ import AppText from '../components/AppText';
 import Card from '../components/Card';
 import { useTheme } from '../context/ThemeContext';
 import { spacing } from '../theme/spacing';
+import typography from '../theme/typography';
 import duas from '../constants/duas';
 
 export default function DuasScreen() {
@@ -24,7 +25,7 @@ export default function DuasScreen() {
           <AppText weight="semibold" size={14} color={colors.amberDeep}>
             {dua.title}
           </AppText>
-          <AppText size={16} weight="medium" style={styles.text}>
+          <AppText size={17} style={styles.text}>
             {dua.text}
           </AppText>
           <AppText size={11.5} color={colors.inkSoft} style={{ marginTop: spacing.sm }}>
@@ -39,6 +40,6 @@ export default function DuasScreen() {
 function createStyles(colors) {
   return StyleSheet.create({
     card: { marginBottom: spacing.md },
-    text: { lineHeight: 28, marginTop: spacing.sm },
+    text: { lineHeight: 30, marginTop: spacing.sm, fontFamily: typography.fontDhikr },
   });
 }

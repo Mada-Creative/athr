@@ -30,12 +30,16 @@ export default function AthkarTile({
 }) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
+  // No progress to track at all (a pure reference screen — 99 Names,
+  // curated duas — rather than a daily checklist item): render icon +
+  // title only, no bar/fraction that would just always read "0 من 0".
+  const hasProgress = totalCount > 0 || completed != null;
   // `completed` (not just completedCount >= totalCount) is the real done
   // state — it also covers the quick "mark it all done" override, which
   // deliberately never touches completedCount (see athkarController.js).
   // The bar still shows 100% once done, so it doesn't visually contradict
   // the checkmark/"تم" next to it.
-  const done = Boolean(completed) || (totalCount > 0 && completedCount >= totalCount);
+  const done = hasProgress && (Boolean(completed) || (totalCount > 0 && completedCount >= totalCount));
   const pct = done ? 100 : totalCount > 0 ? Math.min(completedCount / totalCount, 1) * 100 : 0;
 
   const doneAnim = useDoneAnim(done);

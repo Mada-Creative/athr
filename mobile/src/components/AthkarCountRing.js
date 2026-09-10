@@ -56,45 +56,47 @@ export default function AthkarCountRing({ count, target, size = 108, strokeWidth
   }, [done, onComplete]);
 
   return (
-    <Bounce onPress={onPress} style={styles.wrap}>
-      <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
-        <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: [{ rotate: '-90deg' }] }}>
-          <Circle cx={size / 2} cy={size / 2} r={radiusValue} stroke={colors.border} strokeWidth={strokeWidth} fill="none" />
-          <AnimatedCircle
-            cx={size / 2}
-            cy={size / 2}
-            r={radiusValue}
-            stroke={strokeColor}
-            strokeWidth={strokeWidth}
-            fill="none"
-            strokeDasharray={circumference}
-            strokeDashoffset={dashOffset}
-            strokeLinecap="round"
-          />
-        </Svg>
-        <View style={[StyleSheet.absoluteFillObject, styles.labelLayer]} pointerEvents="none">
-          <Animated.View style={{ alignItems: 'center', justifyContent: 'center', transform: [{ scale: pop }] }}>
-            {done ? (
-              <PopIcon name="checkmark" size={Math.round(size * 0.3)} color={colors.sage} />
-            ) : (
-              <AppText weight="bold" size={Math.round(size * 0.26)} color={colors.ink}>
-                {count}
-              </AppText>
-            )}
-            <AppText size={Math.round(size * 0.1)} color={colors.inkFaint} style={styles.subLabel}>
-              {done ? 'تم' : `من ${target}`}
+    // Bounce *is* the sized container here — no extra plain View wrapping
+    // it — so this matches ProgressRing.js's proven structure exactly
+    // (one sized+centered container, holding the Svg and an absoluteFill
+    // label layer as direct children). An earlier version wrapped an
+    // identical inner View in Bounce, one level deeper than ProgressRing;
+    // that's the one structural difference between a ring that renders its
+    // label and one that silently doesn't.
+    <Bounce onPress={onPress} style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+      <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: [{ rotate: '-90deg' }] }}>
+        <Circle cx={size / 2} cy={size / 2} r={radiusValue} stroke={colors.border} strokeWidth={strokeWidth} fill="none" />
+        <AnimatedCircle
+          cx={size / 2}
+          cy={size / 2}
+          r={radiusValue}
+          stroke={strokeColor}
+          strokeWidth={strokeWidth}
+          fill="none"
+          strokeDasharray={circumference}
+          strokeDashoffset={dashOffset}
+          strokeLinecap="round"
+        />
+      </Svg>
+      <View style={[StyleSheet.absoluteFillObject, styles.labelLayer]} pointerEvents="none">
+        <Animated.View style={{ alignItems: 'center', justifyContent: 'center', transform: [{ scale: pop }] }}>
+          {done ? (
+            <PopIcon name="checkmark" size={Math.round(size * 0.3)} color={colors.sage} />
+          ) : (
+            <AppText weight="bold" size={Math.round(size * 0.26)} color={colors.ink}>
+              {count}
             </AppText>
-          </Animated.View>
-        </View>
+          )}
+          <AppText size={Math.round(size * 0.1)} color={colors.inkFaint} style={styles.subLabel}>
+            {done ? 'تم' : `من ${target}`}
+          </AppText>
+        </Animated.View>
       </View>
     </Bounce>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { alignItems: 'center', justifyContent: 'center' },
-  // z-index is defensive insurance only — normal RN sibling paint order
-  // already puts this View (declared after the Svg) on top.
-  labelLayer: { alignItems: 'center', justifyContent: 'center', zIndex: 1 },
+  labelLayer: { alignItems: 'center', justifyContent: 'center' },
   subLabel: { marginTop: 3 },
 });

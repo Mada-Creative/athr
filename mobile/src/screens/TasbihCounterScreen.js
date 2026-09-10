@@ -7,6 +7,7 @@ import AppText from '../components/AppText';
 import Bounce from '../components/Bounce';
 import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
+import typography from '../theme/typography';
 import { api } from '../api/client';
 import { enqueueAction } from '../utils/pendingActions';
 
@@ -84,7 +85,7 @@ export default function TasbihCounterScreen({ route, navigation }) {
   return (
     <Screen scroll={false} contentStyle={styles.content}>
       <View style={styles.textWrap}>
-        <AppText weight="bold" size={20} style={{ textAlign: 'center' }}>
+        <AppText size={22} style={{ textAlign: 'center', fontFamily: typography.fontDhikr }}>
           {text}
         </AppText>
       </View>

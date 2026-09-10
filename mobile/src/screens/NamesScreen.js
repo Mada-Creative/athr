@@ -4,6 +4,7 @@ import Screen from '../components/Screen';
 import AppText from '../components/AppText';
 import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
+import typography from '../theme/typography';
 import namesOfAllah from '../constants/namesOfAllah';
 
 export default function NamesScreen() {
@@ -29,7 +30,7 @@ export default function NamesScreen() {
             <AppText size={11} color={colors.amberDeep} weight="semibold">
               {index + 1}
             </AppText>
-            <AppText weight="bold" size={17} style={{ marginTop: 4 }}>
+            <AppText size={19} style={{ marginTop: 4, fontFamily: typography.fontDhikr }}>
               {item.ar}
             </AppText>
             <AppText size={11.5} color={colors.inkSoft} style={{ marginTop: 4, textAlign: 'center' }}>

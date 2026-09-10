@@ -8,6 +8,7 @@ import Card from '../components/Card';
 import Bounce from '../components/Bounce';
 import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
+import typography from '../theme/typography';
 import { api } from '../api/client';
 
 // A handful of the most commonly-repeated dhikr — tapping one starts (or
@@ -98,7 +99,7 @@ export default function TasbihScreen({ navigation }) {
             <View style={styles.presetsRow}>
               {PRESETS.map((text) => (
                 <Bounce key={text} style={styles.presetChip} onPress={() => onPickPreset(text)}>
-                  <AppText size={13} weight="semibold" color={colors.ink}>
+                  <AppText size={14} color={colors.ink} style={styles.dhikrText}>
                     {text}
                   </AppText>
                 </Bounce>
@@ -141,7 +142,7 @@ export default function TasbihScreen({ navigation }) {
         renderItem={({ item }) => (
           <Bounce scaleTo={0.97} onPress={() => openCounter(item)}>
             <Card style={styles.counterCard}>
-              <AppText size={15} weight="semibold" style={{ flex: 1 }}>
+              <AppText size={16} style={[styles.dhikrText, { flex: 1 }]}>
                 {item.text}
               </AppText>
               <View style={styles.countBadge}>
@@ -166,6 +167,7 @@ export default function TasbihScreen({ navigation }) {
 
 function createStyles(colors) {
   return StyleSheet.create({
+    dhikrText: { fontFamily: typography.fontDhikr },
     presetsRow: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: spacing.sm },
     presetChip: {
       paddingHorizontal: spacing.md,

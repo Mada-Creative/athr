@@ -22,4 +22,20 @@ AFTER_PRAYER_SLOTS.forEach((slot) => {
   };
 });
 
+// The order every athkar grid (Home, AthkarListScreen) actually shows
+// these in — a real day's flow, wakeup to sleep, not ATHKAR_META's own
+// insertion order (which is just "the 4 standalone ones, then all 5
+// afterPrayer slots tacked on at the end").
+export const ATHKAR_ORDER = [
+  'wakeup',
+  'morning',
+  afterPrayerCategory('fajr'),
+  afterPrayerCategory('dhuhr'),
+  afterPrayerCategory('asr'),
+  'evening',
+  afterPrayerCategory('maghrib'),
+  afterPrayerCategory('isha'),
+  'sleep',
+];
+
 export default ATHKAR_META;

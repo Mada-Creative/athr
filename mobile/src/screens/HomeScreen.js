@@ -12,43 +12,21 @@ import Bounce from '../components/Bounce';
 import AthkarTile from '../components/AthkarTile';
 import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
+import typography from '../theme/typography';
 import { useAuth } from '../context/AuthContext';
 import { todayISO, formatGregorian, formatWeekday, toHijri, greetingFor } from '../utils/date';
 import usePrayerTimes, { formatCountdownWithSeconds, formatClock } from '../hooks/usePrayerTimes';
 import usePrayerNotifications from '../hooks/usePrayerNotifications';
 import useDailyData from '../hooks/useDailyData';
 import duas, { nightWakeDua } from '../constants/duas';
-import { afterPrayerCategory } from '../constants/afterPrayerSlots';
+import ATHKAR_META, { ATHKAR_ORDER } from '../constants/athkarMeta';
+import athkarContent from '../constants/athkarContent';
 
 const FARD_ORDER = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const TILE_GAP = spacing.sm;
 const TILE_WIDTH = (SCREEN_WIDTH - spacing.lg * 2 - TILE_GAP * 2) / 3;
-
-// Which athkar categories get bumped to the front of the list at each part
-// of the day — everything in ATHKAR_LINKS always stays visible, this only
-// changes the order they're offered in. Order within the array is itself
-// the priority order (first = most relevant right now).
-const PRIORITY_BY_PERIOD = {
-  morning: ['morning', 'wakeup'],
-  evening: ['evening'],
-  night: ['sleep'],
-};
-
-function reorderByPriority(links, period) {
-  const priorityKeys = PRIORITY_BY_PERIOD[period];
-  if (!priorityKeys || !priorityKeys.length) return links;
-  const prioritized = [];
-  const rest = [];
-  links.forEach((link) => {
-    const rank = priorityKeys.indexOf(link.key);
-    if (rank === -1) rest.push(link);
-    else prioritized.push({ link, rank });
-  });
-  prioritized.sort((a, b) => a.rank - b.rank);
-  return [...prioritized.map((p) => p.link), ...rest];
-}
 
 export default function HomeScreen({ navigation }) {
   const { colors } = useTheme();
@@ -64,7 +42,7 @@ export default function HomeScreen({ navigation }) {
   }, []);
   const hijri = toHijri(now);
   const { schedule, next, dayPeriod } = usePrayerTimes();
-  const { stats, prayerLog, athkar, loading, reload } = useDailyData(date);
+  const { stats, prayerLog, athkar, quran, loading, reload, toggleAthkarComplete } = useDailyData(date);
   // Only true for a genuine first load with nothing cached yet from a
   // previous successful fetch — a slow-but-normal request (a cold Heroku
   // dyno, a weak connection) shows this instead of a misleading "0%" ring.
@@ -77,17 +55,6 @@ export default function HomeScreen({ navigation }) {
   const remainingToNext = next ? next.time.getTime() - now.getTime() : null;
   const displayRemaining =
     remainingToNext != null && remainingToNext < 0 ? remainingToNext + 24 * 60 * 60 * 1000 : remainingToNext;
-
-  // "أذكار بعد الصلاة" tracks each of the 5 prayers separately (see
-  // constants/afterPrayerSlots.js) — Home's quick link always jumps
-  // straight to whichever prayer just happened, the one this dhikr is
-  // actually for right now, instead of asking which prayer first.
-  const currentFardKey = useMemo(() => {
-    if (!next) return 'isha';
-    const idx = FARD_ORDER.indexOf(next.key);
-    return FARD_ORDER[(idx - 1 + FARD_ORDER.length) % FARD_ORDER.length];
-  }, [next]);
-  const currentFardLabel = schedule.find((s) => s.key === currentFardKey)?.label;
 
   // No bottom tab bar — this row is the whole app's quick-access menu, right
   // under the hero card: everything that used to live in a separate tab
@@ -105,40 +72,34 @@ export default function HomeScreen({ navigation }) {
     [colors]
   );
 
-  // amberDeep differs between light/dark, so these live inside the
+  // Same "tap = done, no need to open the counter and go item by item"
+  // shortcut as AthkarListScreen — long-press still opens the counter for
+  // dhikr-by-dhikr reading. All 9 categories show right here on Home — no
+  // separate "كل الفئات" browse screen, per explicit request.
+  const onToggleAthkarComplete = useCallback((key) => toggleAthkarComplete(key), [toggleAthkarComplete]);
+
+  // amberDeep differs between light/dark, so this lives inside the
   // component (recomputed per theme) rather than as a module constant.
-  const ATHKAR_LINKS = useMemo(
-    () => [
-      { key: 'morning', title: 'أذكار الصباح', subtitle: 'حصنك اليوم', icon: 'partly-sunny-outline', color: colors.amber, params: { category: 'morning' } },
-      { key: 'evening', title: 'أذكار المساء', subtitle: 'قبل غروب الشمس', icon: 'moon-outline', color: colors.clay, params: { category: 'evening' } },
-      {
-        key: 'afterPrayer',
-        title: 'أذكار بعد الصلاة',
-        subtitle: currentFardLabel ? `بعد صلاة ${currentFardLabel}` : 'بعد كل صلاة مفروضة',
-        icon: 'business-outline',
-        color: colors.sage,
-        params: { category: afterPrayerCategory(currentFardKey) },
-      },
-      { key: 'sleep', title: 'أذكار النوم', subtitle: 'قبل أن تنام', icon: 'bed-outline', color: '#7C6A9C', params: { category: 'sleep' } },
-      { key: 'wakeup', title: 'أذكار الاستيقاظ', subtitle: 'أول ما تفتح عينيك', icon: 'alarm-outline', color: '#4E7FA8', params: { category: 'wakeup' } },
-    ],
-    [colors, currentFardKey, currentFardLabel]
-  );
-
-  // Reordered (never filtered) by the current part of the day — see
-  // usePrayerTimes()'s `dayPeriod`. A small "الأنسب الآن" tag on the
-  // top pick is what actually makes the reorder legible instead of a
-  // silent shuffle nobody notices.
-  const orderedAthkarLinks = useMemo(() => reorderByPriority(ATHKAR_LINKS, dayPeriod), [ATHKAR_LINKS, dayPeriod]);
-  const topPriorityKey = PRIORITY_BY_PERIOD[dayPeriod]?.[0] ?? null;
-
+  // Quran carries real daily progress (one "وِرد" done/not-done); Names and
+  // Duas are pure reference screens with no daily-completion concept, so
+  // they're left without progress fields — AthkarTile renders them as plain
+  // icon+title tiles instead of a 0-of-0 bar.
   const MORE_LINKS = useMemo(
     () => [
-      { key: 'quran', title: 'وِرد القرآن', subtitle: 'ورد يومي من القرآن الكريم', icon: 'book-outline', color: colors.amberDeep, route: 'Quran' },
-      { key: 'names', title: 'أسماء الله الحسنى', subtitle: 'الأسماء التسعة والتسعون', icon: 'sparkles-outline', color: colors.sage, route: 'Names' },
-      { key: 'duas', title: 'أدعية مأثورة', subtitle: 'من القرآن والسنة', icon: 'hand-left-outline', color: colors.clay, route: 'Duas' },
+      {
+        key: 'quran',
+        title: 'وِرد القرآن',
+        icon: 'book-outline',
+        color: colors.amberDeep,
+        completed: quran?.completed,
+        totalCount: 1,
+        completedCount: quran?.completed ? 1 : 0,
+        onPress: () => navigation.navigate('Quran'),
+      },
+      { key: 'names', title: 'أسماء الله الحسنى', icon: 'sparkles-outline', color: colors.sage, onPress: () => navigation.navigate('Names') },
+      { key: 'duas', title: 'أدعية مأثورة', icon: 'hand-left-outline', color: colors.clay, onPress: () => navigation.navigate('Duas') },
     ],
-    [colors]
+    [colors, navigation, quran]
   );
 
   // Rotates through the curated duas roughly once an hour — a light touch
@@ -195,7 +156,7 @@ export default function HomeScreen({ navigation }) {
 
       <Bounce scaleTo={0.97} onPress={() => navigation.navigate('Duas')} style={styles.duaStrip}>
         <Ionicons name="hand-left-outline" size={14} color={colors.amberDeep} />
-        <AppText size={12.5} weight="semibold" color={colors.amberDeep} style={{ flex: 1 }} numberOfLines={1}>
+        <AppText size={13.5} color={colors.amberDeep} style={{ flex: 1, fontFamily: typography.fontDhikr }} numberOfLines={1}>
           {dua.text}
         </AppText>
       </Bounce>
@@ -285,44 +246,46 @@ export default function HomeScreen({ navigation }) {
         <Ionicons name="chevron-back" size={20} color={colors.inkSoft} />
       </Card>
 
-      <SectionHeader title="الأذكار" actionLabel="كل الفئات" onAction={() => navigation.navigate('AthkarList')} />
+      <SectionHeader title="الأذكار" />
       <View style={styles.athkarGrid}>
-        {orderedAthkarLinks.map((item) => {
-          const progress = athkar?.[item.params.category];
+        {ATHKAR_ORDER.map((key) => {
+          const meta = ATHKAR_META[key];
+          const progress = athkar?.[key];
+          const total = progress?.totalItems ?? athkarContent[key].items.length;
+          const done = progress?.completedItems?.length ?? 0;
           return (
             <AthkarTile
-              key={item.key}
+              key={key}
               width={TILE_WIDTH}
-              title={item.title}
-              icon={item.icon}
-              color={item.color}
+              title={meta.title}
+              icon={meta.icon}
+              color={meta.color}
               completed={progress?.completed}
-              completedCount={progress?.completedItems?.length ?? 0}
-              totalCount={progress?.totalItems ?? 0}
-              highlighted={item.key === topPriorityKey}
-              onPress={() => navigation.navigate('AthkarCounter', item.params)}
+              completedCount={done}
+              totalCount={total}
+              onPress={() => onToggleAthkarComplete(key)}
+              onLongPress={() => navigation.navigate('AthkarCounter', { category: key })}
             />
           );
         })}
       </View>
 
       <SectionHeader title="أخرى" />
-      {MORE_LINKS.map((item) => (
-        <Bounce key={item.key} scaleTo={0.97} style={styles.linkRow} onPress={() => navigation.navigate(item.route)}>
-          <View style={[styles.linkIcon, { backgroundColor: `${item.color}22` }]}>
-            <Ionicons name={item.icon} size={19} color={item.color} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <AppText weight="semibold" size={14}>
-              {item.title}
-            </AppText>
-            <AppText size={11.5} color={colors.inkSoft} style={{ marginTop: 1 }}>
-              {item.subtitle}
-            </AppText>
-          </View>
-          <Ionicons name="chevron-back" size={16} color={colors.inkSoft} />
-        </Bounce>
-      ))}
+      <View style={styles.athkarGrid}>
+        {MORE_LINKS.map((item) => (
+          <AthkarTile
+            key={item.key}
+            width={TILE_WIDTH}
+            title={item.title}
+            icon={item.icon}
+            color={item.color}
+            completed={item.completed}
+            completedCount={item.completedCount}
+            totalCount={item.totalCount}
+            onPress={item.onPress}
+          />
+        ))}
+      </View>
     </Screen>
   );
 }
@@ -436,18 +399,6 @@ function createStyles(colors) {
       alignItems: 'center',
       justifyContent: 'center',
     },
-    linkRow: {
-      flexDirection: 'row-reverse',
-      alignItems: 'center',
-      gap: spacing.md,
-      backgroundColor: colors.surface,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: radius.md,
-      padding: spacing.md,
-      marginBottom: spacing.sm,
-    },
-    linkIcon: { width: 40, height: 40, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
     athkarGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: TILE_GAP, marginBottom: spacing.sm },
   });
 }

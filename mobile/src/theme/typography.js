@@ -6,9 +6,15 @@ const typography = {
   fontMedium: 'Cairo_500Medium',
   fontSemiBold: 'Cairo_600SemiBold',
   fontBold: 'Cairo_700Bold',
-  // Only for actual Quran text (verses, surah headers) — the official
-  // mushaf text uses Uthmani-script marks Cairo has no glyphs for.
+  // For the literal Quran reader — the official mushaf text uses
+  // Uthmani-script marks Cairo has no glyphs for.
   fontQuran: 'AmiriQuran_400Regular',
+  // Same loaded font family, used more broadly: any dhikr/dua/hadith text
+  // (the athkar counter, duas, the 99 Names, tasbih phrases) gets this
+  // calligraphic Naskh face instead of Cairo, so remembrance text reads
+  // distinctly from the app's own UI chrome — headings, labels, buttons
+  // stay Cairo/Tajawal.
+  fontDhikr: 'AmiriQuran_400Regular',
 
   h1: 28,
   h2: 22,
