@@ -20,7 +20,8 @@
       "bundleIdentifier": "app.athr.mobile",
       "usesAppleSignIn": true,
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "نستخدم موقعك لحساب مواعيد الصلاة واتجاه القبلة بدقة."
+        "NSLocationWhenInUseUsageDescription": "نستخدم موقعك لحساب مواعيد الصلاة واتجاه القبلة بدقة.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -38,7 +39,16 @@
       "favicon": "./assets/logo.png"
     },
     "extra": {
-      "apiBaseUrl": "https://safe-citadel-95574-87a79d0291e7.herokuapp.com/api"
-    }
+      "apiBaseUrl": "https://safe-citadel-95574-87a79d0291e7.herokuapp.com/api",
+      "eas": {
+        "projectId": "5d0dcaf0-6f42-47ce-831f-a498f1c70478"
+      }
+    },
+    "plugins": [
+      "expo-font",
+      "expo-splash-screen",
+      "expo-status-bar",
+      "expo-web-browser"
+    ]
   }
 }
