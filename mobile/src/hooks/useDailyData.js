@@ -256,6 +256,63 @@ export default function useDailyData(date) {
     [date, taskLogs, load]
   );
 
+  // Editing a custom task's title/description — e.g. fixing a typo in a
+  // dhikr you added yourself. Applies to whichever list (dailyDeeds/other)
+  // actually holds it, since the caller only has the task id.
+  const editTask = useCallback(
+    async (taskId, patch) => {
+      setError(null);
+      setSyncNotice(null);
+      const path = `/tasks/${taskId}`;
+      try {
+        const res = await api.patch(path, patch);
+        setDailyDeedTasks((prev) => prev.map((t) => (t._id === taskId ? res.task : t)));
+        setOtherTasks((prev) => prev.map((t) => (t._id === taskId ? res.task : t)));
+      } catch (err) {
+        if (err.isNetworkError) {
+          await enqueueAction({ method: 'patch', path, body: patch });
+          setDailyDeedTasks((prev) => prev.map((t) => (t._id === taskId ? { ...t, ...patch } : t)));
+          setOtherTasks((prev) => prev.map((t) => (t._id === taskId ? { ...t, ...patch } : t)));
+          setSyncNotice('تم الحفظ على جهازك — سيُرفع عند عودة الاتصال');
+        } else {
+          setError(err.message || 'تعذر حفظ التعديل');
+          throw err;
+        }
+      }
+    },
+    []
+  );
+
+  // Removing a custom task the user added themselves (e.g. a typo they'd
+  // rather redo than fix). Optimistic — removed from both lists right
+  // away, restored only if the server outright rejects it (not just a
+  // network hiccup, which queues the delete instead).
+  const deleteTask = useCallback(
+    async (taskId) => {
+      setError(null);
+      setSyncNotice(null);
+      const removedFromDaily = dailyDeedTasks.find((t) => t._id === taskId);
+      const removedFromOther = otherTasks.find((t) => t._id === taskId);
+      setDailyDeedTasks((prev) => prev.filter((t) => t._id !== taskId));
+      setOtherTasks((prev) => prev.filter((t) => t._id !== taskId));
+      const path = `/tasks/${taskId}`;
+      try {
+        await api.delete(path);
+      } catch (err) {
+        if (err.isNetworkError) {
+          await enqueueAction({ method: 'delete', path });
+          setSyncNotice('تم الحذف على جهازك — سيُرفع عند عودة الاتصال');
+        } else {
+          if (removedFromDaily) setDailyDeedTasks((prev) => [...prev, removedFromDaily]);
+          if (removedFromOther) setOtherTasks((prev) => [...prev, removedFromOther]);
+          setError(err.message || 'تعذر الحذف');
+          throw err;
+        }
+      }
+    },
+    [dailyDeedTasks, otherTasks]
+  );
+
   return {
     loading,
     error,
@@ -275,6 +332,8 @@ export default function useDailyData(date) {
     toggleAthkarComplete,
     toggleQuran,
     toggleTask,
+    editTask,
+    deleteTask,
   };
 }
 

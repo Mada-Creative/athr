@@ -383,16 +383,22 @@ export default function TrackerScreen({ navigation }) {
       {dailyDeedTasks.length === 0 ? (
         <EmptyHint text="لا توجد عبادات مضافة بعد" />
       ) : (
-        dailyDeedTasks.map((task) => (
-          <CheckRow
-            key={task._id}
-            title={task.title}
-            subtitle={task.description}
-            checked={isTaskDone(task._id)}
-            onToggle={() => onToggleTask(task._id)}
-            icon="sunny-outline"
-          />
-        ))
+        <>
+          {dailyDeedTasks.map((task) => (
+            <CheckRow
+              key={task._id}
+              title={task.title}
+              subtitle={task.description}
+              checked={isTaskDone(task._id)}
+              onToggle={() => onToggleTask(task._id)}
+              onLongPress={() => navigation.navigate('AddTask', { group: 'dailyDeeds', taskId: task._id })}
+              icon="sunny-outline"
+            />
+          ))}
+          <AppText size={11} color={colors.inkSoft} style={{ marginTop: -spacing.xs, marginBottom: spacing.sm }}>
+            اضغط مطوّلًا على أي عنصر لتعديله أو حذفه
+          </AppText>
+        </>
       )}
 
       <SectionHeader
@@ -404,16 +410,22 @@ export default function TrackerScreen({ navigation }) {
       {otherTasks.length === 0 ? (
         <EmptyHint text="أضف عبادات أو أعمالًا خاصة بك لتتبعها" />
       ) : (
-        otherTasks.map((task) => (
-          <CheckRow
-            key={task._id}
-            title={task.title}
-            subtitle={task.description}
-            checked={isTaskDone(task._id)}
-            onToggle={() => onToggleTask(task._id)}
-            icon="sparkles-outline"
-          />
-        ))
+        <>
+          {otherTasks.map((task) => (
+            <CheckRow
+              key={task._id}
+              title={task.title}
+              subtitle={task.description}
+              checked={isTaskDone(task._id)}
+              onToggle={() => onToggleTask(task._id)}
+              onLongPress={() => navigation.navigate('AddTask', { group: 'other', taskId: task._id })}
+              icon="sparkles-outline"
+            />
+          ))}
+          <AppText size={11} color={colors.inkSoft} style={{ marginTop: -spacing.xs, marginBottom: spacing.sm }}>
+            اضغط مطوّلًا على أي عنصر لتعديله أو حذفه
+          </AppText>
+        </>
       )}
 
       {stats ? (

@@ -29,6 +29,20 @@ async function create(req, res) {
   return res.status(201).json({ task });
 }
 
+async function update(req, res) {
+  const { title, description } = req.body;
+  if (title !== undefined && !title.trim()) {
+    return res.status(400).json({ message: 'العنوان مطلوب' });
+  }
+  const patch = {};
+  if (title !== undefined) patch.title = title.trim();
+  if (description !== undefined) patch.description = description;
+
+  const task = await CustomTask.findOneAndUpdate({ _id: req.params.id, user: req.user._id }, patch, { new: true });
+  if (!task) return res.status(404).json({ message: 'العنصر غير موجود' });
+  return res.json({ task });
+}
+
 async function remove(req, res) {
   const task = await CustomTask.findOneAndUpdate(
     { _id: req.params.id, user: req.user._id },
@@ -77,4 +91,4 @@ async function toggleLog(req, res) {
   return res.json({ log });
 }
 
-module.exports = { list, create, remove, getLogsByDate, toggleLog };
+module.exports = { list, create, update, remove, getLogsByDate, toggleLog };

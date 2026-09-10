@@ -7,7 +7,7 @@ import AppText from './AppText';
 import Bounce from './Bounce';
 import PopIcon from './PopIcon';
 
-export default function CheckRow({ title, subtitle, checked, onToggle, locked, icon = 'moon-outline' }) {
+export default function CheckRow({ title, subtitle, checked, onToggle, onLongPress, locked, icon = 'moon-outline' }) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
   const doneAnim = useDoneAnim(checked);
@@ -17,6 +17,7 @@ export default function CheckRow({ title, subtitle, checked, onToggle, locked, i
     <Bounce
       disabled={locked}
       onPress={locked ? undefined : onToggle}
+      onLongPress={locked ? undefined : onLongPress}
       style={[styles.row, checked && styles.rowChecked]}
     >
       <Animated.View style={[styles.iconWrap, { backgroundColor: iconWrapBg }]}>
