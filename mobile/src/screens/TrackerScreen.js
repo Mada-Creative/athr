@@ -48,9 +48,9 @@ const PRAYER_COLUMNS = [
     title: 'الفجر',
     cells: [
       { type: 'fard', key: 'fajr', title: 'الفرض', icon: 'moon-outline' },
-      { type: 'athkar', category: afterPrayerCategory('fajr'), title: 'بعد الصلاة', icon: 'business-outline' },
+      { type: 'athkar', category: afterPrayerCategory('fajr'), title: 'أذكار الصلاة', icon: 'business-outline' },
       { type: 'nawafil', key: 'fajrSunnah', title: 'سنة', icon: 'star-outline' },
-      { type: 'athkar', category: 'morning', title: 'الصباح', icon: 'partly-sunny-outline' },
+      { type: 'athkar', category: 'morning', title: 'أذكار الصباح', icon: 'partly-sunny-outline' },
     ],
   },
   {
@@ -58,7 +58,7 @@ const PRAYER_COLUMNS = [
     title: 'الظهر',
     cells: [
       { type: 'fard', key: 'dhuhr', title: 'الفرض', icon: 'moon-outline' },
-      { type: 'athkar', category: afterPrayerCategory('dhuhr'), title: 'بعد الصلاة', icon: 'business-outline' },
+      { type: 'athkar', category: afterPrayerCategory('dhuhr'), title: 'أذكار الصلاة', icon: 'business-outline' },
       { type: 'nawafil', key: 'dhuhrQabliyah', title: 'قبلية', icon: 'star-outline' },
       { type: 'nawafil', key: 'dhuhrBadiyah', title: 'بعدية', icon: 'star-outline' },
     ],
@@ -68,8 +68,8 @@ const PRAYER_COLUMNS = [
     title: 'العصر',
     cells: [
       { type: 'fard', key: 'asr', title: 'الفرض', icon: 'moon-outline' },
-      { type: 'athkar', category: afterPrayerCategory('asr'), title: 'بعد الصلاة', icon: 'business-outline' },
-      { type: 'athkar', category: 'evening', title: 'المساء', icon: 'moon-outline' },
+      { type: 'athkar', category: afterPrayerCategory('asr'), title: 'أذكار الصلاة', icon: 'business-outline' },
+      { type: 'athkar', category: 'evening', title: 'أذكار المساء', icon: 'moon-outline' },
     ],
   },
   {
@@ -77,7 +77,7 @@ const PRAYER_COLUMNS = [
     title: 'المغرب',
     cells: [
       { type: 'fard', key: 'maghrib', title: 'الفرض', icon: 'moon-outline' },
-      { type: 'athkar', category: afterPrayerCategory('maghrib'), title: 'بعد الصلاة', icon: 'business-outline' },
+      { type: 'athkar', category: afterPrayerCategory('maghrib'), title: 'أذكار الصلاة', icon: 'business-outline' },
       { type: 'nawafil', key: 'maghribSunnah', title: 'سنة', icon: 'star-outline' },
     ],
   },
@@ -86,11 +86,11 @@ const PRAYER_COLUMNS = [
     title: 'العشاء',
     cells: [
       { type: 'fard', key: 'isha', title: 'الفرض', icon: 'moon-outline' },
-      { type: 'athkar', category: afterPrayerCategory('isha'), title: 'بعد الصلاة', icon: 'business-outline' },
+      { type: 'athkar', category: afterPrayerCategory('isha'), title: 'أذكار الصلاة', icon: 'business-outline' },
       { type: 'nawafil', key: 'ishaSunnah', title: 'سنة', icon: 'star-outline' },
       { type: 'nawafil', key: 'witr', title: 'الوتر', icon: 'sparkles-outline' },
       { type: 'nawafil', key: 'qiyam', title: 'قيام', icon: 'sparkles-outline' },
-      { type: 'athkar', category: 'sleep', title: 'النوم', icon: 'bed-outline' },
+      { type: 'athkar', category: 'sleep', title: 'أذكار النوم', icon: 'bed-outline' },
     ],
   },
 ];
