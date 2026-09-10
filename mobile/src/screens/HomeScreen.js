@@ -17,6 +17,7 @@ import usePrayerTimes, { formatCountdownWithSeconds, formatClock } from '../hook
 import usePrayerNotifications from '../hooks/usePrayerNotifications';
 import useDailyData from '../hooks/useDailyData';
 import duas, { nightWakeDua } from '../constants/duas';
+import { afterPrayerCategory } from '../constants/afterPrayerSlots';
 
 const FARD_ORDER = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
 
@@ -72,6 +73,17 @@ export default function HomeScreen({ navigation }) {
   const displayRemaining =
     remainingToNext != null && remainingToNext < 0 ? remainingToNext + 24 * 60 * 60 * 1000 : remainingToNext;
 
+  // "أذكار بعد الصلاة" tracks each of the 5 prayers separately (see
+  // constants/afterPrayerSlots.js) — Home's quick link always jumps
+  // straight to whichever prayer just happened, the one this dhikr is
+  // actually for right now, instead of asking which prayer first.
+  const currentFardKey = useMemo(() => {
+    if (!next) return 'isha';
+    const idx = FARD_ORDER.indexOf(next.key);
+    return FARD_ORDER[(idx - 1 + FARD_ORDER.length) % FARD_ORDER.length];
+  }, [next]);
+  const currentFardLabel = schedule.find((s) => s.key === currentFardKey)?.label;
+
   // No bottom tab bar — this row is the whole app's quick-access menu, right
   // under the hero card: everything that used to live in a separate tab
   // (تتبع/الأذكار) is one tap away from Home instead. Colored icon badges
@@ -94,11 +106,18 @@ export default function HomeScreen({ navigation }) {
     () => [
       { key: 'morning', title: 'أذكار الصباح', subtitle: 'حصنك اليوم', icon: 'partly-sunny-outline', color: colors.amber, params: { category: 'morning' } },
       { key: 'evening', title: 'أذكار المساء', subtitle: 'قبل غروب الشمس', icon: 'moon-outline', color: colors.clay, params: { category: 'evening' } },
-      { key: 'afterPrayer', title: 'أذكار بعد الصلاة', subtitle: 'بعد كل صلاة مفروضة', icon: 'business-outline', color: colors.sage, params: { category: 'afterPrayer' } },
+      {
+        key: 'afterPrayer',
+        title: 'أذكار بعد الصلاة',
+        subtitle: currentFardLabel ? `بعد صلاة ${currentFardLabel}` : 'بعد كل صلاة مفروضة',
+        icon: 'business-outline',
+        color: colors.sage,
+        params: { category: afterPrayerCategory(currentFardKey) },
+      },
       { key: 'sleep', title: 'أذكار النوم', subtitle: 'قبل أن تنام', icon: 'bed-outline', color: '#7C6A9C', params: { category: 'sleep' } },
       { key: 'wakeup', title: 'أذكار الاستيقاظ', subtitle: 'أول ما تفتح عينيك', icon: 'alarm-outline', color: '#4E7FA8', params: { category: 'wakeup' } },
     ],
-    [colors]
+    [colors, currentFardKey, currentFardLabel]
   );
 
   // Reordered (never filtered) by the current part of the day — see

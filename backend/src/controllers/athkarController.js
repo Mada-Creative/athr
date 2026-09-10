@@ -1,6 +1,19 @@
 const AthkarLog = require('../models/AthkarLog');
 const athkarContent = require('../data/athkarContent');
 const { isValidDateParam } = require('../utils/date');
+const { AFTER_PRAYER_CATEGORIES, isAfterPrayerCategory } = require('../utils/afterPrayer');
+
+// "afterPrayer_fajr", "afterPrayer_dhuhr", ... all read from the same
+// dhikr text (athkarContent.afterPrayer) — only their completion state is
+// tracked separately, per prayer. Every other category maps to itself.
+function resolveDefinition(category) {
+  if (isAfterPrayerCategory(category)) return athkarContent.afterPrayer;
+  return athkarContent[category];
+}
+
+// The full set of category keys a client can ask progress for — every
+// regular category plus one synthetic entry per prayer for afterPrayer.
+const ALL_CATEGORIES = [...Object.keys(athkarContent).filter((key) => key !== 'afterPrayer'), ...AFTER_PRAYER_CATEGORIES];
 
 function getContent(req, res) {
   return res.json({ content: athkarContent });
@@ -14,15 +27,16 @@ async function getByDate(req, res) {
 
   const logs = await AthkarLog.find({ user: req.user._id, date });
   const byCategory = {};
-  for (const category of Object.keys(athkarContent)) {
+  for (const category of ALL_CATEGORIES) {
+    const definition = resolveDefinition(category);
     const existing = logs.find((l) => l.category === category);
     byCategory[category] = existing
       ? {
           completedItems: existing.completedItems,
-          totalItems: athkarContent[category].items.length,
+          totalItems: definition.items.length,
           completed: existing.completed,
         }
-      : { completedItems: [], totalItems: athkarContent[category].items.length, completed: false };
+      : { completedItems: [], totalItems: definition.items.length, completed: false };
   }
 
   return res.json({ date, categories: byCategory });
@@ -35,7 +49,7 @@ async function updateProgress(req, res) {
   if (!isValidDateParam(date)) {
     return res.status(400).json({ message: 'صيغة التاريخ غير صحيحة (YYYY-MM-DD)' });
   }
-  const definition = athkarContent[category];
+  const definition = resolveDefinition(category);
   if (!definition) {
     return res.status(400).json({ message: 'تصنيف أذكار غير معروف' });
   }
@@ -98,4 +112,4 @@ async function updateProgress(req, res) {
   });
 }
 
-module.exports = { getContent, getByDate, updateProgress };
+module.exports = { getContent, getByDate, updateProgress, ALL_CATEGORIES };

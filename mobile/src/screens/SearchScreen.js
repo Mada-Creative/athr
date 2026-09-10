@@ -11,7 +11,10 @@ const SEARCHABLE = [
   { title: 'مواقيت الصلاة', icon: 'time-outline', route: 'PrayerDetail' },
   { title: 'أذكار الصباح', icon: 'partly-sunny-outline', route: 'AthkarCounter', params: { category: 'morning' } },
   { title: 'أذكار المساء', icon: 'moon-outline', route: 'AthkarCounter', params: { category: 'evening' } },
-  { title: 'أذكار بعد الصلاة', icon: 'business-outline', route: 'AthkarCounter', params: { category: 'afterPrayer' } },
+  // Tracked per-prayer now (5 independent categories, see
+  // constants/afterPrayerSlots.js) — no single category to jump straight
+  // into anymore, so this opens the full list to pick a prayer from.
+  { title: 'أذكار بعد الصلاة', icon: 'business-outline', route: 'AthkarList' },
   { title: 'أذكار النوم', icon: 'bed-outline', route: 'AthkarCounter', params: { category: 'sleep' } },
   { title: 'أذكار الاستيقاظ', icon: 'alarm-outline', route: 'AthkarCounter', params: { category: 'wakeup' } },
   { title: 'وِرد القرآن', icon: 'book-outline', route: 'Quran' },
