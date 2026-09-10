@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Dimensions, StyleSheet, View } from 'react-native';
+import { Animated, Dimensions, Image, StyleSheet, View } from 'react-native';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
 import Screen from '../components/Screen';
@@ -36,7 +36,13 @@ export default function AthkarCounterScreen({ route, navigation }) {
   }, [navigation, meta.title]);
 
   const [counts, setCounts] = useState(() => items.map(() => 0));
-  const [index, setIndex] = useState(0);
+  // Reading order — a list of item indices, computed once the real
+  // progress loads (see below): whatever's left unread comes first, and
+  // anything already fully read moves to the end instead of greeting you
+  // again at the top. `pos` is a position *within this order*, never a raw
+  // item index — `order[pos]` is the one to look up in `items`/`counts`.
+  const [order, setOrder] = useState(() => items.map((_, i) => i));
+  const [pos, setPos] = useState(0);
   const [previewDir, setPreviewDir] = useState(null); // 'next' | 'prev' | null
   const [transitioning, setTransitioning] = useState(false);
 
@@ -45,11 +51,17 @@ export default function AthkarCounterScreen({ route, navigation }) {
       try {
         const res = await api.get(`/athkar/${date}`);
         const progress = res.categories?.[category];
-        if (progress?.completedItems?.length) {
-          setCounts(items.map((item, idx) => (progress.completedItems.includes(idx) ? item.repeat : 0)));
-        }
+        const loaded = progress?.completedItems?.length
+          ? items.map((item, idx) => (progress.completedItems.includes(idx) ? item.repeat : 0))
+          : items.map(() => 0);
+        setCounts(loaded);
+        const unread = [];
+        const read = [];
+        items.forEach((item, idx) => (loaded[idx] >= item.repeat ? read : unread).push(idx));
+        setOrder([...unread, ...read]);
       } catch (err) {
-        // no network — counter still works locally for this session
+        // no network — counter still works locally for this session, in
+        // the category's natural order (the default `order` above)
       }
     })();
     // Only ever meant to run once per category, on mount — `items` is a
@@ -94,7 +106,7 @@ export default function AthkarCounterScreen({ route, navigation }) {
   const translateX = useRef(new Animated.Value(0)).current;
   const dirLockedRef = useRef(false);
 
-  const neighborIndex = useCallback((dir) => (dir === 'next' ? (index + 1) % items.length : (index - 1 + items.length) % items.length), [index, items.length]);
+  const neighborPos = useCallback((dir) => (dir === 'next' ? (pos + 1) % order.length : (pos - 1 + order.length) % order.length), [pos, order.length]);
 
   const commitTo = useCallback(
     (dir) => {
@@ -106,14 +118,14 @@ export default function AthkarCounterScreen({ route, navigation }) {
       // below), so animating just this one value carries both along together.
       Animated.timing(translateX, { toValue: exitTo, duration: 240, useNativeDriver: true }).start();
       setTimeout(() => {
-        setIndex((i) => (dir === 'next' ? (i + 1) % items.length : (i - 1 + items.length) % items.length));
+        setPos((p) => (dir === 'next' ? (p + 1) % order.length : (p - 1 + order.length) % order.length));
         translateX.setValue(0);
         setPreviewDir(null);
         dirLockedRef.current = false;
         setTransitioning(false);
       }, 250);
     },
-    [transitioning, translateX, items.length]
+    [transitioning, translateX, order.length]
   );
 
   const springBack = useCallback(() => {
@@ -163,9 +175,10 @@ export default function AthkarCounterScreen({ route, navigation }) {
     setTimeout(() => commitTo('next'), 650);
   }, [commitTo]);
 
-  const frontItem = items[index];
-  const backIndex = previewDir ? neighborIndex(previewDir) : null;
-  const backItem = backIndex != null ? items[backIndex] : null;
+  const itemIndex = order[pos];
+  const frontItem = items[itemIndex];
+  const backItemIndex = previewDir ? order[neighborPos(previewDir)] : null;
+  const backItem = backItemIndex != null ? items[backItemIndex] : null;
 
   const frontRotate = translateX.interpolate({
     inputRange: [-CARD_WIDTH, 0, CARD_WIDTH],
@@ -199,14 +212,18 @@ export default function AthkarCounterScreen({ route, navigation }) {
   return (
     <Screen scroll={false} contentStyle={{ flex: 1, paddingBottom: spacing.lg }}>
       <AppText size={12.5} color={colors.inkFaint} style={styles.posLabel}>
-        {index + 1} من {items.length}
+        {pos + 1} من {items.length}
       </AppText>
 
       <View style={styles.dotsRow}>
         {items.map((it, i) => (
           <View
             key={i}
-            style={[styles.dot, i === index && styles.dotCurrent, i !== index && counts[i] >= it.repeat && styles.dotDone]}
+            style={[
+              styles.dot,
+              i === itemIndex && styles.dotCurrent,
+              i !== itemIndex && counts[i] >= it.repeat && styles.dotDone,
+            ]}
           />
         ))}
       </View>
@@ -221,7 +238,7 @@ export default function AthkarCounterScreen({ route, navigation }) {
             ]}
             pointerEvents="none"
           >
-            <CardBody item={backItem} count={counts[backIndex]} meta={meta} colors={colors} styles={styles} onPress={() => {}} />
+            <CardBody item={backItem} count={counts[backItemIndex]} meta={meta} colors={colors} styles={styles} onPress={() => {}} />
           </Animated.View>
         ) : null}
 
@@ -235,11 +252,11 @@ export default function AthkarCounterScreen({ route, navigation }) {
           <Animated.View style={[styles.card, styles.cardFront, { transform: [{ translateX }, { rotate: frontRotate }] }]}>
             <CardBody
               item={frontItem}
-              count={counts[index]}
+              count={counts[itemIndex]}
               meta={meta}
               colors={colors}
               styles={styles}
-              onPress={() => onRingPress(index)}
+              onPress={() => onRingPress(itemIndex)}
               onComplete={onRingComplete}
             />
           </Animated.View>
@@ -257,6 +274,12 @@ function CardBody({ item, count, meta, colors, styles, onPress, onComplete }) {
   const done = count >= item.repeat;
   return (
     <>
+      <Image
+        source={require('../../assets/logo.png')}
+        style={styles.watermark}
+        resizeMode="contain"
+        pointerEvents="none"
+      />
       <View style={[styles.tag, { backgroundColor: `${meta.color}22` }]}>
         <AppText size={12} weight="bold" color={meta.color}>
           {item.label || meta.title}
@@ -317,6 +340,19 @@ function createStyles(colors) {
     },
     cardFront: { zIndex: 2 },
     cardBack: { zIndex: 1 },
+    // Centered behind everything else in the card (painted first, so the
+    // tag/text/ring below it naturally sit on top) — a quiet brand mark
+    // rather than a loud logo placement.
+    watermark: {
+      position: 'absolute',
+      top: '50%',
+      left: '50%',
+      width: 170,
+      height: 170,
+      marginTop: -85,
+      marginLeft: -85,
+      opacity: 0.05,
+    },
     tag: {
       alignSelf: 'center',
       borderRadius: radius.pill,
