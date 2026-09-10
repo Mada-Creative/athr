@@ -458,6 +458,11 @@ function WeightPill({ label, value }) {
 // One row in the "أذكار بعد الصلاة / الاستيقاظ" list — its own component so
 // its color-fade animation can use a hook per row without breaking the
 // rules of hooks inside the .map() above.
+// The color fade lives on its own inner Animated.View rather than on
+// Bounce's own `style` prop: Bounce already animates its press-scale with
+// useNativeDriver: true, and React Native can't mix a native-driven value
+// with a JS-driven one (this color fade — colors aren't native-driver
+// eligible) on the same animated node without crashing at runtime.
 function AthkarSummaryRow({ meta, completed, pct, onPress, onLongPress }) {
   const { colors, scheme } = useTheme();
   const styles = createStyles(colors);
@@ -468,20 +473,17 @@ function AthkarSummaryRow({ meta, completed, pct, onPress, onLongPress }) {
   const badgeBorder = doneAnim.interpolate({ inputRange: [0, 1], outputRange: [colors.border, colors.sage] });
 
   return (
-    <Bounce
-      scaleTo={0.97}
-      style={[styles.athkarRow, { backgroundColor: rowBg, borderColor: rowBorder }]}
-      onPress={onPress}
-      onLongPress={onLongPress}
-    >
-      <View style={[styles.athkarIcon, { backgroundColor: `${meta.color}${scheme === 'dark' ? '33' : '22'}` }]}>
-        <PopIcon name={completed ? 'checkmark' : meta.icon} size={18} color={meta.color} />
-      </View>
-      <AppText weight="semibold" size={14} style={{ flex: 1 }}>
-        {meta.title}
-      </AppText>
-      <Animated.View style={[styles.pctBadge, { backgroundColor: badgeBg, borderColor: badgeBorder }]}>
-        <AnimatedPercent value={pct} color={completed ? colors.white : colors.inkSoft} />
+    <Bounce scaleTo={0.97} onPress={onPress} onLongPress={onLongPress}>
+      <Animated.View style={[styles.athkarRow, { backgroundColor: rowBg, borderColor: rowBorder }]}>
+        <View style={[styles.athkarIcon, { backgroundColor: `${meta.color}${scheme === 'dark' ? '33' : '22'}` }]}>
+          <PopIcon name={completed ? 'checkmark' : meta.icon} size={18} color={meta.color} />
+        </View>
+        <AppText weight="semibold" size={14} style={{ flex: 1 }}>
+          {meta.title}
+        </AppText>
+        <Animated.View style={[styles.pctBadge, { backgroundColor: badgeBg, borderColor: badgeBorder }]}>
+          <AnimatedPercent value={pct} color={completed ? colors.white : colors.inkSoft} />
+        </Animated.View>
       </Animated.View>
     </Bounce>
   );
