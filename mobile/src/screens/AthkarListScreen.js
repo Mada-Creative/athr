@@ -1,23 +1,25 @@
 import React, { useCallback, useState } from 'react';
-import { Animated, RefreshControl, StyleSheet, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Dimensions, RefreshControl, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import Screen from '../components/Screen';
 import AppText from '../components/AppText';
-import Bounce from '../components/Bounce';
-import PopIcon from '../components/PopIcon';
+import AthkarTile from '../components/AthkarTile';
 import { useTheme } from '../context/ThemeContext';
-import { radius, spacing } from '../theme/spacing';
+import { spacing } from '../theme/spacing';
 import { api } from '../api/client';
 import { todayISO } from '../utils/date';
 import { enqueueAction } from '../utils/pendingActions';
-import useDoneAnim from '../hooks/useDoneAnim';
 import ATHKAR_META from '../constants/athkarMeta';
 import athkarContent from '../constants/athkarContent';
 
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const TILE_GAP = spacing.sm;
+// Screen's own side padding (spacing.lg on each edge) plus two gaps between
+// three columns — whatever's left over splits three ways.
+const TILE_WIDTH = (SCREEN_WIDTH - spacing.lg * 2 - TILE_GAP * 2) / 3;
+
 export default function AthkarListScreen({ navigation }) {
   const { colors } = useTheme();
-  const styles = createStyles(colors);
   const date = todayISO();
   const [categories, setCategories] = useState({});
   const [refreshing, setRefreshing] = useState(false);
@@ -79,78 +81,32 @@ export default function AthkarListScreen({ navigation }) {
         الأذكار
       </AppText>
       <AppText color={colors.inkSoft} size={13.5} style={{ marginTop: 4, marginBottom: spacing.lg }}>
-        اضغط على أي تصنيف لتعليمه مكتملًا — اضغط مطوّلًا لفتحه والعدّ فيه دِكرًا دِكرًا
+        اضغط على أي بطاقة لتعليمها مكتملة — اضغط مطوّلًا لفتحها والعدّ فيها دِكرًا دِكرًا
       </AppText>
 
-      {Object.keys(ATHKAR_META).map((key) => {
-        const meta = ATHKAR_META[key];
-        const progress = categories[key];
-        const total = progress?.totalItems ?? athkarContent[key].items.length;
-        const done = progress?.completedItems?.length ?? 0;
-        const isDone = Boolean(progress?.completed);
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: TILE_GAP }}>
+        {Object.keys(ATHKAR_META).map((key) => {
+          const meta = ATHKAR_META[key];
+          const progress = categories[key];
+          const total = progress?.totalItems ?? athkarContent[key].items.length;
+          const done = progress?.completedItems?.length ?? 0;
 
-        return (
-          <AthkarRow
-            key={key}
-            meta={meta}
-            done={done}
-            total={total}
-            isDone={isDone}
-            onPress={() => onToggleComplete(key)}
-            onLongPress={() => navigation.navigate('AthkarCounter', { category: key })}
-          />
-        );
-      })}
+          return (
+            <AthkarTile
+              key={key}
+              width={TILE_WIDTH}
+              title={meta.title}
+              icon={meta.icon}
+              color={meta.color}
+              completed={progress?.completed}
+              completedCount={done}
+              totalCount={total}
+              onPress={() => onToggleComplete(key)}
+              onLongPress={() => navigation.navigate('AthkarCounter', { category: key })}
+            />
+          );
+        })}
+      </View>
     </Screen>
   );
-}
-
-// A single category row — its own component so its color-fade animation can
-// use a hook per row without breaking the rules of hooks inside a .map().
-//
-// The color fade lives on its own inner Animated.View rather than on
-// Bounce's own `style` prop: Bounce already animates its press-scale with
-// useNativeDriver: true, and React Native can't mix a native-driven value
-// with a JS-driven one (this color fade — colors aren't native-driver
-// eligible) on the same animated node without crashing at runtime.
-function AthkarRow({ meta, done, total, isDone, onPress, onLongPress }) {
-  const { colors } = useTheme();
-  const styles = createStyles(colors);
-  const doneAnim = useDoneAnim(isDone);
-  const cardBg = doneAnim.interpolate({ inputRange: [0, 1], outputRange: [colors.surface, colors.sageSoft] });
-  const cardBorder = doneAnim.interpolate({ inputRange: [0, 1], outputRange: [colors.border, colors.sage] });
-
-  return (
-    <Bounce onPress={onPress} onLongPress={onLongPress}>
-      <Animated.View style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder }]}>
-        <View style={[styles.iconWrap, { backgroundColor: `${meta.color}22` }]}>
-          <PopIcon name={isDone ? 'checkmark' : meta.icon} size={22} color={meta.color} />
-        </View>
-        <View style={{ flex: 1 }}>
-          <AppText weight="semibold" size={15}>
-            {meta.title}
-          </AppText>
-          <AppText size={12} color={colors.inkSoft} style={{ marginTop: 2 }}>
-            {done}/{total} أذكار مكتملة
-          </AppText>
-        </View>
-        <Ionicons name="chevron-back" size={18} color={colors.inkSoft} />
-      </Animated.View>
-    </Bounce>
-  );
-}
-
-function createStyles(colors) {
-  return StyleSheet.create({
-    card: {
-      flexDirection: 'row-reverse',
-      alignItems: 'center',
-      gap: spacing.md,
-      borderRadius: radius.md,
-      borderWidth: 1,
-      padding: spacing.lg,
-      marginBottom: spacing.md,
-    },
-    iconWrap: { width: 46, height: 46, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
-  });
 }

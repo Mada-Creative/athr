@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Image, RefreshControl, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Dimensions, Image, RefreshControl, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import Screen from '../components/Screen';
@@ -9,6 +9,7 @@ import ProgressRing from '../components/ProgressRing';
 import LiveClock from '../components/LiveClock';
 import SectionHeader from '../components/SectionHeader';
 import Bounce from '../components/Bounce';
+import AthkarTile from '../components/AthkarTile';
 import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
 import { useAuth } from '../context/AuthContext';
@@ -20,6 +21,10 @@ import duas, { nightWakeDua } from '../constants/duas';
 import { afterPrayerCategory } from '../constants/afterPrayerSlots';
 
 const FARD_ORDER = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const TILE_GAP = spacing.sm;
+const TILE_WIDTH = (SCREEN_WIDTH - spacing.lg * 2 - TILE_GAP * 2) / 3;
 
 // Which athkar categories get bumped to the front of the list at each part
 // of the day — everything in ATHKAR_LINKS always stays visible, this only
@@ -59,7 +64,7 @@ export default function HomeScreen({ navigation }) {
   }, []);
   const hijri = toHijri(now);
   const { schedule, next, dayPeriod } = usePrayerTimes();
-  const { stats, prayerLog, loading, reload } = useDailyData(date);
+  const { stats, prayerLog, athkar, loading, reload } = useDailyData(date);
   // Only true for a genuine first load with nothing cached yet from a
   // previous successful fetch — a slow-but-normal request (a cold Heroku
   // dyno, a weak connection) shows this instead of a misleading "0%" ring.
@@ -281,36 +286,25 @@ export default function HomeScreen({ navigation }) {
       </Card>
 
       <SectionHeader title="الأذكار" actionLabel="كل الفئات" onAction={() => navigation.navigate('AthkarList')} />
-      {orderedAthkarLinks.map((item) => (
-        <Bounce
-          key={item.key}
-          scaleTo={0.97}
-          style={styles.linkRow}
-          onPress={() => navigation.navigate('AthkarCounter', item.params)}
-        >
-          <View style={[styles.linkIcon, { backgroundColor: `${item.color}22` }]}>
-            <Ionicons name={item.icon} size={19} color={item.color} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <View style={styles.linkTitleRow}>
-              <AppText weight="semibold" size={14}>
-                {item.title}
-              </AppText>
-              {item.key === topPriorityKey ? (
-                <View style={styles.nowBadge}>
-                  <AppText size={9.5} weight="bold" color={colors.white}>
-                    الأنسب الآن
-                  </AppText>
-                </View>
-              ) : null}
-            </View>
-            <AppText size={11.5} color={colors.inkSoft} style={{ marginTop: 1 }}>
-              {item.subtitle}
-            </AppText>
-          </View>
-          <Ionicons name="chevron-back" size={16} color={colors.inkSoft} />
-        </Bounce>
-      ))}
+      <View style={styles.athkarGrid}>
+        {orderedAthkarLinks.map((item) => {
+          const progress = athkar?.[item.params.category];
+          return (
+            <AthkarTile
+              key={item.key}
+              width={TILE_WIDTH}
+              title={item.title}
+              icon={item.icon}
+              color={item.color}
+              completed={progress?.completed}
+              completedCount={progress?.completedItems?.length ?? 0}
+              totalCount={progress?.totalItems ?? 0}
+              highlighted={item.key === topPriorityKey}
+              onPress={() => navigation.navigate('AthkarCounter', item.params)}
+            />
+          );
+        })}
+      </View>
 
       <SectionHeader title="أخرى" />
       {MORE_LINKS.map((item) => (
@@ -454,12 +448,6 @@ function createStyles(colors) {
       marginBottom: spacing.sm,
     },
     linkIcon: { width: 40, height: 40, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
-    linkTitleRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: spacing.xs },
-    nowBadge: {
-      backgroundColor: colors.amberDeep,
-      paddingHorizontal: 6,
-      paddingVertical: 2,
-      borderRadius: radius.pill,
-    },
+    athkarGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: TILE_GAP, marginBottom: spacing.sm },
   });
 }
