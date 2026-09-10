@@ -12,6 +12,18 @@
 // behind it — and the moment it's said — is different).
 import { AFTER_PRAYER_SLOTS, afterPrayerCategory } from './afterPrayerSlots';
 
+// Written out in full rather than named/referenced — "المعوذات الثلاث"
+// used to just be a parenthetical pointer to the three surahs' names
+// instead of their actual text, which meant nothing to actually read
+// through the counter. Same three surahs, reused everywhere they're
+// prescribed (morning, evening, after every prayer, before sleep).
+const AL_IKHLAS = 'قُلْ هُوَ اللَّهُ أَحَدٌ، اللَّهُ الصَّمَدُ، لَمْ يَلِدْ وَلَمْ يُولَدْ، وَلَمْ يَكُنْ لَهُ كُفُوًا أَحَدٌ';
+const AL_FALAQ =
+  'قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ، مِنْ شَرِّ مَا خَلَقَ، وَمِنْ شَرِّ غَاسِقٍ إِذَا وَقَبَ، وَمِنْ شَرِّ النَّفَّاثَاتِ فِي الْعُقَدِ، وَمِنْ شَرِّ حَاسِدٍ إِذَا حَسَدَ';
+const AN_NAS =
+  'قُلْ أَعُوذُ بِرَبِّ النَّاسِ، مَلِكِ النَّاسِ، إِلَٰهِ النَّاسِ، مِنْ شَرِّ الْوَسْوَاسِ الْخَنَّاسِ، الَّذِي يُوَسْوِسُ فِي صُدُورِ النَّاسِ، مِنَ الْجِنَّةِ وَالنَّاسِ';
+const THREE_QULS_TEXT = `${AL_IKHLAS}. ${AL_FALAQ}. ${AN_NAS}`;
+
 const athkarContent = {
   morning: {
     title: 'أذكار الصباح',
@@ -64,8 +76,9 @@ const athkarContent = {
         source: 'من قرأها حين يصبح أُجير من الجن حتى يمسي — حديث حسن',
       },
       {
-        text: 'المعوذات الثلاث (سورة الإخلاص، الفلق، الناس)',
+        text: THREE_QULS_TEXT,
         repeat: 3,
+        label: 'المعوذات الثلاث',
         source: 'تكفيك من كل شيء — رواه أبو داود والترمذي وصححه الألباني',
       },
       {
@@ -120,8 +133,9 @@ const athkarContent = {
         source: 'من قرأها حين يمسي أُجير من الجن حتى يصبح — حديث حسن',
       },
       {
-        text: 'المعوذات الثلاث (سورة الإخلاص، الفلق، الناس)',
+        text: THREE_QULS_TEXT,
         repeat: 3,
+        label: 'المعوذات الثلاث',
         source: 'رواه أبو داود والترمذي وصححه الألباني',
       },
       {
@@ -197,8 +211,9 @@ const athkarContent = {
         source: 'متفق عليه',
       },
       {
-        text: 'المعوذات الثلاث (سورة الإخلاص، الفلق، الناس)',
+        text: THREE_QULS_TEXT,
         repeat: 1,
+        label: 'المعوذات الثلاث',
         source: 'أمرني رسول الله ﷺ أن أقرأ بهنّ دبر كل صلاة — رواه أبو داود والترمذي والنسائي، وصححه الألباني',
       },
       {
@@ -228,8 +243,9 @@ const athkarContent = {
         source: 'من قرأها حين يأوي إلى فراشه لم يزل عليه من الله حافظ ولا يقربه شيطان حتى يصبح — رواه البخاري',
       },
       {
-        text: 'قل هو الله أحد، والمعوذتان',
+        text: THREE_QULS_TEXT,
         repeat: 3,
+        label: 'الإخلاص والمعوذتان',
         source: 'متفق عليه',
       },
       {

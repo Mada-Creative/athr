@@ -1,25 +1,32 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, View } from 'react-native';
+import { Animated, Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { useTheme } from '../context/ThemeContext';
 import useDoneAnim from '../hooks/useDoneAnim';
 import PopIcon from './PopIcon';
-import Bounce from './Bounce';
 import AppText from './AppText';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
-// The tap target for counting through one dhikr on the card screen — fills
-// as the repeat count climbs, flips to sage with a checkmark once the
-// target is reached. `onPress` should just increment the count by one;
-// `onComplete` fires exactly once, the moment the target is first reached,
-// so the caller can auto-advance to the next card.
+// The tap target for counting through one dhikr on the counter card — its
+// own component, deliberately NOT sharing structure with ProgressRing (the
+// small stats ring on Home/Tracker) or the generic Bounce press-wrapper:
+// this ring needs to be its own thing, visually (a soft tinted disc behind
+// the stroke, sized for a full-screen card) and structurally.
 //
-// Structured to mirror ProgressRing.js as closely as possible (outer
-// sized+centered View > Svg > an absoluteFill label layer) since that
-// component is proven to render its centered label correctly.
-export default function AthkarCountRing({ count, target, size = 108, strokeWidth = 9, onPress, onComplete }) {
+// Layout, spelled out because getting this wrong is what silently broke
+// the label before: `Pressable` here is ONLY a tap-target wrapper — it
+// carries no size/position styling of its own. The actual sized circle is
+// the `Animated.View` directly inside it, a real View (not a Pressable),
+// so it reliably gets its own positioning context for the absolutely-filled
+// `Svg` behind it. The count/checkmark label is a normal (non-absolute)
+// flow child of that same View, centered by its own alignItems/
+// justifyContent — with the Svg pulled OUT of flow via absoluteFill, the
+// label is the only flow child left, so plain flex centering places it
+// dead in the middle without needing any of its own absolute positioning.
+export default function AthkarCountRing({ count, target, size = 112, strokeWidth = 10, onPress, onComplete }) {
   const { colors } = useTheme();
+  const styles = createStyles(colors);
   const radiusValue = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radiusValue;
   const done = count >= target;
@@ -32,7 +39,14 @@ export default function AthkarCountRing({ count, target, size = 108, strokeWidth
 
   const doneAnim = useDoneAnim(done);
   const strokeColor = doneAnim.interpolate({ inputRange: [0, 1], outputRange: [colors.amber, colors.sage] });
+  const trackColor = doneAnim.interpolate({ inputRange: [0, 1], outputRange: [colors.amberSoft, colors.sageSoft] });
   const dashOffset = progress.interpolate({ inputRange: [0, 1], outputRange: [circumference, 0] });
+
+  // Press feedback lives on this component directly — no Bounce dependency
+  // — a plain native-driven spring on the sized View itself.
+  const pressScale = useRef(new Animated.Value(1)).current;
+  const onPressIn = () => Animated.spring(pressScale, { toValue: 0.94, useNativeDriver: true, speed: 40, bounciness: 8 }).start();
+  const onPressOut = () => Animated.spring(pressScale, { toValue: 1, useNativeDriver: true, speed: 40, bounciness: 8 }).start();
 
   // A small scale "pop" on every tap (and on the completion checkmark
   // itself) — its own native-driven node, kept separate from the ring's
@@ -56,30 +70,29 @@ export default function AthkarCountRing({ count, target, size = 108, strokeWidth
   }, [done, onComplete]);
 
   return (
-    // Bounce *is* the sized container here — no extra plain View wrapping
-    // it — so this matches ProgressRing.js's proven structure exactly
-    // (one sized+centered container, holding the Svg and an absoluteFill
-    // label layer as direct children). An earlier version wrapped an
-    // identical inner View in Bounce, one level deeper than ProgressRing;
-    // that's the one structural difference between a ring that renders its
-    // label and one that silently doesn't.
-    <Bounce onPress={onPress} style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
-      <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: [{ rotate: '-90deg' }] }}>
-        <Circle cx={size / 2} cy={size / 2} r={radiusValue} stroke={colors.border} strokeWidth={strokeWidth} fill="none" />
-        <AnimatedCircle
-          cx={size / 2}
-          cy={size / 2}
-          r={radiusValue}
-          stroke={strokeColor}
-          strokeWidth={strokeWidth}
-          fill="none"
-          strokeDasharray={circumference}
-          strokeDashoffset={dashOffset}
-          strokeLinecap="round"
-        />
-      </Svg>
-      <View style={[StyleSheet.absoluteFillObject, styles.labelLayer]} pointerEvents="none">
-        <Animated.View style={{ alignItems: 'center', justifyContent: 'center', transform: [{ scale: pop }] }}>
+    <Pressable onPress={onPress} hitSlop={10} onPressIn={onPressIn} onPressOut={onPressOut}>
+      <Animated.View style={[styles.ring, { width: size, height: size, transform: [{ scale: pressScale }] }]}>
+        <Animated.View style={[StyleSheet.absoluteFillObject, styles.disc, { backgroundColor: trackColor }]} />
+        <Svg
+          width={size}
+          height={size}
+          viewBox={`0 0 ${size} ${size}`}
+          style={[StyleSheet.absoluteFillObject, styles.svgRotate]}
+        >
+          <Circle cx={size / 2} cy={size / 2} r={radiusValue} stroke={colors.border} strokeWidth={strokeWidth} fill="none" />
+          <AnimatedCircle
+            cx={size / 2}
+            cy={size / 2}
+            r={radiusValue}
+            stroke={strokeColor}
+            strokeWidth={strokeWidth}
+            fill="none"
+            strokeDasharray={circumference}
+            strokeDashoffset={dashOffset}
+            strokeLinecap="round"
+          />
+        </Svg>
+        <Animated.View style={[styles.label, { transform: [{ scale: pop }] }]}>
           {done ? (
             <PopIcon name="checkmark" size={Math.round(size * 0.3)} color={colors.sage} />
           ) : (
@@ -91,12 +104,17 @@ export default function AthkarCountRing({ count, target, size = 108, strokeWidth
             {done ? 'تم' : `من ${target}`}
           </AppText>
         </Animated.View>
-      </View>
-    </Bounce>
+      </Animated.View>
+    </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
-  labelLayer: { alignItems: 'center', justifyContent: 'center' },
-  subLabel: { marginTop: 3 },
-});
+function createStyles(colors) {
+  return StyleSheet.create({
+    ring: { alignItems: 'center', justifyContent: 'center', position: 'relative' },
+    disc: { borderRadius: 999, opacity: 0.5 },
+    svgRotate: { transform: [{ rotate: '-90deg' }] },
+    label: { alignItems: 'center', justifyContent: 'center' },
+    subLabel: { marginTop: 3 },
+  });
+}
