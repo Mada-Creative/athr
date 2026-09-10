@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { RefreshControl, StyleSheet, View } from 'react-native';
+import { Animated, RefreshControl, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import Screen from '../components/Screen';
@@ -107,6 +107,12 @@ export default function AthkarListScreen({ navigation }) {
 
 // A single category row — its own component so its color-fade animation can
 // use a hook per row without breaking the rules of hooks inside a .map().
+//
+// The color fade lives on its own inner Animated.View rather than on
+// Bounce's own `style` prop: Bounce already animates its press-scale with
+// useNativeDriver: true, and React Native can't mix a native-driven value
+// with a JS-driven one (this color fade — colors aren't native-driver
+// eligible) on the same animated node without crashing at runtime.
 function AthkarRow({ meta, done, total, isDone, onPress, onLongPress }) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
@@ -115,19 +121,21 @@ function AthkarRow({ meta, done, total, isDone, onPress, onLongPress }) {
   const cardBorder = doneAnim.interpolate({ inputRange: [0, 1], outputRange: [colors.border, colors.sage] });
 
   return (
-    <Bounce style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder }]} onPress={onPress} onLongPress={onLongPress}>
-      <View style={[styles.iconWrap, { backgroundColor: `${meta.color}22` }]}>
-        <PopIcon name={isDone ? 'checkmark' : meta.icon} size={22} color={meta.color} />
-      </View>
-      <View style={{ flex: 1 }}>
-        <AppText weight="semibold" size={15}>
-          {meta.title}
-        </AppText>
-        <AppText size={12} color={colors.inkSoft} style={{ marginTop: 2 }}>
-          {done}/{total} أذكار مكتملة
-        </AppText>
-      </View>
-      <Ionicons name="chevron-back" size={18} color={colors.inkSoft} />
+    <Bounce onPress={onPress} onLongPress={onLongPress}>
+      <Animated.View style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder }]}>
+        <View style={[styles.iconWrap, { backgroundColor: `${meta.color}22` }]}>
+          <PopIcon name={isDone ? 'checkmark' : meta.icon} size={22} color={meta.color} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <AppText weight="semibold" size={15}>
+            {meta.title}
+          </AppText>
+          <AppText size={12} color={colors.inkSoft} style={{ marginTop: 2 }}>
+            {done}/{total} أذكار مكتملة
+          </AppText>
+        </View>
+        <Ionicons name="chevron-back" size={18} color={colors.inkSoft} />
+      </Animated.View>
     </Bounce>
   );
 }
