@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Pressable, StyleSheet, View } from 'react-native';
+import { Animated, Pressable, StyleSheet } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { useTheme } from '../context/ThemeContext';
 import useDoneAnim from '../hooks/useDoneAnim';
@@ -9,24 +9,22 @@ import AppText from './AppText';
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 // The tap target for counting through one dhikr on the counter card — its
-// own component, deliberately NOT sharing structure with ProgressRing (the
-// small stats ring on Home/Tracker) or the generic Bounce press-wrapper:
-// this ring needs to be its own thing, visually (a soft tinted disc behind
-// the stroke, sized for a full-screen card) and structurally.
+// own component, deliberately not sharing structure with ProgressRing (the
+// small stats ring on Home/Tracker) or the generic Bounce press-wrapper.
 //
-// Layout, spelled out because getting this wrong is what silently broke
-// the label before: `Pressable` here is ONLY a tap-target wrapper — it
-// carries no size/position styling of its own. The actual sized circle is
-// the `Animated.View` directly inside it, a real View (not a Pressable),
-// so it reliably gets its own positioning context for the absolutely-filled
-// `Svg` behind it. The count/checkmark label is a normal (non-absolute)
-// flow child of that same View, centered by its own alignItems/
-// justifyContent — with the Svg pulled OUT of flow via absoluteFill, the
-// label is the only flow child left, so plain flex centering places it
-// dead in the middle without needing any of its own absolute positioning.
+// Overlaying the label used to rely on `position: 'absolute'` (an
+// absoluteFill label View stacked over the Svg) — through three attempts at
+// getting that container structure right, it kept rendering the label
+// outside the ring instead of centered inside it. Rebuilt without any
+// absolute positioning at all: the Svg renders normally (it takes up real
+// layout space, size×size), and the label View directly after it uses
+// `marginTop: -size` to pull itself back up on top of the Svg — plain box
+// model, no positioning-context assumptions, nothing to get subtly wrong.
+// The soft background disc is now just a third, filled `Circle` drawn
+// first inside the same Svg (behind the track/progress circles) instead of
+// a separately-overlaid layer — one less thing that has to line up.
 export default function AthkarCountRing({ count, target, size = 112, strokeWidth = 10, onPress, onComplete }) {
   const { colors } = useTheme();
-  const styles = createStyles(colors);
   const radiusValue = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radiusValue;
   const done = count >= target;
@@ -39,11 +37,11 @@ export default function AthkarCountRing({ count, target, size = 112, strokeWidth
 
   const doneAnim = useDoneAnim(done);
   const strokeColor = doneAnim.interpolate({ inputRange: [0, 1], outputRange: [colors.amber, colors.sage] });
-  const trackColor = doneAnim.interpolate({ inputRange: [0, 1], outputRange: [colors.amberSoft, colors.sageSoft] });
+  const discColor = doneAnim.interpolate({ inputRange: [0, 1], outputRange: [colors.amberSoft, colors.sageSoft] });
   const dashOffset = progress.interpolate({ inputRange: [0, 1], outputRange: [circumference, 0] });
 
   // Press feedback lives on this component directly — no Bounce dependency
-  // — a plain native-driven spring on the sized View itself.
+  // — a plain native-driven spring on the whole ring.
   const pressScale = useRef(new Animated.Value(1)).current;
   const onPressIn = () => Animated.spring(pressScale, { toValue: 0.94, useNativeDriver: true, speed: 40, bounciness: 8 }).start();
   const onPressOut = () => Animated.spring(pressScale, { toValue: 1, useNativeDriver: true, speed: 40, bounciness: 8 }).start();
@@ -71,14 +69,9 @@ export default function AthkarCountRing({ count, target, size = 112, strokeWidth
 
   return (
     <Pressable onPress={onPress} hitSlop={10} onPressIn={onPressIn} onPressOut={onPressOut}>
-      <Animated.View style={[styles.ring, { width: size, height: size, transform: [{ scale: pressScale }] }]}>
-        <Animated.View style={[StyleSheet.absoluteFillObject, styles.disc, { backgroundColor: trackColor }]} />
-        <Svg
-          width={size}
-          height={size}
-          viewBox={`0 0 ${size} ${size}`}
-          style={[StyleSheet.absoluteFillObject, styles.svgRotate]}
-        >
+      <Animated.View style={{ transform: [{ scale: pressScale }] }}>
+        <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: [{ rotate: '-90deg' }] }}>
+          <AnimatedCircle cx={size / 2} cy={size / 2} r={radiusValue} fill={discColor} />
           <Circle cx={size / 2} cy={size / 2} r={radiusValue} stroke={colors.border} strokeWidth={strokeWidth} fill="none" />
           <AnimatedCircle
             cx={size / 2}
@@ -92,7 +85,15 @@ export default function AthkarCountRing({ count, target, size = 112, strokeWidth
             strokeLinecap="round"
           />
         </Svg>
-        <Animated.View style={[styles.label, { transform: [{ scale: pop }] }]}>
+        {/* Sits directly on top of the Svg via negative margin (not
+            position:absolute) — see the note above. */}
+        <Animated.View
+          style={[
+            styles.label,
+            { width: size, height: size, marginTop: -size, transform: [{ scale: pop }] },
+          ]}
+          pointerEvents="none"
+        >
           {done ? (
             <PopIcon name="checkmark" size={Math.round(size * 0.3)} color={colors.sage} />
           ) : (
@@ -109,12 +110,7 @@ export default function AthkarCountRing({ count, target, size = 112, strokeWidth
   );
 }
 
-function createStyles(colors) {
-  return StyleSheet.create({
-    ring: { alignItems: 'center', justifyContent: 'center', position: 'relative' },
-    disc: { borderRadius: 999, opacity: 0.5 },
-    svgRotate: { transform: [{ rotate: '-90deg' }] },
-    label: { alignItems: 'center', justifyContent: 'center' },
-    subLabel: { marginTop: 3 },
-  });
-}
+const styles = StyleSheet.create({
+  label: { alignItems: 'center', justifyContent: 'center' },
+  subLabel: { marginTop: 3 },
+});
