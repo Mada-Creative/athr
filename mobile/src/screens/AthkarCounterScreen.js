@@ -1,29 +1,44 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { Animated, StyleSheet, TouchableOpacity, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, Dimensions, StyleSheet, View } from 'react-native';
+import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
 import Screen from '../components/Screen';
 import AppText from '../components/AppText';
-import Card from '../components/Card';
-import PopIcon from '../components/PopIcon';
+import AthkarCountRing from '../components/AthkarCountRing';
 import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
 import { api } from '../api/client';
 import { todayISO } from '../utils/date';
 import athkarContent from '../constants/athkarContent';
 import ATHKAR_META from '../constants/athkarMeta';
-import useDoneAnim from '../hooks/useDoneAnim';
 
-export default function AthkarCounterScreen({ route }) {
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const CARD_WIDTH = SCREEN_WIDTH - spacing.lg * 2;
+const SWIPE_THRESHOLD = 90;
+const VELOCITY_THRESHOLD = 800;
+const DIR_LOCK = 10;
+
+// One dhikr, full-screen, one at a time — swipe right for the next, left
+// for the previous, tap the ring to count. Replaces the old scrolling list
+// of cards with the same swipeable-card model the rest of "بطاقات أثر" will
+// eventually share.
+export default function AthkarCounterScreen({ route, navigation }) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
   const { category } = route.params;
   const meta = ATHKAR_META[category];
   const definition = athkarContent[category];
+  const items = definition.items;
   const date = todayISO();
 
-  const [counts, setCounts] = useState(() => definition.items.map(() => 0));
-  const [syncedIndices, setSyncedIndices] = useState(new Set());
+  useEffect(() => {
+    navigation.setOptions({ title: meta.title });
+  }, [navigation, meta.title]);
+
+  const [counts, setCounts] = useState(() => items.map(() => 0));
+  const [index, setIndex] = useState(0);
+  const [previewDir, setPreviewDir] = useState(null); // 'next' | 'prev' | null
+  const [transitioning, setTransitioning] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -31,136 +46,287 @@ export default function AthkarCounterScreen({ route }) {
         const res = await api.get(`/athkar/${date}`);
         const progress = res.categories?.[category];
         if (progress?.completedItems?.length) {
-          setCounts(definition.items.map((item, idx) => (progress.completedItems.includes(idx) ? item.repeat : 0)));
-          setSyncedIndices(new Set(progress.completedItems));
+          setCounts(items.map((item, idx) => (progress.completedItems.includes(idx) ? item.repeat : 0)));
         }
       } catch (err) {
         // no network — counter still works locally for this session
       }
     })();
-  }, [category, date, definition.items]);
+    // Only ever meant to run once per category, on mount — `items` is a
+    // stable module-level array for a given category.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category, date]);
 
-  const completedCount = counts.filter((c, i) => c >= definition.items[i].repeat).length;
-  const progressPercent = Math.round((completedCount / definition.items.length) * 100);
-
-  const onTapItem = useCallback(
-    async (index) => {
-      const target = definition.items[index].repeat;
-      const nextValue = counts[index] >= target ? 0 : counts[index] + 1;
-      const wasComplete = counts[index] >= target;
-      const isNowComplete = nextValue >= target;
-
-      setCounts((prev) => prev.map((c, i) => (i === index ? nextValue : c)));
-
+  const syncItem = useCallback(
+    async (itemIndex, wasComplete, isNowComplete) => {
+      if (wasComplete === isNowComplete) return;
       try {
-        if (Haptics?.selectionAsync) Haptics.selectionAsync();
+        await api.patch(`/athkar/${date}/${category}`, { itemIndex });
+      } catch (err) {
+        // will resync next time the screen loads with network back
+      }
+    },
+    [date, category]
+  );
+
+  const onRingPress = useCallback(
+    (itemIndex) => {
+      const target = items[itemIndex].repeat;
+      setCounts((prev) => {
+        const wasComplete = prev[itemIndex] >= target;
+        const nextValue = wasComplete ? 0 : prev[itemIndex] + 1;
+        const isNowComplete = nextValue >= target;
+        const next = prev.slice();
+        next[itemIndex] = nextValue;
+        syncItem(itemIndex, wasComplete, isNowComplete);
+        return next;
+      });
+      try {
+        Haptics.selectionAsync();
       } catch (err) {
         // haptics unavailable on this platform — ignore
       }
-
-      if (wasComplete !== isNowComplete) {
-        try {
-          await api.patch(`/athkar/${date}/${category}`, { itemIndex: index });
-        } catch (err) {
-          // will resync next time the screen loads with network back
-        }
-      }
     },
-    [counts, definition.items, date, category]
+    [items, syncItem]
   );
 
+  // ---------- swipe mechanics ----------
+  const translateX = useRef(new Animated.Value(0)).current;
+  const dirLockedRef = useRef(false);
+
+  const neighborIndex = useCallback((dir) => (dir === 'next' ? (index + 1) % items.length : (index - 1 + items.length) % items.length), [index, items.length]);
+
+  const commitTo = useCallback(
+    (dir) => {
+      if (transitioning) return;
+      setTransitioning(true);
+      setPreviewDir(dir);
+      const exitTo = dir === 'next' ? SCREEN_WIDTH * 1.3 : -SCREEN_WIDTH * 1.3;
+      // Rotation is derived from translateX via interpolation (frontRotate
+      // below), so animating just this one value carries both along together.
+      Animated.timing(translateX, { toValue: exitTo, duration: 240, useNativeDriver: true }).start();
+      setTimeout(() => {
+        setIndex((i) => (dir === 'next' ? (i + 1) % items.length : (i - 1 + items.length) % items.length));
+        translateX.setValue(0);
+        setPreviewDir(null);
+        dirLockedRef.current = false;
+        setTransitioning(false);
+      }, 250);
+    },
+    [transitioning, translateX, items.length]
+  );
+
+  const springBack = useCallback(() => {
+    Animated.spring(translateX, { toValue: 0, useNativeDriver: true, speed: 20, bounciness: 6 }).start(() => {
+      setPreviewDir(null);
+      dirLockedRef.current = false;
+    });
+  }, [translateX]);
+
+  const onGestureEvent = useMemo(
+    () =>
+      Animated.event([{ nativeEvent: { translationX: translateX } }], {
+        useNativeDriver: true,
+        listener: (e) => {
+          const dx = e.nativeEvent.translationX;
+          if (!dirLockedRef.current && Math.abs(dx) > DIR_LOCK) {
+            dirLockedRef.current = true;
+            setPreviewDir(dx > 0 ? 'next' : 'prev');
+          }
+        },
+      }),
+    [translateX]
+  );
+
+  const onHandlerStateChange = useCallback(
+    (e) => {
+      if (e.nativeEvent.oldState !== State.ACTIVE) return;
+      if (!dirLockedRef.current) {
+        // released before the direction ever locked in (a near-tap that
+        // still nudged the pan a little) — snap back to exactly 0 rather
+        // than leaving a few stray pixels of offset.
+        translateX.setValue(0);
+        return;
+      }
+      const { translationX, velocityX } = e.nativeEvent;
+      const passedThreshold = Math.abs(translationX) > SWIPE_THRESHOLD || Math.abs(velocityX) > VELOCITY_THRESHOLD;
+      if (passedThreshold) {
+        commitTo(translationX >= 0 ? 'next' : 'prev');
+      } else {
+        springBack();
+      }
+    },
+    [commitTo, springBack, translateX]
+  );
+
+  const onRingComplete = useCallback(() => {
+    setTimeout(() => commitTo('next'), 650);
+  }, [commitTo]);
+
+  const frontItem = items[index];
+  const backIndex = previewDir ? neighborIndex(previewDir) : null;
+  const backItem = backIndex != null ? items[backIndex] : null;
+
+  const frontRotate = translateX.interpolate({
+    inputRange: [-CARD_WIDTH, 0, CARD_WIDTH],
+    outputRange: ['-10deg', '0deg', '10deg'],
+    extrapolate: 'clamp',
+  });
+
+  const backInputRange = previewDir === 'next' ? [0, CARD_WIDTH] : [-CARD_WIDTH, 0];
+  const backTranslateX = previewDir
+    ? translateX.interpolate({
+        inputRange: backInputRange,
+        outputRange: previewDir === 'next' ? [-CARD_WIDTH * 0.34, 0] : [0, CARD_WIDTH * 0.34],
+        extrapolate: 'clamp',
+      })
+    : 0;
+  const backScale = previewDir
+    ? translateX.interpolate({
+        inputRange: backInputRange,
+        outputRange: previewDir === 'next' ? [0.93, 1] : [1, 0.93],
+        extrapolate: 'clamp',
+      })
+    : 1;
+  const backOpacity = previewDir
+    ? translateX.interpolate({
+        inputRange: backInputRange,
+        outputRange: previewDir === 'next' ? [0.55, 1] : [1, 0.55],
+        extrapolate: 'clamp',
+      })
+    : 0;
+
   return (
-    <Screen>
-      <View style={styles.header}>
-        <View style={[styles.headerIcon, { backgroundColor: `${meta.color}22` }]}>
-          <Ionicons name={meta.icon} size={26} color={meta.color} />
-        </View>
-        <AppText weight="bold" size={20} style={{ marginTop: spacing.sm }}>
-          {meta.title}
-        </AppText>
-        <AppText size={13} color={colors.inkSoft} style={{ marginTop: 2 }}>
-          {completedCount} من {definition.items.length} أذكار — {progressPercent}%
-        </AppText>
+    <Screen scroll={false} contentStyle={{ flex: 1, paddingBottom: spacing.lg }}>
+      <AppText size={12.5} color={colors.inkFaint} style={styles.posLabel}>
+        {index + 1} من {items.length}
+      </AppText>
+
+      <View style={styles.dotsRow}>
+        {items.map((it, i) => (
+          <View
+            key={i}
+            style={[styles.dot, i === index && styles.dotCurrent, i !== index && counts[i] >= it.repeat && styles.dotDone]}
+          />
+        ))}
       </View>
 
-      {definition.items.map((item, index) => {
-        const count = counts[index];
-        const done = count >= item.repeat;
-        return (
-          <AthkarItem key={index} item={item} count={count} done={done} onPress={() => onTapItem(index)} />
-        );
-      })}
+      <View style={styles.stage}>
+        {backItem ? (
+          <Animated.View
+            style={[
+              styles.card,
+              styles.cardBack,
+              { transform: [{ translateX: backTranslateX }, { scale: backScale }], opacity: backOpacity },
+            ]}
+            pointerEvents="none"
+          >
+            <CardBody item={backItem} count={counts[backIndex]} meta={meta} colors={colors} styles={styles} onPress={() => {}} />
+          </Animated.View>
+        ) : null}
+
+        <PanGestureHandler
+          onGestureEvent={onGestureEvent}
+          onHandlerStateChange={onHandlerStateChange}
+          activeOffsetX={[-DIR_LOCK, DIR_LOCK]}
+          failOffsetY={[-24, 24]}
+          enabled={!transitioning}
+        >
+          <Animated.View style={[styles.card, styles.cardFront, { transform: [{ translateX }, { rotate: frontRotate }] }]}>
+            <CardBody
+              item={frontItem}
+              count={counts[index]}
+              meta={meta}
+              colors={colors}
+              styles={styles}
+              onPress={() => onRingPress(index)}
+              onComplete={onRingComplete}
+            />
+          </Animated.View>
+        </PanGestureHandler>
+      </View>
+
+      <AppText size={11} color={colors.inkFaint} style={styles.swipeHint}>
+        اسحب يمين للتالي، شمال للسابق
+      </AppText>
     </Screen>
   );
 }
 
-// One dhikr card — its own component so the badge's color-fade animation
-// can use a hook per item without breaking the rules of hooks inside the
-// .map() above.
-function AthkarItem({ item, count, done, onPress }) {
-  const { colors } = useTheme();
-  const styles = createStyles(colors);
-  const doneAnim = useDoneAnim(done);
-  const badgeBg = doneAnim.interpolate({ inputRange: [0, 1], outputRange: [colors.amberSoft, colors.sage] });
-
+function CardBody({ item, count, meta, colors, styles, onPress, onComplete }) {
+  const done = count >= item.repeat;
   return (
-    <TouchableOpacity activeOpacity={0.8} onPress={onPress}>
-      <Card style={[styles.itemCard, done && styles.itemCardDone]}>
-        {item.label ? (
-          <AppText size={11.5} weight="bold" color={colors.amberDeep} style={styles.itemLabel}>
-            {item.label}
-          </AppText>
-        ) : null}
-        <AppText size={16} weight="semibold" style={styles.itemText}>
+    <>
+      <View style={[styles.tag, { backgroundColor: `${meta.color}22` }]}>
+        <AppText size={12} weight="bold" color={meta.color}>
+          {item.label || meta.title}
+        </AppText>
+      </View>
+      <View style={styles.textWrap}>
+        <AppText size={19} weight="bold" color={colors.ink} style={styles.cardText}>
           {item.text}
         </AppText>
-        {item.source ? (
-          <AppText size={11.5} color={colors.inkSoft} style={styles.itemSource}>
-            {item.source}
-          </AppText>
-        ) : null}
-        <View style={styles.itemFooter}>
-          <Animated.View style={[styles.counterBadge, { backgroundColor: badgeBg }]}>
-            {done ? (
-              <PopIcon name="checkmark" size={16} color={colors.white} />
-            ) : (
-              <AppText weight="bold" size={14} color={colors.ink}>
-                {count}/{item.repeat}
-              </AppText>
-            )}
-          </Animated.View>
-          <AppText size={11.5} color={colors.inkSoft}>
-            اضغط للعد
-          </AppText>
-        </View>
-      </Card>
-    </TouchableOpacity>
+      </View>
+      {item.source ? (
+        <AppText size={11.5} color={colors.inkSoft} style={styles.source}>
+          {item.source}
+        </AppText>
+      ) : null}
+      <View style={styles.footer}>
+        <AthkarCountRing count={count} target={item.repeat} onPress={onPress} onComplete={onComplete} />
+        <AppText size={12} color={colors.inkFaint} style={{ marginTop: spacing.sm }}>
+          {done ? 'أحسنت — بننتقل تلقائيًا' : 'اضغط للعدّ'}
+        </AppText>
+      </View>
+    </>
   );
 }
 
 function createStyles(colors) {
   return StyleSheet.create({
-    header: { alignItems: 'center', marginBottom: spacing.lg },
-    headerIcon: { width: 56, height: 56, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
-    itemCard: { marginBottom: spacing.md },
-    itemCardDone: { borderColor: colors.sage, backgroundColor: colors.sageSoft },
-    itemLabel: { marginBottom: 4 },
-    itemText: { lineHeight: 26 },
-    itemSource: { marginTop: spacing.sm, lineHeight: 17 },
-    itemFooter: {
+    posLabel: { textAlign: 'center', marginTop: spacing.xs, fontVariant: ['tabular-nums'] },
+    dotsRow: {
       flexDirection: 'row-reverse',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      marginTop: spacing.md,
-    },
-    counterBadge: {
-      minWidth: 44,
-      height: 32,
-      paddingHorizontal: spacing.sm,
-      borderRadius: radius.pill,
-      backgroundColor: colors.amberSoft,
-      alignItems: 'center',
+      flexWrap: 'wrap',
       justifyContent: 'center',
+      alignItems: 'center',
+      gap: 6,
+      marginTop: spacing.sm,
+      marginBottom: spacing.md,
     },
+    dot: { width: 6, height: 6, borderRadius: radius.pill, backgroundColor: colors.border },
+    dotCurrent: { width: 18, borderRadius: 4, backgroundColor: colors.amber },
+    dotDone: { backgroundColor: colors.sage },
+    stage: { flex: 1, position: 'relative' },
+    card: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radius.lg,
+      padding: spacing.xl,
+      shadowColor: colors.shadow,
+      shadowOpacity: 1,
+      shadowRadius: 16,
+      shadowOffset: { width: 0, height: 10 },
+      elevation: 4,
+    },
+    cardFront: { zIndex: 2 },
+    cardBack: { zIndex: 1 },
+    tag: {
+      alignSelf: 'center',
+      borderRadius: radius.pill,
+      paddingHorizontal: spacing.md,
+      paddingVertical: 5,
+    },
+    textWrap: { flex: 1, justifyContent: 'center', marginTop: spacing.lg },
+    cardText: { textAlign: 'center', lineHeight: 30 },
+    source: { textAlign: 'center', marginTop: spacing.sm },
+    footer: { alignItems: 'center', marginTop: spacing.lg },
+    swipeHint: { textAlign: 'center', marginTop: spacing.sm, marginBottom: spacing.xs },
   });
 }

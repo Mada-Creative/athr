@@ -1,6 +1,7 @@
 import 'react-native-gesture-handler';
 import React, { useCallback, useEffect } from 'react';
 import { I18nManager, LogBox, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Notifications from 'expo-notifications';
@@ -59,12 +60,15 @@ function AppShell({ fontsLoaded, onLayoutRootView }) {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }} onLayout={onLayoutRootView}>
+    // Required for react-native-gesture-handler's handlers to work reliably
+    // (the athkar card's swipe, in particular) — without this root wrapper
+    // gesture recognition is flaky-to-broken on Android in particular.
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }} onLayout={onLayoutRootView}>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       <AuthProvider>
         <RootNavigator />
       </AuthProvider>
-    </View>
+    </GestureHandlerRootView>
   );
 }
 
