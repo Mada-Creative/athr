@@ -22,6 +22,7 @@ import { AuthProvider } from './src/context/AuthContext';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import RootNavigator from './src/navigation/RootNavigator';
 import { ensureAndroidNotificationChannel } from './src/hooks/usePrayerNotifications';
+import useAthrCardNotifications from './src/hooks/useAthrCardNotifications';
 
 // Show prayer-time notifications as a banner + sound even while the app is
 // open, instead of silently queuing them for the notification tray.
@@ -54,6 +55,7 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 // Split out so it can call useTheme() — the provider has to be above it.
 function AppShell({ fontsLoaded, onLayoutRootView }) {
   const { colors, scheme } = useTheme();
+  useAthrCardNotifications();
 
   if (!fontsLoaded) {
     return <View style={{ flex: 1, backgroundColor: colors.background }} />;

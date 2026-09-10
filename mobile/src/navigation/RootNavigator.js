@@ -3,6 +3,7 @@ import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import navigationRef from './navigationRef';
 
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -31,6 +32,7 @@ import SearchScreen from '../screens/SearchScreen';
 import TrackerScreen from '../screens/TrackerScreen';
 import TasbihScreen from '../screens/TasbihScreen';
 import TasbihCounterScreen from '../screens/TasbihCounterScreen';
+import AthrCardScreen from '../screens/AthrCardScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -55,6 +57,11 @@ function MainStack() {
   return (
     <Stack.Navigator screenOptions={stackHeaderOptions}>
       <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
+      <Stack.Screen
+        name="AthrCard"
+        component={AthrCardScreen}
+        options={{ headerShown: false, presentation: 'modal' }}
+      />
       <Stack.Screen name="Tracker" component={TrackerScreen} options={{ title: 'متابعة العبادات' }} />
       <Stack.Screen name="AthkarList" component={AthkarListScreen} options={{ title: 'الأذكار' }} />
       <Stack.Screen name="AthkarCounter" component={AthkarCounterScreen} options={{ title: '' }} />
@@ -164,7 +171,7 @@ export default function RootNavigator() {
   return (
     <View style={{ flex: 1 }}>
       {sessionFailed ? <SessionFailedBanner /> : isOffline ? <OfflineStrip /> : null}
-      <NavigationContainer>
+      <NavigationContainer ref={navigationRef}>
         <MainStack />
       </NavigationContainer>
     </View>

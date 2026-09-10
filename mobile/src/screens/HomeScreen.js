@@ -10,15 +10,14 @@ import LiveClock from '../components/LiveClock';
 import SectionHeader from '../components/SectionHeader';
 import Bounce from '../components/Bounce';
 import AthkarTile from '../components/AthkarTile';
+import AthrCardStack, { PEEK_HEIGHT as ATHR_CARD_PEEK_HEIGHT } from '../components/AthrCardStack';
 import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
-import typography from '../theme/typography';
 import { useAuth } from '../context/AuthContext';
 import { todayISO, formatGregorian, formatWeekday, toHijri, greetingFor } from '../utils/date';
 import usePrayerTimes, { formatCountdownWithSeconds, formatClock } from '../hooks/usePrayerTimes';
 import usePrayerNotifications from '../hooks/usePrayerNotifications';
 import useDailyData from '../hooks/useDailyData';
-import duas, { nightWakeDua } from '../constants/duas';
 import ATHKAR_META, { ATHKAR_ORDER, ATHKAR_UNLOCK_PRAYER } from '../constants/athkarMeta';
 import athkarContent from '../constants/athkarContent';
 
@@ -41,7 +40,7 @@ export default function HomeScreen({ navigation }) {
     return () => clearInterval(id);
   }, []);
   const hijri = toHijri(now);
-  const { schedule, next, dayPeriod } = usePrayerTimes();
+  const { schedule, next } = usePrayerTimes();
   const { stats, prayerLog, athkar, quran, loading, reload, toggleAthkarComplete } = useDailyData(date);
   // Only true for a genuine first load with nothing cached yet from a
   // previous successful fetch — a slow-but-normal request (a cold Heroku
@@ -103,14 +102,6 @@ export default function HomeScreen({ navigation }) {
     [colors, navigation, quran]
   );
 
-  // Rotates through the curated duas roughly once an hour — a light touch
-  // of "there's something new here" without any dedicated timer. At night
-  // (after Isha, before Fajr) it's replaced with the dua for someone who
-  // wakes up in the night, same idea as morning/evening duas just timed to
-  // when someone would actually open the app then.
-  const hourBucket = Math.floor(now.getTime() / (1000 * 60 * 60));
-  const dua = dayPeriod === 'night' ? nightWakeDua : duas[hourBucket % duas.length];
-
   usePrayerNotifications(schedule, user?.prayerNotifications);
 
   useFocusEffect(
@@ -155,14 +146,9 @@ export default function HomeScreen({ navigation }) {
         </View>
       </View>
 
-      <Bounce scaleTo={0.97} onPress={() => navigation.navigate('Duas')} style={styles.duaStrip}>
-        <Ionicons name="hand-left-outline" size={14} color={colors.amberDeep} />
-        <AppText size={13.5} color={colors.amberDeep} style={{ flex: 1, fontFamily: typography.fontDhikr }} numberOfLines={1}>
-          {dua.text}
-        </AppText>
-      </Bounce>
+      <AthrCardStack date={now} onPress={() => navigation.navigate('AthrCard')} />
 
-      <Bounce scaleTo={0.98} onPress={() => navigation.navigate('PrayerDetail')}>
+      <Bounce scaleTo={0.98} onPress={() => navigation.navigate('PrayerDetail')} style={{ marginTop: -ATHR_CARD_PEEK_HEIGHT }}>
         <Card style={styles.heroCard}>
           <View style={styles.heroTop}>
             <View>
@@ -328,21 +314,13 @@ function createStyles(colors) {
       // here would show as a mismatched square behind it in dark mode).
       backgroundColor: '#FAF5EC',
     },
-    duaStrip: {
-      flexDirection: 'row-reverse',
-      alignItems: 'center',
-      gap: spacing.xs,
-      backgroundColor: colors.amberSoft,
-      borderRadius: radius.pill,
-      paddingVertical: spacing.xs + 2,
-      paddingHorizontal: spacing.md,
-      marginTop: spacing.md,
-    },
     heroCard: {
       // Fixed dark ink surface — deliberately doesn't invert with the theme.
       backgroundColor: colors.accentDark,
       borderColor: colors.accentDark,
-      marginTop: spacing.lg,
+      // No marginTop here — the card-stack peek above it (see the Bounce
+      // wrapper's own negative marginTop) already sets the vertical
+      // rhythm between the greeting row and this card.
     },
     heroTop: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'flex-start' },
     countdownWrap: { alignItems: 'center' },
