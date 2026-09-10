@@ -1,16 +1,18 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Animated, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import Screen from '../components/Screen';
 import AppText from '../components/AppText';
 import Card from '../components/Card';
+import PopIcon from '../components/PopIcon';
 import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
 import { api } from '../api/client';
 import { todayISO } from '../utils/date';
 import athkarContent from '../constants/athkarContent';
 import ATHKAR_META from '../constants/athkarMeta';
+import useDoneAnim from '../hooks/useDoneAnim';
 
 export default function AthkarCounterScreen({ route }) {
   const { colors } = useTheme();
@@ -85,40 +87,54 @@ export default function AthkarCounterScreen({ route }) {
         const count = counts[index];
         const done = count >= item.repeat;
         return (
-          <TouchableOpacity key={index} activeOpacity={0.8} onPress={() => onTapItem(index)}>
-            <Card style={[styles.itemCard, done && styles.itemCardDone]}>
-              {item.label ? (
-                <AppText size={11.5} weight="bold" color={colors.amberDeep} style={styles.itemLabel}>
-                  {item.label}
-                </AppText>
-              ) : null}
-              <AppText size={16} weight="semibold" style={styles.itemText}>
-                {item.text}
-              </AppText>
-              {item.source ? (
-                <AppText size={11.5} color={colors.inkSoft} style={styles.itemSource}>
-                  {item.source}
-                </AppText>
-              ) : null}
-              <View style={styles.itemFooter}>
-                <View style={[styles.counterBadge, done && styles.counterBadgeDone]}>
-                  {done ? (
-                    <Ionicons name="checkmark" size={16} color={colors.white} />
-                  ) : (
-                    <AppText weight="bold" size={14} color={colors.ink}>
-                      {count}/{item.repeat}
-                    </AppText>
-                  )}
-                </View>
-                <AppText size={11.5} color={colors.inkSoft}>
-                  اضغط للعد
-                </AppText>
-              </View>
-            </Card>
-          </TouchableOpacity>
+          <AthkarItem key={index} item={item} count={count} done={done} onPress={() => onTapItem(index)} />
         );
       })}
     </Screen>
+  );
+}
+
+// One dhikr card — its own component so the badge's color-fade animation
+// can use a hook per item without breaking the rules of hooks inside the
+// .map() above.
+function AthkarItem({ item, count, done, onPress }) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
+  const doneAnim = useDoneAnim(done);
+  const badgeBg = doneAnim.interpolate({ inputRange: [0, 1], outputRange: [colors.amberSoft, colors.sage] });
+
+  return (
+    <TouchableOpacity activeOpacity={0.8} onPress={onPress}>
+      <Card style={[styles.itemCard, done && styles.itemCardDone]}>
+        {item.label ? (
+          <AppText size={11.5} weight="bold" color={colors.amberDeep} style={styles.itemLabel}>
+            {item.label}
+          </AppText>
+        ) : null}
+        <AppText size={16} weight="semibold" style={styles.itemText}>
+          {item.text}
+        </AppText>
+        {item.source ? (
+          <AppText size={11.5} color={colors.inkSoft} style={styles.itemSource}>
+            {item.source}
+          </AppText>
+        ) : null}
+        <View style={styles.itemFooter}>
+          <Animated.View style={[styles.counterBadge, { backgroundColor: badgeBg }]}>
+            {done ? (
+              <PopIcon name="checkmark" size={16} color={colors.white} />
+            ) : (
+              <AppText weight="bold" size={14} color={colors.ink}>
+                {count}/{item.repeat}
+              </AppText>
+            )}
+          </Animated.View>
+          <AppText size={11.5} color={colors.inkSoft}>
+            اضغط للعد
+          </AppText>
+        </View>
+      </Card>
+    </TouchableOpacity>
   );
 }
 
@@ -146,6 +162,5 @@ function createStyles(colors) {
       alignItems: 'center',
       justifyContent: 'center',
     },
-    counterBadgeDone: { backgroundColor: colors.sage },
   });
 }

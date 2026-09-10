@@ -1,14 +1,17 @@
 import React, { useCallback, useState } from 'react';
-import { RefreshControl, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { RefreshControl, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import Screen from '../components/Screen';
 import AppText from '../components/AppText';
+import Bounce from '../components/Bounce';
+import PopIcon from '../components/PopIcon';
 import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
 import { api } from '../api/client';
 import { todayISO } from '../utils/date';
 import { enqueueAction } from '../utils/pendingActions';
+import useDoneAnim from '../hooks/useDoneAnim';
 import ATHKAR_META from '../constants/athkarMeta';
 import athkarContent from '../constants/athkarContent';
 
@@ -49,14 +52,11 @@ export default function AthkarListScreen({ navigation }) {
   const onToggleComplete = useCallback(
     async (key) => {
       const current = Boolean(categories[key]?.completed);
-      const total = categories[key]?.totalItems ?? athkarContent[key].items.length;
+      // Summary-only override — leave completedItems exactly as they are,
+      // so the counter screen keeps showing what was actually read.
       setCategories((prev) => ({
         ...prev,
-        [key]: {
-          ...prev[key],
-          completed: !current,
-          completedItems: !current ? Array.from({ length: total }, (_, i) => i) : [],
-        },
+        [key]: { ...prev[key], completed: !current },
       }));
       const path = `/athkar/${date}/${key}`;
       const body = { completed: !current };
@@ -87,32 +87,48 @@ export default function AthkarListScreen({ navigation }) {
         const progress = categories[key];
         const total = progress?.totalItems ?? athkarContent[key].items.length;
         const done = progress?.completedItems?.length ?? 0;
-        const isDone = progress?.completed;
+        const isDone = Boolean(progress?.completed);
 
         return (
-          <TouchableOpacity
+          <AthkarRow
             key={key}
-            style={[styles.card, isDone && styles.cardDone]}
-            activeOpacity={0.85}
+            meta={meta}
+            done={done}
+            total={total}
+            isDone={isDone}
             onPress={() => onToggleComplete(key)}
             onLongPress={() => navigation.navigate('AthkarCounter', { category: key })}
-          >
-            <View style={[styles.iconWrap, { backgroundColor: `${meta.color}22` }]}>
-              <Ionicons name={isDone ? 'checkmark' : meta.icon} size={22} color={meta.color} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <AppText weight="semibold" size={15}>
-                {meta.title}
-              </AppText>
-              <AppText size={12} color={colors.inkSoft} style={{ marginTop: 2 }}>
-                {done}/{total} أذكار مكتملة
-              </AppText>
-            </View>
-            <Ionicons name="chevron-back" size={18} color={colors.inkSoft} />
-          </TouchableOpacity>
+          />
         );
       })}
     </Screen>
+  );
+}
+
+// A single category row — its own component so its color-fade animation can
+// use a hook per row without breaking the rules of hooks inside a .map().
+function AthkarRow({ meta, done, total, isDone, onPress, onLongPress }) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
+  const doneAnim = useDoneAnim(isDone);
+  const cardBg = doneAnim.interpolate({ inputRange: [0, 1], outputRange: [colors.surface, colors.sageSoft] });
+  const cardBorder = doneAnim.interpolate({ inputRange: [0, 1], outputRange: [colors.border, colors.sage] });
+
+  return (
+    <Bounce style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder }]} onPress={onPress} onLongPress={onLongPress}>
+      <View style={[styles.iconWrap, { backgroundColor: `${meta.color}22` }]}>
+        <PopIcon name={isDone ? 'checkmark' : meta.icon} size={22} color={meta.color} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <AppText weight="semibold" size={15}>
+          {meta.title}
+        </AppText>
+        <AppText size={12} color={colors.inkSoft} style={{ marginTop: 2 }}>
+          {done}/{total} أذكار مكتملة
+        </AppText>
+      </View>
+      <Ionicons name="chevron-back" size={18} color={colors.inkSoft} />
+    </Bounce>
   );
 }
 
@@ -122,14 +138,11 @@ function createStyles(colors) {
       flexDirection: 'row-reverse',
       alignItems: 'center',
       gap: spacing.md,
-      backgroundColor: colors.surface,
       borderRadius: radius.md,
       borderWidth: 1,
-      borderColor: colors.border,
       padding: spacing.lg,
       marginBottom: spacing.md,
     },
-    cardDone: { borderColor: colors.sage, backgroundColor: colors.sageSoft },
     iconWrap: { width: 46, height: 46, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
   });
 }

@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import PopIcon from './PopIcon';
 import AppText from './AppText';
 import Bounce from './Bounce';
 import { useTheme } from '../context/ThemeContext';
@@ -41,7 +41,7 @@ export default function PrayerCell({ title, icon = 'ellipse-outline', done, lock
       onLongPress={disabled ? undefined : onLongPress}
       style={[styles.cell, { backgroundColor: bg, borderColor }]}
     >
-      <Ionicons name={displayIcon} size={16} color={iconColor} />
+      <PopIcon name={displayIcon} size={16} color={iconColor} />
       <AppText size={9.5} weight="semibold" color={iconColor} style={styles.label} numberOfLines={1}>
         {title}
       </AppText>

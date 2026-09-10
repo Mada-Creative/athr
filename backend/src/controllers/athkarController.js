@@ -44,16 +44,23 @@ async function updateProgress(req, res) {
 
   function applyMutation() {
     if (typeof itemIndex === 'number') {
+      // Reading through the dhikrs themselves is the real source of truth —
+      // toggling one item here can always *promote* the category to
+      // complete once every item is read, but never demotes a category
+      // someone already marked done via the quick toggle below. Otherwise
+      // tapping a single dhikr for fun after a "mark it all done" shortcut
+      // would silently revoke that "done" status.
       const set = new Set(log.completedItems);
       if (set.has(itemIndex)) set.delete(itemIndex);
       else set.add(itemIndex);
       log.completedItems = Array.from(set).sort((a, b) => a - b);
-      log.completed = log.completedItems.length >= definition.items.length;
+      log.completed = log.completed || log.completedItems.length >= definition.items.length;
     } else if (typeof completed === 'boolean') {
+      // The "mark whole category done" shortcut (tap without opening it) is
+      // a summary-only override — it must never fabricate progress on the
+      // individual dhikrs, or opening the category afterwards would falsely
+      // show every one of them as read.
       log.completed = completed;
-      log.completedItems = completed
-        ? Array.from({ length: definition.items.length }, (_, i) => i)
-        : [];
     }
     log.totalItems = definition.items.length;
   }
