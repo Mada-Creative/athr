@@ -1,27 +1,31 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Animated, StyleSheet, View } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
+import useDoneAnim from '../hooks/useDoneAnim';
 import AppText from './AppText';
 import Bounce from './Bounce';
+import PopIcon from './PopIcon';
 
 export default function CheckRow({ title, subtitle, checked, onToggle, locked, icon = 'moon-outline' }) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
+  const doneAnim = useDoneAnim(checked);
+  const iconWrapBg = doneAnim.interpolate({ inputRange: [0, 1], outputRange: [colors.backgroundAlt, colors.sage] });
+
   return (
     <Bounce
       disabled={locked}
       onPress={locked ? undefined : onToggle}
       style={[styles.row, checked && styles.rowChecked]}
     >
-      <View style={[styles.iconWrap, checked && styles.iconWrapChecked]}>
-        <Ionicons
+      <Animated.View style={[styles.iconWrap, { backgroundColor: iconWrapBg }]}>
+        <PopIcon
           name={locked ? 'lock-closed-outline' : checked ? 'checkmark' : icon}
           size={18}
           color={checked ? colors.white : colors.inkSoft}
         />
-      </View>
+      </Animated.View>
       <View style={styles.texts}>
         <AppText weight="semibold" size={15}>
           {title}
@@ -58,7 +62,6 @@ function createStyles(colors) {
       alignItems: 'center',
       justifyContent: 'center',
     },
-    iconWrapChecked: { backgroundColor: colors.sage },
     texts: { flex: 1 },
   });
 }

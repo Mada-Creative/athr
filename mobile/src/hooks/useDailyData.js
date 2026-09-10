@@ -2,8 +2,15 @@ import { useCallback, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from '../api/client';
 import { enqueueAction, flushPendingActions } from '../utils/pendingActions';
+import { AFTER_PRAYER_SLOTS, afterPrayerCategory } from '../constants/afterPrayerSlots';
 
-const ATHKAR_CONTENT_FALLBACK_KEYS = ['morning', 'evening', 'afterPrayer', 'sleep', 'wakeup'];
+const ATHKAR_CONTENT_FALLBACK_KEYS = [
+  'morning',
+  'evening',
+  ...AFTER_PRAYER_SLOTS.map(afterPrayerCategory),
+  'sleep',
+  'wakeup',
+];
 
 const cacheKey = (date) => `athr_daily_cache_${date}`;
 

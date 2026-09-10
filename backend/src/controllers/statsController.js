@@ -3,11 +3,9 @@ const AthkarLog = require('../models/AthkarLog');
 const QuranLog = require('../models/QuranLog');
 const CustomTask = require('../models/CustomTask');
 const CustomTaskLog = require('../models/CustomTaskLog');
-const athkarContent = require('../data/athkarContent');
 const { isValidDateParam } = require('../utils/date');
 const { FARD_KEYS, NAWAFIL_KEYS } = require('./prayerController');
-
-const ATHKAR_CATEGORIES = Object.keys(athkarContent);
+const { ALL_CATEGORIES: ATHKAR_CATEGORIES } = require('./athkarController');
 
 // Fixed for every user — prayers are the foundation of the day's score,
 // everything else splits the rest evenly. Not configurable, and not read

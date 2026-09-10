@@ -10,7 +10,9 @@
 // one for a different reason (e.g. the tasbih-completing declaration below
 // is word-for-word the same du'a said right after salam, but the hadith
 // behind it — and the moment it's said — is different).
-export default {
+import { AFTER_PRAYER_SLOTS, afterPrayerCategory } from './afterPrayerSlots';
+
+const athkarContent = {
   morning: {
     title: 'أذكار الصباح',
     items: [
@@ -263,3 +265,11 @@ export default {
     ],
   },
 };
+
+// One entry per prayer, all pointing at the very same dhikr text above —
+// only completion is tracked separately per prayer (see afterPrayerSlots.js).
+AFTER_PRAYER_SLOTS.forEach((slot) => {
+  athkarContent[afterPrayerCategory(slot)] = athkarContent.afterPrayer;
+});
+
+export default athkarContent;

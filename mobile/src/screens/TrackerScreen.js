@@ -22,23 +22,33 @@ import ProgressRing from '../components/ProgressRing';
 import PrayerCell from '../components/PrayerCell';
 import WeekRingStrip from '../components/WeekRingStrip';
 import Bounce from '../components/Bounce';
+import PopIcon from '../components/PopIcon';
+import AnimatedPercent from '../components/AnimatedPercent';
 import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
 import { todayISO, addDays, formatGregorian, formatWeekday } from '../utils/date';
 import { useAuth } from '../context/AuthContext';
 import usePrayerTimes from '../hooks/usePrayerTimes';
 import useDailyData from '../hooks/useDailyData';
+import useDoneAnim from '../hooks/useDoneAnim';
 import ATHKAR_META from '../constants/athkarMeta';
+import { afterPrayerCategory } from '../constants/afterPrayerSlots';
 
 // Each prayer gets its own column; its rawatib/witr/qiyam and any athkar
 // naturally tied to that time of day stack underneath it, so marking
 // everything around one prayer is one tap-target away from the next.
+//
+// Every column also gets its own "بعد الصلاة" athkar cell (right after the
+// fard) — that dhikr is meant to be read after *each* prayer, not once for
+// the whole day, so its completion is tracked per prayer via its own
+// afterPrayer_<slot> category (see constants/afterPrayerSlots.js).
 const PRAYER_COLUMNS = [
   {
     key: 'fajr',
     title: 'الفجر',
     cells: [
       { type: 'fard', key: 'fajr', title: 'الفرض', icon: 'moon-outline' },
+      { type: 'athkar', category: afterPrayerCategory('fajr'), title: 'بعد الصلاة', icon: 'business-outline' },
       { type: 'nawafil', key: 'fajrSunnah', title: 'سنة', icon: 'star-outline' },
       { type: 'athkar', category: 'morning', title: 'الصباح', icon: 'partly-sunny-outline' },
     ],
@@ -48,6 +58,7 @@ const PRAYER_COLUMNS = [
     title: 'الظهر',
     cells: [
       { type: 'fard', key: 'dhuhr', title: 'الفرض', icon: 'moon-outline' },
+      { type: 'athkar', category: afterPrayerCategory('dhuhr'), title: 'بعد الصلاة', icon: 'business-outline' },
       { type: 'nawafil', key: 'dhuhrQabliyah', title: 'قبلية', icon: 'star-outline' },
       { type: 'nawafil', key: 'dhuhrBadiyah', title: 'بعدية', icon: 'star-outline' },
     ],
@@ -57,6 +68,7 @@ const PRAYER_COLUMNS = [
     title: 'العصر',
     cells: [
       { type: 'fard', key: 'asr', title: 'الفرض', icon: 'moon-outline' },
+      { type: 'athkar', category: afterPrayerCategory('asr'), title: 'بعد الصلاة', icon: 'business-outline' },
       { type: 'athkar', category: 'evening', title: 'المساء', icon: 'moon-outline' },
     ],
   },
@@ -65,6 +77,7 @@ const PRAYER_COLUMNS = [
     title: 'المغرب',
     cells: [
       { type: 'fard', key: 'maghrib', title: 'الفرض', icon: 'moon-outline' },
+      { type: 'athkar', category: afterPrayerCategory('maghrib'), title: 'بعد الصلاة', icon: 'business-outline' },
       { type: 'nawafil', key: 'maghribSunnah', title: 'سنة', icon: 'star-outline' },
     ],
   },
@@ -73,6 +86,7 @@ const PRAYER_COLUMNS = [
     title: 'العشاء',
     cells: [
       { type: 'fard', key: 'isha', title: 'الفرض', icon: 'moon-outline' },
+      { type: 'athkar', category: afterPrayerCategory('isha'), title: 'بعد الصلاة', icon: 'business-outline' },
       { type: 'nawafil', key: 'ishaSunnah', title: 'سنة', icon: 'star-outline' },
       { type: 'nawafil', key: 'witr', title: 'الوتر', icon: 'sparkles-outline' },
       { type: 'nawafil', key: 'qiyam', title: 'قيام', icon: 'sparkles-outline' },
@@ -82,7 +96,7 @@ const PRAYER_COLUMNS = [
 ];
 
 // Athkar not already folded into a prayer column above.
-const REMAINING_ATHKAR_KEYS = ['afterPrayer', 'wakeup'];
+const REMAINING_ATHKAR_KEYS = ['wakeup'];
 
 // Old-architecture Android needs this opt-in for LayoutAnimation; harmless
 // to call unconditionally elsewhere.
@@ -334,28 +348,17 @@ export default function TrackerScreen({ navigation }) {
       {REMAINING_ATHKAR_KEYS.map((key) => {
         const meta = ATHKAR_META[key];
         const progress = athkar?.[key];
-        const completed = progress?.completed;
+        const completed = Boolean(progress?.completed);
         const pct = progress?.totalItems ? Math.round((progress.completedItems.length / progress.totalItems) * 100) : 0;
         return (
-          <Bounce
+          <AthkarSummaryRow
             key={key}
-            scaleTo={0.97}
-            style={[styles.athkarRow, completed && styles.athkarRowDone]}
+            meta={meta}
+            completed={completed}
+            pct={pct}
             onPress={() => onToggleAthkar(key)}
             onLongPress={() => navigation.navigate('AthkarCounter', { category: key })}
-          >
-            <View style={[styles.athkarIcon, { backgroundColor: `${meta.color}${scheme === 'dark' ? '33' : '22'}` }]}>
-              <Ionicons name={completed ? 'checkmark' : meta.icon} size={18} color={meta.color} />
-            </View>
-            <AppText weight="semibold" size={14} style={{ flex: 1 }}>
-              {meta.title}
-            </AppText>
-            <View style={[styles.pctBadge, completed && styles.pctBadgeDone]}>
-              <AppText size={11} weight="bold" color={completed ? colors.white : colors.inkSoft}>
-                {pct}%
-              </AppText>
-            </View>
-          </Bounce>
+          />
         );
       })}
       <AppText size={11} color={colors.inkSoft} style={{ marginTop: spacing.xs, marginBottom: spacing.lg }}>
@@ -449,6 +452,38 @@ function WeightPill({ label, value }) {
         {label}
       </AppText>
     </View>
+  );
+}
+
+// One row in the "أذكار بعد الصلاة / الاستيقاظ" list — its own component so
+// its color-fade animation can use a hook per row without breaking the
+// rules of hooks inside the .map() above.
+function AthkarSummaryRow({ meta, completed, pct, onPress, onLongPress }) {
+  const { colors, scheme } = useTheme();
+  const styles = createStyles(colors);
+  const doneAnim = useDoneAnim(completed);
+  const rowBg = doneAnim.interpolate({ inputRange: [0, 1], outputRange: [colors.surface, colors.sageSoft] });
+  const rowBorder = doneAnim.interpolate({ inputRange: [0, 1], outputRange: [colors.border, colors.sage] });
+  const badgeBg = doneAnim.interpolate({ inputRange: [0, 1], outputRange: [colors.surface, colors.sage] });
+  const badgeBorder = doneAnim.interpolate({ inputRange: [0, 1], outputRange: [colors.border, colors.sage] });
+
+  return (
+    <Bounce
+      scaleTo={0.97}
+      style={[styles.athkarRow, { backgroundColor: rowBg, borderColor: rowBorder }]}
+      onPress={onPress}
+      onLongPress={onLongPress}
+    >
+      <View style={[styles.athkarIcon, { backgroundColor: `${meta.color}${scheme === 'dark' ? '33' : '22'}` }]}>
+        <PopIcon name={completed ? 'checkmark' : meta.icon} size={18} color={meta.color} />
+      </View>
+      <AppText weight="semibold" size={14} style={{ flex: 1 }}>
+        {meta.title}
+      </AppText>
+      <Animated.View style={[styles.pctBadge, { backgroundColor: badgeBg, borderColor: badgeBorder }]}>
+        <AnimatedPercent value={pct} color={completed ? colors.white : colors.inkSoft} />
+      </Animated.View>
+    </Bounce>
   );
 }
 
@@ -561,29 +596,22 @@ function createStyles(colors) {
       flexDirection: 'row-reverse',
       alignItems: 'center',
       gap: spacing.md,
-      backgroundColor: colors.surface,
       borderRadius: radius.md,
       borderWidth: 1,
-      borderColor: colors.border,
       padding: spacing.md,
       marginBottom: spacing.sm,
     },
-    athkarRowDone: { borderColor: colors.sage, backgroundColor: colors.sageSoft },
     athkarIcon: { width: 36, height: 36, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
-    // A plain static badge on purpose, not the animated ProgressRing — a
-    // small percentage number in a circle reads the same at this size
-    // without the extra machinery.
+    // Colors are animated (useDoneAnim in AthkarSummaryRow) rather than
+    // static here, so a plain done/not-done variant isn't needed.
     pctBadge: {
       width: 38,
       height: 38,
       borderRadius: radius.pill,
       borderWidth: 1.5,
-      borderColor: colors.border,
-      backgroundColor: colors.surface,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    pctBadgeDone: { backgroundColor: colors.sage, borderColor: colors.sage },
     weightsToggle: {
       flexDirection: 'row-reverse',
       alignSelf: 'center',
