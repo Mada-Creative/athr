@@ -27,11 +27,14 @@ const MAIN_HEIGHT = 92;
 const SIDE_HEIGHT = 66;
 const SIDE_TOP_OFFSET = 14;
 // HomeScreen pulls the hero prayer card up by this same amount so the
-// card row appears to be tucked in behind it — see the Bounce wrapper's
-// own negative marginTop there. Exported so the two stay in sync. Small
-// on purpose — just enough to read as "tucked behind", not deep enough
-// to cover the hero card's own top-row content underneath it.
-export const HERO_OVERLAP = 14;
+// card row appears to be clearly tucked in behind it — see the Bounce
+// wrapper's own negative marginTop there. Exported so the two stay in
+// sync, and so HomeScreen can also give the hero card that same amount
+// of extra top padding (plus a small buffer): that's what actually keeps
+// this deep an overlap from covering "الصلاة القادمة" itself — the card
+// row still visually disappears behind the hero card's surface, just
+// behind a buffer zone at its top instead of behind its real content.
+export const HERO_OVERLAP = 34;
 
 // The "أثر" daily card, above the "الصلاة القادمة" hero card — a front
 // card (today's, see athrCards.js) with two shorter cards fanned out

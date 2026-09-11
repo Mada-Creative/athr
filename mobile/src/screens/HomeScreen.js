@@ -148,7 +148,18 @@ export default function HomeScreen({ navigation }) {
 
       <AthrCardStack date={now} onPress={() => navigation.navigate('AthrCard')} />
 
-      <Bounce scaleTo={0.98} onPress={() => navigation.navigate('PrayerDetail')} style={{ marginTop: -HERO_OVERLAP }}>
+      {/* zIndex here isn't decorative — AthrCardStack's own internal
+          zIndex (mainCard over its two side cards) can otherwise promote
+          that whole row above a later sibling with no zIndex of its own
+          at all, which is what actually had the card row painting over
+          this hero card instead of tucking in behind it, regardless of
+          JSX order or the negative marginTop. Comfortably higher than
+          AthrCardStack's highest internal value (2). */}
+      <Bounce
+        scaleTo={0.98}
+        onPress={() => navigation.navigate('PrayerDetail')}
+        style={{ marginTop: -HERO_OVERLAP, zIndex: 10 }}
+      >
         <Card style={styles.heroCard}>
           <View style={styles.heroTop}>
             <View>
@@ -321,6 +332,11 @@ function createStyles(colors) {
       // No marginTop — the Bounce wrapper's own negative marginTop (see
       // HERO_OVERLAP) already sets the spacing, pulling this card up to
       // tuck in behind the card row above it.
+      //
+      // Extra top padding (beyond Card's own default) so the card row
+      // tucking in this deep still lands behind a blank buffer zone at
+      // this card's top, never behind "الصلاة القادمة" itself.
+      paddingTop: HERO_OVERLAP + spacing.sm,
     },
     heroTop: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'flex-start' },
     countdownWrap: { alignItems: 'center' },
