@@ -143,9 +143,6 @@ export default function AthrCardScreen({ navigation }) {
         <Bounce onPress={() => navigation.goBack()} style={styles.closeBtn}>
           <Ionicons name="chevron-back" size={20} color={colors.ink} />
         </Bounce>
-        <AppText size={11} color={colors.inkFaint} style={{ fontVariant: ['tabular-nums'] }}>
-          {pos + 1} / {ATHR_CARDS.length}
-        </AppText>
       </View>
 
       <View style={styles.stage}>

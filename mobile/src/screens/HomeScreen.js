@@ -10,7 +10,7 @@ import LiveClock from '../components/LiveClock';
 import SectionHeader from '../components/SectionHeader';
 import Bounce from '../components/Bounce';
 import AthkarTile from '../components/AthkarTile';
-import AthrCardStack from '../components/AthrCardStack';
+import AthrCardStack, { HERO_OVERLAP } from '../components/AthrCardStack';
 import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
 import { useAuth } from '../context/AuthContext';
@@ -148,7 +148,7 @@ export default function HomeScreen({ navigation }) {
 
       <AthrCardStack date={now} onPress={() => navigation.navigate('AthrCard')} />
 
-      <Bounce scaleTo={0.98} onPress={() => navigation.navigate('PrayerDetail')}>
+      <Bounce scaleTo={0.98} onPress={() => navigation.navigate('PrayerDetail')} style={{ marginTop: -HERO_OVERLAP }}>
         <Card style={styles.heroCard}>
           <View style={styles.heroTop}>
             <View>
@@ -318,7 +318,9 @@ function createStyles(colors) {
       // Fixed dark ink surface — deliberately doesn't invert with the theme.
       backgroundColor: colors.accentDark,
       borderColor: colors.accentDark,
-      marginTop: spacing.md,
+      // No marginTop — the Bounce wrapper's own negative marginTop (see
+      // HERO_OVERLAP) already sets the spacing, pulling this card up to
+      // tuck in behind the card row above it.
     },
     heroTop: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'flex-start' },
     countdownWrap: { alignItems: 'center' },
