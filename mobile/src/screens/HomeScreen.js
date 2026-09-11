@@ -18,8 +18,8 @@ import { todayISO, formatGregorian, formatWeekday, toHijri, greetingFor, volunta
 import usePrayerTimes, { formatCountdownWithSeconds, formatClock } from '../hooks/usePrayerTimes';
 import usePrayerNotifications from '../hooks/usePrayerNotifications';
 import useDailyData from '../hooks/useDailyData';
-import ATHKAR_META, { ATHKAR_ORDER, ATHKAR_UNLOCK_PRAYER } from '../constants/athkarMeta';
-import athkarContent from '../constants/athkarContent';
+import ATHKAR_META, { ATHKAR_UNLOCK_PRAYER } from '../constants/athkarMeta';
+import { afterPrayerCategory } from '../constants/afterPrayerSlots';
 
 const FARD_ORDER = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
 
@@ -41,8 +41,7 @@ export default function HomeScreen({ navigation }) {
   }, []);
   const hijri = toHijri(now);
   const { schedule, next } = usePrayerTimes();
-  const { stats, prayerLog, athkar, quran, loading, reload, toggleAthkarComplete, toggleVoluntaryFasting } =
-    useDailyData(date);
+  const { stats, prayerLog, quran, loading, reload, toggleVoluntaryFasting } = useDailyData(date);
   // Only true for a genuine first load with nothing cached yet from a
   // previous successful fetch — a slow-but-normal request (a cold Heroku
   // dyno, a weak connection) shows this instead of a misleading "0%" ring.
@@ -72,11 +71,18 @@ export default function HomeScreen({ navigation }) {
     [colors]
   );
 
-  // Same "tap = done, no need to open the counter and go item by item"
-  // shortcut as AthkarListScreen — long-press still opens the counter for
-  // dhikr-by-dhikr reading. All 9 categories show right here on Home — no
-  // separate "كل الفئات" browse screen, per explicit request.
-  const onToggleAthkarComplete = useCallback((key) => toggleAthkarComplete(key), [toggleAthkarComplete]);
+  // Home is pure navigation now — a tap opens the reading/counter screen,
+  // nothing here ever marks a category done. Marking-complete (and seeing
+  // what's actually done) lives only on Tracker, so the two screens have a
+  // real reason to both exist instead of duplicating each other. Also why
+  // the 5 "بعد الفجر/الظهر/العصر/المغرب/العشاء" tiles collapse into one
+  // "أذكار الصلاة" tile here (Tracker still shows all 5 separately) — see
+  // prayerAthkarCategory below for which one it actually opens.
+  const lastPassedPrayer = useMemo(() => {
+    const passed = schedule.filter((s) => s.time <= now);
+    return passed.length ? passed[passed.length - 1] : schedule.find((s) => s.key === 'isha');
+  }, [schedule, now]);
+  const prayerAthkarCategory = afterPrayerCategory(lastPassedPrayer?.key || 'isha');
 
   // Only truthy on Monday/Thursday — the tile below only shows up those
   // two days, not a permanent fixture that's just disabled the rest of
@@ -109,8 +115,10 @@ export default function HomeScreen({ navigation }) {
       },
       { key: 'names', title: 'أسماء الله الحسنى', icon: 'sparkles-outline', color: colors.sage, onPress: () => navigation.navigate('Names') },
       { key: 'duas', title: 'أدعية مأثورة', icon: 'hand-left-outline', color: colors.clay, onPress: () => navigation.navigate('Duas') },
-      // Only on Monday/Thursday — tapping toggles right here, no separate
-      // screen, same "tap = done" shortcut as the athkar tiles above.
+      // Only on Monday/Thursday. Unlike the athkar tiles above (which are
+      // pure navigation now — see the comment on them), there's no "read"
+      // screen to send this one to: marking it *is* the whole interaction,
+      // so tapping toggles it right here.
       ...(fastingDay
         ? [
             {
@@ -271,15 +279,17 @@ export default function HomeScreen({ navigation }) {
 
       <SectionHeader title="الأذكار" />
       <View style={styles.athkarGrid}>
-        {ATHKAR_ORDER.map((key) => {
-          const meta = ATHKAR_META[key];
-          const progress = athkar?.[key];
-          const total = progress?.totalItems ?? athkarContent[key].items.length;
-          const done = progress?.completedItems?.length ?? 0;
+        {['wakeup', 'morning', 'prayerAthkar', 'evening', 'sleep'].map((key) => {
+          // The merged tile isn't a real ATHKAR_META entry — borrow the
+          // afterPrayer group's own icon/color (all 5 slots share them) and
+          // give it its own title instead of one prayer's specific label.
+          const meta = key === 'prayerAthkar' ? { ...ATHKAR_META[afterPrayerCategory('fajr')], title: 'أذكار الصلاة' } : ATHKAR_META[key];
+          const category = key === 'prayerAthkar' ? prayerAthkarCategory : key;
           // Same "opens once its time starts" gating as TrackerScreen's
-          // prayer columns — Home used to let you open/mark afterPrayer or
-          // evening/morning/sleep athkar before their time even arrived.
-          const unlockPrayerKey = ATHKAR_UNLOCK_PRAYER[key];
+          // prayer columns — the merged tile is never locked (there's
+          // always *some* prayer's athkar it can open, even overnight
+          // before fajr, via the isha fallback above).
+          const unlockPrayerKey = key === 'prayerAthkar' ? null : ATHKAR_UNLOCK_PRAYER[key];
           const unlockPrayer = unlockPrayerKey ? schedule.find((s) => s.key === unlockPrayerKey) : null;
           const locked = Boolean(unlockPrayerKey) && (!unlockPrayer || now < unlockPrayer.time);
           return (
@@ -289,13 +299,9 @@ export default function HomeScreen({ navigation }) {
               title={meta.title}
               icon={meta.icon}
               color={meta.color}
-              completed={progress?.completed}
-              completedCount={done}
-              totalCount={total}
               locked={locked}
               lockNote={unlockPrayer ? `يفتح بعد صلاة ${unlockPrayer.label}` : undefined}
-              onPress={() => onToggleAthkarComplete(key)}
-              onLongPress={() => navigation.navigate('AthkarCounter', { category: key })}
+              onPress={() => navigation.navigate('AthkarCounter', { category })}
             />
           );
         })}
