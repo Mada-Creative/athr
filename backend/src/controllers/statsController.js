@@ -28,15 +28,7 @@ async function computeDayScore(userId, date, weights = FIXED_WEIGHTS) {
     CustomTaskLog.find({ user: userId, date }),
   ]);
 
-  // total===0 only ever happens for dailyDeeds/other (the two buckets
-  // backed by the user's own custom task list, not a fixed set like the 5
-  // prayers) — someone who never added a single custom task has nothing
-  // to do in that bucket, so it reads as fully met (1), the same "not
-  // obligated → not penalized" logic as the excused-day handling below.
-  // The old `: 0` fallback instead scored an empty list as 0% forever,
-  // silently capping that user's daily score at 90% (bucket's weight)
-  // with no way to ever reach 100% — not a real gap, a bug.
-  const ratio = (done, total) => (total > 0 ? done / total : 1);
+  const ratio = (done, total) => (total > 0 ? done / total : 0);
 
   // A day marked as a legitimate Islamic excuse (menstruation/postpartum)
   // isn't a day of missed prayers — she isn't obligated to pray it, so it
@@ -72,10 +64,31 @@ async function computeDayScore(userId, date, weights = FIXED_WEIGHTS) {
     other: { ratio: ratio(otherDone, otherTasks.length), weight: weights.other, done: otherDone, total: otherTasks.length },
   };
 
-  let percentage = 0;
+  // total===0 only ever happens for dailyDeeds/other (the two buckets
+  // backed by the user's own custom task list, not a fixed set like the 5
+  // prayers) — someone who never added a single custom task has nothing
+  // in that bucket at all. Two wrong ways to handle that, both tried and
+  // both reverted:
+  //   - Score it as 0/0 → ratio 0: silently caps the score at (100 minus
+  //     that bucket's weight) forever, no matter what else gets done —
+  //     the original bug report.
+  //   - Score it as "fully met" (ratio 1) just because it's empty: hands
+  //     out that bucket's weight as free credit even on a day where
+  //     nothing at all was done yet — the very next bug report, a 10%
+  //     starting score on a brand new day with a blank "أخرى" list.
+  // Correct answer is neither: a bucket nobody's using isn't applicable
+  // today, so it's excluded from the score entirely and the remaining
+  // buckets' weights are re-normalized to still span the full 0-100 —
+  // same shape as the excused-day carve-out (not obligated → not
+  // counted against you), just without auto-crediting an unused feature.
+  let earned = 0;
+  let weightSum = 0;
   for (const bucket of Object.values(buckets)) {
-    percentage += bucket.ratio * bucket.weight;
+    if (bucket.total === 0) continue;
+    earned += bucket.ratio * bucket.weight;
+    weightSum += bucket.weight;
   }
+  const percentage = weightSum > 0 ? (earned / weightSum) * 100 : 0;
 
   return { date, percentage: Math.round(percentage), excused, buckets };
 }
