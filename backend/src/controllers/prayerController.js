@@ -108,4 +108,34 @@ async function setExcused(req, res) {
   return res.json({ log });
 }
 
-module.exports = { getByDate, toggle, setExcused, FARD_KEYS, NAWAFIL_KEYS };
+async function setVoluntaryFasting(req, res) {
+  const { date } = req.params;
+  const { fasted } = req.body;
+
+  if (!isValidDateParam(date)) {
+    return res.status(400).json({ message: 'صيغة التاريخ غير صحيحة (YYYY-MM-DD)' });
+  }
+  if (typeof fasted !== 'boolean') {
+    return res.status(400).json({ message: 'قيمة fasted يجب أن تكون true أو false' });
+  }
+
+  const update = { $set: { voluntaryFasting: fasted } };
+  let log;
+  try {
+    log = await PrayerLog.findOneAndUpdate({ user: req.user._id, date }, update, {
+      upsert: true,
+      new: true,
+      setDefaultsOnInsert: true,
+    });
+  } catch (err) {
+    if (err.code === 11000) {
+      log = await PrayerLog.findOneAndUpdate({ user: req.user._id, date }, update, { new: true });
+    } else {
+      throw err;
+    }
+  }
+
+  return res.json({ log });
+}
+
+module.exports = { getByDate, toggle, setExcused, setVoluntaryFasting, FARD_KEYS, NAWAFIL_KEYS };

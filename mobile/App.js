@@ -23,6 +23,7 @@ import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import RootNavigator from './src/navigation/RootNavigator';
 import { ensureAndroidNotificationChannel } from './src/hooks/usePrayerNotifications';
 import useAthrCardNotifications from './src/hooks/useAthrCardNotifications';
+import useFastingNotifications from './src/hooks/useFastingNotifications';
 
 // Show prayer-time notifications as a banner + sound even while the app is
 // open, instead of silently queuing them for the notification tray.
@@ -56,6 +57,7 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 function AppShell({ fontsLoaded, onLayoutRootView }) {
   const { colors, scheme } = useTheme();
   useAthrCardNotifications();
+  useFastingNotifications();
 
   if (!fontsLoaded) {
     return <View style={{ flex: 1, backgroundColor: colors.background }} />;

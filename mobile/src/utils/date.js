@@ -96,6 +96,14 @@ function toHijri(date = new Date()) {
   return { day, month: HIJRI_MONTHS[month - 1] || HIJRI_MONTHS[0], year };
 }
 
+// getDay(): 0=Sunday...6=Saturday. Sunnah fasting days only.
+function voluntaryFastingDay(date = new Date()) {
+  const day = date.getDay();
+  if (day === 1) return 'الاثنين';
+  if (day === 4) return 'الخميس';
+  return null;
+}
+
 function greetingFor(date = new Date()) {
   const hour = date.getHours();
   if (hour < 5) return 'طاب ليلك';
@@ -105,4 +113,4 @@ function greetingFor(date = new Date()) {
   return 'مساء النور';
 }
 
-export { todayISO, addDays, formatGregorian, formatWeekday, toHijri, greetingFor };
+export { todayISO, addDays, formatGregorian, formatWeekday, toHijri, greetingFor, voluntaryFastingDay };

@@ -166,6 +166,30 @@ export default function useDailyData(date) {
     [date, load]
   );
 
+  const toggleVoluntaryFasting = useCallback(
+    async (fasted) => {
+      setError(null);
+      setSyncNotice(null);
+      setPrayerLog((prev) => ({ ...prev, voluntaryFasting: fasted }));
+      const path = `/prayers/${date}/fasting`;
+      const body = { fasted };
+      try {
+        const res = await api.patch(path, body);
+        setPrayerLog(res.log);
+        load();
+      } catch (err) {
+        if (err.isNetworkError) {
+          await enqueueAction({ method: 'patch', path, body });
+          setSyncNotice('تم الحفظ على جهازك — سيُرفع عند عودة الاتصال');
+        } else {
+          setPrayerLog((prev) => ({ ...prev, voluntaryFasting: !fasted }));
+          setError(err.message || 'تعذر تسجيل الصيام');
+        }
+      }
+    },
+    [date, load]
+  );
+
   const toggleAthkarItem = useCallback(
     async (category, itemIndex) => {
       const path = `/athkar/${date}/${category}`;
@@ -328,6 +352,7 @@ export default function useDailyData(date) {
     reload: load,
     togglePrayer,
     toggleExcused,
+    toggleVoluntaryFasting,
     toggleAthkarItem,
     toggleAthkarComplete,
     toggleQuran,

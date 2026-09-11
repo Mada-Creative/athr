@@ -30,6 +30,16 @@ const PrayerLogSchema = new mongoose.Schema(
     // as fully met rather than missed, and fard/nawafil can't be toggled
     // while it's set. Athkar is unaffected — dhikr isn't tied to this ruling.
     excused: { type: Boolean, default: false },
+
+    // Sunnah fasting (Monday/Thursday) — a standalone yes/no tracked here
+    // because this is already the one-doc-per-user-per-date model, but
+    // deliberately left out of computeDayScore's weighted buckets in
+    // statsController.js: it only applies two days a week, and folding it
+    // into the fixed 100%-summing weights would mean either rebalancing
+    // everyone's existing score composition or a bucket that's silently
+    // 0/0 (and so invisible) five days out of seven. It's a self-contained
+    // streak, not a score input.
+    voluntaryFasting: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

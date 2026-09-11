@@ -14,7 +14,7 @@ import AthrCardStack, { HERO_OVERLAP } from '../components/AthrCardStack';
 import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
 import { useAuth } from '../context/AuthContext';
-import { todayISO, formatGregorian, formatWeekday, toHijri, greetingFor } from '../utils/date';
+import { todayISO, formatGregorian, formatWeekday, toHijri, greetingFor, voluntaryFastingDay } from '../utils/date';
 import usePrayerTimes, { formatCountdownWithSeconds, formatClock } from '../hooks/usePrayerTimes';
 import usePrayerNotifications from '../hooks/usePrayerNotifications';
 import useDailyData from '../hooks/useDailyData';
@@ -41,7 +41,8 @@ export default function HomeScreen({ navigation }) {
   }, []);
   const hijri = toHijri(now);
   const { schedule, next } = usePrayerTimes();
-  const { stats, prayerLog, athkar, quran, loading, reload, toggleAthkarComplete } = useDailyData(date);
+  const { stats, prayerLog, athkar, quran, loading, reload, toggleAthkarComplete, toggleVoluntaryFasting } =
+    useDailyData(date);
   // Only true for a genuine first load with nothing cached yet from a
   // previous successful fetch — a slow-but-normal request (a cold Heroku
   // dyno, a weak connection) shows this instead of a misleading "0%" ring.
@@ -77,6 +78,16 @@ export default function HomeScreen({ navigation }) {
   // separate "كل الفئات" browse screen, per explicit request.
   const onToggleAthkarComplete = useCallback((key) => toggleAthkarComplete(key), [toggleAthkarComplete]);
 
+  // Only truthy on Monday/Thursday — the tile below only shows up those
+  // two days, not a permanent fixture that's just disabled the rest of
+  // the week. Standalone streak, not part of "بصمتك اليوم" — see the
+  // comment on PrayerLog.voluntaryFasting.
+  const fastingDay = voluntaryFastingDay(now);
+  const onToggleFasting = useCallback(
+    () => toggleVoluntaryFasting(!prayerLog?.voluntaryFasting),
+    [toggleVoluntaryFasting, prayerLog?.voluntaryFasting]
+  );
+
   // amberDeep differs between light/dark, so this lives inside the
   // component (recomputed per theme) rather than as a module constant.
   // Quran carries real daily progress (one "وِرد" done/not-done); Names and
@@ -98,8 +109,22 @@ export default function HomeScreen({ navigation }) {
       },
       { key: 'names', title: 'أسماء الله الحسنى', icon: 'sparkles-outline', color: colors.sage, onPress: () => navigation.navigate('Names') },
       { key: 'duas', title: 'أدعية مأثورة', icon: 'hand-left-outline', color: colors.clay, onPress: () => navigation.navigate('Duas') },
+      // Only on Monday/Thursday — tapping toggles right here, no separate
+      // screen, same "tap = done" shortcut as the athkar tiles above.
+      ...(fastingDay
+        ? [
+            {
+              key: 'fasting',
+              title: `صيام ${fastingDay}`,
+              icon: 'moon-outline',
+              color: '#4E7FA8',
+              completed: Boolean(prayerLog?.voluntaryFasting),
+              onPress: onToggleFasting,
+            },
+          ]
+        : []),
     ],
-    [colors, navigation, quran]
+    [colors, navigation, quran, fastingDay, prayerLog?.voluntaryFasting, onToggleFasting]
   );
 
   usePrayerNotifications(schedule, user?.prayerNotifications);
