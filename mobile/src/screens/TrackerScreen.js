@@ -267,6 +267,14 @@ export default function TrackerScreen({ navigation }) {
               <BucketLine label="الصلوات" bucket={stats.buckets.prayers} />
               <BucketLine label="النوافل" bucket={stats.buckets.nawafil} />
               <BucketLine label="الأذكار" bucket={stats.buckets.athkar} />
+              <BucketLine label="القرآن" bucket={stats.buckets.quran} />
+              {/* Only shown once there's actually a custom task in that
+                  group — an empty list scores as fully met (see
+                  statsController.js), but a "عبادات يومية 0/0" line would
+                  still read as something to worry about. Same convention
+                  bucketCount() below already uses for these two. */}
+              {dailyDeedTasks.length ? <BucketLine label="عبادات يومية" bucket={stats.buckets.dailyDeeds} /> : null}
+              {otherTasks.length ? <BucketLine label="أخرى" bucket={stats.buckets.other} /> : null}
             </View>
           ) : null}
         </View>

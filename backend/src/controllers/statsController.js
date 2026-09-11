@@ -28,7 +28,15 @@ async function computeDayScore(userId, date, weights = FIXED_WEIGHTS) {
     CustomTaskLog.find({ user: userId, date }),
   ]);
 
-  const ratio = (done, total) => (total > 0 ? done / total : 0);
+  // total===0 only ever happens for dailyDeeds/other (the two buckets
+  // backed by the user's own custom task list, not a fixed set like the 5
+  // prayers) — someone who never added a single custom task has nothing
+  // to do in that bucket, so it reads as fully met (1), the same "not
+  // obligated → not penalized" logic as the excused-day handling below.
+  // The old `: 0` fallback instead scored an empty list as 0% forever,
+  // silently capping that user's daily score at 90% (bucket's weight)
+  // with no way to ever reach 100% — not a real gap, a bug.
+  const ratio = (done, total) => (total > 0 ? done / total : 1);
 
   // A day marked as a legitimate Islamic excuse (menstruation/postpartum)
   // isn't a day of missed prayers — she isn't obligated to pray it, so it
