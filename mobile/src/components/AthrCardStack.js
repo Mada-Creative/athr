@@ -11,10 +11,17 @@ const SCREEN_WIDTH = Dimensions.get('window').width;
 // Screen's own side padding — matches how TILE_WIDTH etc. are computed
 // elsewhere in this app.
 const CONTENT_WIDTH = SCREEN_WIDTH - spacing.lg * 2;
-const MAIN_WIDTH = CONTENT_WIDTH * 0.72;
-const SIDE_WIDTH = CONTENT_WIDTH * 0.5;
-// How far each side card tucks in behind the main card's edge.
-const OVERLAP = SIDE_WIDTH * 0.62;
+const MAIN_WIDTH = CONTENT_WIDTH * 0.78;
+const SIDE_WIDTH = CONTENT_WIDTH * 0.28;
+// The row is allowed to bleed this many total px past CONTENT_WIDTH (split
+// both sides) — a small deliberate peek beyond the card's own edges, not
+// an accident. OVERLAP is solved backwards from that target so the row's
+// actual rendered width is always predictable regardless of device width,
+// instead of guessing an overlap ratio and hoping it doesn't blow up wider
+// than the screen (which is exactly what happened before this fix: the
+// row came out to ~420px on a ~382px-wide content area).
+const BLEED = 16;
+const OVERLAP = (SIDE_WIDTH * 2 + MAIN_WIDTH - CONTENT_WIDTH - BLEED) / 2;
 
 const MAIN_HEIGHT = 92;
 const SIDE_HEIGHT = 66;
@@ -85,8 +92,8 @@ function createStyles(colors) {
     },
     // Rotated OUTWARD (away from the front card) so the fan reads as
     // obvious rather than huddled in.
-    sideLeft: { transform: [{ rotate: '-9deg' }], marginRight: -OVERLAP },
-    sideRight: { transform: [{ rotate: '9deg' }], marginLeft: -OVERLAP },
+    sideLeft: { transform: [{ rotate: '-7deg' }], marginRight: -OVERLAP },
+    sideRight: { transform: [{ rotate: '7deg' }], marginLeft: -OVERLAP },
     mainCard: {
       width: MAIN_WIDTH,
       height: MAIN_HEIGHT,
