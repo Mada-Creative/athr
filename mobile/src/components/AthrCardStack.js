@@ -28,8 +28,10 @@ const SIDE_HEIGHT = 66;
 const SIDE_TOP_OFFSET = 14;
 // HomeScreen pulls the hero prayer card up by this same amount so the
 // card row appears to be tucked in behind it — see the Bounce wrapper's
-// own negative marginTop there. Exported so the two stay in sync.
-export const HERO_OVERLAP = MAIN_HEIGHT - 54;
+// own negative marginTop there. Exported so the two stay in sync. Small
+// on purpose — just enough to read as "tucked behind", not deep enough
+// to cover the hero card's own top-row content underneath it.
+export const HERO_OVERLAP = 14;
 
 // The "أثر" daily card, above the "الصلاة القادمة" hero card — a front
 // card (today's, see athrCards.js) with two shorter cards fanned out
@@ -44,6 +46,17 @@ export const HERO_OVERLAP = MAIN_HEIGHT - 54;
 // negative-margin trick that fixed both of those rings), with zIndex to
 // keep the front card painted on top — ordinary flex/zIndex, nothing
 // absolutely positioned to silently misplace.
+//
+// RTL: a real device screenshot showed this row's own 'row' rendering
+// right-to-left AND a plain-mistake-looking 'row-reverse' elsewhere
+// rendering left-to-right — both consistent with I18nManager.isRTL
+// actually being true at runtime now (see App.js: forceRTL(true) is
+// called on every boot, but only takes visual effect after a native
+// process restart, which apparently happened at some point across this
+// many-restarts testing session). The rotation signs and topRow's
+// flexDirection below are written for that real-RTL reality, not the
+// "RTL never activates" assumption most of the rest of this app's
+// row-reverse usages were written under — worth a wider look at those.
 export default function AthrCardStack({ date, onPress }) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
@@ -91,9 +104,13 @@ function createStyles(colors) {
       elevation: 1,
     },
     // Rotated OUTWARD (away from the front card) so the fan reads as
-    // obvious rather than huddled in.
-    sideLeft: { transform: [{ rotate: '-7deg' }], marginRight: -OVERLAP },
-    sideRight: { transform: [{ rotate: '7deg' }], marginLeft: -OVERLAP },
+    // obvious rather than huddled in. The rotation signs here are swapped
+    // from what "outward" would naively suggest — RTL is active on-device
+    // now (see the comment above the component), which flips which
+    // physical side each of these two ends up on without touching their
+    // own rotate value, so the sign has to be pre-corrected here instead.
+    sideLeft: { transform: [{ rotate: '7deg' }], marginRight: -OVERLAP },
+    sideRight: { transform: [{ rotate: '-7deg' }], marginLeft: -OVERLAP },
     mainCard: {
       width: MAIN_WIDTH,
       height: MAIN_HEIGHT,
@@ -110,7 +127,11 @@ function createStyles(colors) {
       shadowOffset: { width: 0, height: 8 },
       elevation: 4,
     },
-    topRow: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between' },
+    // Plain 'row', not 'row-reverse' — with RTL actually active now (see
+    // the note above), 'row' itself already lays out right-to-left, so
+    // the tag (first below) lands on the right and the mark on the left
+    // without needing the reverse.
+    topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     tag: {
       backgroundColor: colors.amberSoft,
       borderRadius: radius.pill,
