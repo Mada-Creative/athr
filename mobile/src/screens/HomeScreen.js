@@ -17,6 +17,7 @@ import { todayISO, formatGregorian, formatWeekday, toHijri, greetingFor, volunta
 import usePrayerTimes, { formatCountdownWithSeconds, formatClock } from '../hooks/usePrayerTimes';
 import usePrayerNotifications from '../hooks/usePrayerNotifications';
 import useAthkarReminderNotifications from '../hooks/useAthkarReminderNotifications';
+import useFridaySunnahNotifications from '../hooks/useFridaySunnahNotifications';
 import useDailyData from '../hooks/useDailyData';
 import ATHKAR_META, { ATHKAR_UNLOCK_PRAYER } from '../constants/athkarMeta';
 import { afterPrayerCategory } from '../constants/afterPrayerSlots';
@@ -84,6 +85,39 @@ export default function HomeScreen({ navigation }) {
   }, [schedule, now]);
   const prayerAthkarCategory = afterPrayerCategory(lastPassedPrayer?.key || 'isha');
 
+  // Same shape as MORE_LINKS below (not the raw ATHKAR_META lookup the JSX
+  // used to do inline) so both can be merged into one ordered list — needed
+  // to put "سنن يوم الجمعة" first on Fridays, which means reordering across
+  // what used to be two separate arrays.
+  const athkarHomeTiles = useMemo(
+    () =>
+      ['wakeup', 'morning', 'prayerAthkar', 'evening', 'sleep'].map((key) => {
+        // The merged tile isn't a real ATHKAR_META entry — borrow the
+        // afterPrayer group's own icon/color (all 5 slots share them) and
+        // give it its own title instead of one prayer's specific label.
+        const meta =
+          key === 'prayerAthkar' ? { ...ATHKAR_META[afterPrayerCategory('fajr')], title: 'أذكار الصلاة' } : ATHKAR_META[key];
+        const category = key === 'prayerAthkar' ? prayerAthkarCategory : key;
+        // Same "opens once its time starts" gating as TrackerScreen's
+        // prayer columns — the merged tile is never locked (there's always
+        // *some* prayer's athkar it can open, even overnight before fajr,
+        // via the isha fallback above).
+        const unlockPrayerKey = key === 'prayerAthkar' ? null : ATHKAR_UNLOCK_PRAYER[key];
+        const unlockPrayer = unlockPrayerKey ? schedule.find((s) => s.key === unlockPrayerKey) : null;
+        const locked = Boolean(unlockPrayerKey) && (!unlockPrayer || now < unlockPrayer.time);
+        return {
+          key,
+          title: meta.title,
+          icon: meta.icon,
+          color: meta.color,
+          locked,
+          lockNote: unlockPrayer ? `يفتح بعد صلاة ${unlockPrayer.label}` : undefined,
+          onPress: () => navigation.navigate('AthkarCounter', { category }),
+        };
+      }),
+    [schedule, now, prayerAthkarCategory, navigation]
+  );
+
   // Only truthy on Monday/Thursday — the tile below only shows up those
   // two days, not a permanent fixture that's just disabled the rest of
   // the week. Standalone streak, not part of "بصمتك اليوم" — see the
@@ -131,8 +165,26 @@ export default function HomeScreen({ navigation }) {
     [colors, navigation, fastingDay, prayerLog?.voluntaryFasting, onToggleFasting]
   );
 
+  // Always reachable (not locked to Friday — someone should be able to read
+  // up on it any day), but only *surfaced first* on Friday itself, the same
+  // "the relevant thing floats to the top" idea as morning/evening athkar.
+  const isFriday = now.getDay() === 5;
+  const homeTiles = useMemo(() => {
+    const fridayTile = {
+      key: 'fridaySunnah',
+      title: 'سنن يوم الجمعة',
+      icon: 'star-outline',
+      color: colors.gold,
+      onPress: () => navigation.navigate('FridaySunnah'),
+    };
+    const combined = [...athkarHomeTiles, ...MORE_LINKS, fridayTile];
+    if (!isFriday) return combined;
+    return [{ ...fridayTile, highlighted: true }, ...combined.filter((t) => t.key !== 'fridaySunnah')];
+  }, [athkarHomeTiles, MORE_LINKS, isFriday, colors.gold, navigation]);
+
   usePrayerNotifications(schedule, user?.prayerNotifications);
   useAthkarReminderNotifications(schedule);
+  useFridaySunnahNotifications(schedule);
 
   useFocusEffect(
     useCallback(() => {
@@ -280,33 +332,7 @@ export default function HomeScreen({ navigation }) {
           giving them two titled zones just added visual structure the
           content didn't need. */}
       <View style={styles.athkarGrid}>
-        {['wakeup', 'morning', 'prayerAthkar', 'evening', 'sleep'].map((key) => {
-          // The merged tile isn't a real ATHKAR_META entry — borrow the
-          // afterPrayer group's own icon/color (all 5 slots share them) and
-          // give it its own title instead of one prayer's specific label.
-          const meta = key === 'prayerAthkar' ? { ...ATHKAR_META[afterPrayerCategory('fajr')], title: 'أذكار الصلاة' } : ATHKAR_META[key];
-          const category = key === 'prayerAthkar' ? prayerAthkarCategory : key;
-          // Same "opens once its time starts" gating as TrackerScreen's
-          // prayer columns — the merged tile is never locked (there's
-          // always *some* prayer's athkar it can open, even overnight
-          // before fajr, via the isha fallback above).
-          const unlockPrayerKey = key === 'prayerAthkar' ? null : ATHKAR_UNLOCK_PRAYER[key];
-          const unlockPrayer = unlockPrayerKey ? schedule.find((s) => s.key === unlockPrayerKey) : null;
-          const locked = Boolean(unlockPrayerKey) && (!unlockPrayer || now < unlockPrayer.time);
-          return (
-            <AthkarTile
-              key={key}
-              width={TILE_WIDTH}
-              title={meta.title}
-              icon={meta.icon}
-              color={meta.color}
-              locked={locked}
-              lockNote={unlockPrayer ? `يفتح بعد صلاة ${unlockPrayer.label}` : undefined}
-              onPress={() => navigation.navigate('AthkarCounter', { category })}
-            />
-          );
-        })}
-        {MORE_LINKS.map((item) => (
+        {homeTiles.map((item) => (
           <AthkarTile
             key={item.key}
             width={TILE_WIDTH}
@@ -316,6 +342,9 @@ export default function HomeScreen({ navigation }) {
             completed={item.completed}
             completedCount={item.completedCount}
             totalCount={item.totalCount}
+            locked={item.locked}
+            lockNote={item.lockNote}
+            highlighted={item.highlighted}
             onPress={item.onPress}
           />
         ))}

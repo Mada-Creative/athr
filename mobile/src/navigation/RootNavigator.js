@@ -33,6 +33,7 @@ import TrackerScreen from '../screens/TrackerScreen';
 import TasbihScreen from '../screens/TasbihScreen';
 import TasbihCounterScreen from '../screens/TasbihCounterScreen';
 import AthrCardScreen from '../screens/AthrCardScreen';
+import FridaySunnahScreen from '../screens/FridaySunnahScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -70,6 +71,7 @@ function MainStack() {
       <Stack.Screen name="QuranReader" component={QuranReaderScreen} options={{ title: '' }} />
       <Stack.Screen name="Names" component={NamesScreen} options={{ title: 'أسماء الله الحسنى' }} />
       <Stack.Screen name="Duas" component={DuasScreen} options={{ title: 'أدعية' }} />
+      <Stack.Screen name="FridaySunnah" component={FridaySunnahScreen} options={{ title: 'سنن يوم الجمعة' }} />
       <Stack.Screen name="Qibla" component={QiblaScreen} options={{ title: 'القبلة' }} />
       <Stack.Screen name="PrayerDetail" component={PrayerDetailScreen} options={{ title: 'مواقيت الصلاة' }} />
       <Stack.Screen name="WeeklyStats" component={WeeklyStatsScreen} options={{ title: 'الإحصائيات' }} />
