@@ -10,7 +10,7 @@ import LiveClock from '../components/LiveClock';
 import SectionHeader from '../components/SectionHeader';
 import Bounce from '../components/Bounce';
 import AthkarTile from '../components/AthkarTile';
-import AthrCardStack, { PEEK_HEIGHT as ATHR_CARD_PEEK_HEIGHT } from '../components/AthrCardStack';
+import AthrCardStack from '../components/AthrCardStack';
 import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
 import { useAuth } from '../context/AuthContext';
@@ -148,7 +148,7 @@ export default function HomeScreen({ navigation }) {
 
       <AthrCardStack date={now} onPress={() => navigation.navigate('AthrCard')} />
 
-      <Bounce scaleTo={0.98} onPress={() => navigation.navigate('PrayerDetail')} style={{ marginTop: -ATHR_CARD_PEEK_HEIGHT }}>
+      <Bounce scaleTo={0.98} onPress={() => navigation.navigate('PrayerDetail')}>
         <Card style={styles.heroCard}>
           <View style={styles.heroTop}>
             <View>
@@ -318,9 +318,7 @@ function createStyles(colors) {
       // Fixed dark ink surface — deliberately doesn't invert with the theme.
       backgroundColor: colors.accentDark,
       borderColor: colors.accentDark,
-      // No marginTop here — the card-stack peek above it (see the Bounce
-      // wrapper's own negative marginTop) already sets the vertical
-      // rhythm between the greeting row and this card.
+      marginTop: spacing.md,
     },
     heroTop: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'flex-start' },
     countdownWrap: { alignItems: 'center' },
