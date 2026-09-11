@@ -26,6 +26,10 @@ const FRIDAY_SUNNAH = [
     icon: 'book-outline',
     text: 'مَنْ قَرَأَ سُورَةَ الْكَهْفِ يَوْمَ الْجُمُعَةِ أَضَاءَ لَهُ مِنَ النُّورِ مَا بَيْنَ الْجُمُعَتَيْنِ',
     source: 'حسّنه الألباني في صحيح الترغيب، عن أبي سعيد الخدري رضي الله عنه',
+    // The only item here with something to actually *do* right from this
+    // screen — surahId 18 in the app's own bundled mushaf (constants/
+    // quranText.json), so tapping opens the real text, not a promise.
+    action: { label: 'اقرأ السورة الآن', route: 'QuranReader', params: { surahId: 18 } },
   },
   {
     title: 'الإكثار من الصلاة على النبي ﷺ',
