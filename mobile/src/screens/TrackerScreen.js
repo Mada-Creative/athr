@@ -357,7 +357,19 @@ export default function TrackerScreen({ navigation }) {
         const meta = ATHKAR_META[key];
         const progress = athkar?.[key];
         const completed = Boolean(progress?.completed);
-        const pct = progress?.totalItems ? Math.round((progress.completedItems.length / progress.totalItems) * 100) : 0;
+        // `completed` is the one-tap "mark the whole category done" shortcut
+        // (see athkarController.js — it deliberately leaves completedItems
+        // alone so the counter screen still shows what was actually read
+        // dhikr-by-dhikr). That shortcut is exactly why this can be true
+        // while completedItems is still empty — same case AthkarTile
+        // already handles (`done ? 100 : ...`) so its bar doesn't show 0%
+        // next to a checkmark. This row had the same checkmark/percent pair
+        // but was missing that override.
+        const pct = completed
+          ? 100
+          : progress?.totalItems
+          ? Math.round((progress.completedItems.length / progress.totalItems) * 100)
+          : 0;
         return (
           <AthkarSummaryRow
             key={key}
