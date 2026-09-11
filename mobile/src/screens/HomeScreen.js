@@ -7,7 +7,6 @@ import AppText from '../components/AppText';
 import Card from '../components/Card';
 import ProgressRing from '../components/ProgressRing';
 import LiveClock from '../components/LiveClock';
-import SectionHeader from '../components/SectionHeader';
 import Bounce from '../components/Bounce';
 import AthkarTile from '../components/AthkarTile';
 import AthrCardStack, { HERO_OVERLAP } from '../components/AthrCardStack';
@@ -275,7 +274,11 @@ export default function HomeScreen({ navigation }) {
         <Ionicons name="chevron-back" size={20} color={colors.inkSoft} />
       </Card>
 
-      <SectionHeader title="الأذكار" />
+      {/* One unmarked grid, not two sections under separate headers — an
+          athkar shortcut and "وِرد القرآن"/"أسماء الله"/duas/fasting aren't
+          meaningfully different categories to a user glancing at Home, so
+          giving them two titled zones just added visual structure the
+          content didn't need. */}
       <View style={styles.athkarGrid}>
         {['wakeup', 'morning', 'prayerAthkar', 'evening', 'sleep'].map((key) => {
           // The merged tile isn't a real ATHKAR_META entry — borrow the
@@ -303,10 +306,6 @@ export default function HomeScreen({ navigation }) {
             />
           );
         })}
-      </View>
-
-      <SectionHeader title="أخرى" />
-      <View style={styles.athkarGrid}>
         {MORE_LINKS.map((item) => (
           <AthkarTile
             key={item.key}
