@@ -72,7 +72,7 @@ export default function AthkarTile({
             color={locked ? colors.inkFaint : done ? colors.sage : color}
           />
         </View>
-        <AppText weight="bold" size={11} numberOfLines={2} color={locked ? colors.inkFaint : undefined} style={styles.title}>
+        <AppText weight="bold" size={13} numberOfLines={2} color={locked ? colors.inkFaint : undefined} style={styles.title}>
           {title}
         </AppText>
         {locked ? (

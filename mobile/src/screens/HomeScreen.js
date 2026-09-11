@@ -430,6 +430,6 @@ function createStyles(colors) {
       alignItems: 'center',
       justifyContent: 'center',
     },
-    athkarGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: TILE_GAP, marginBottom: spacing.sm },
+    athkarGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: TILE_GAP, marginTop: spacing.lg, marginBottom: spacing.sm },
   });
 }
