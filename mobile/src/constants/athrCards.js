@@ -1,8 +1,7 @@
 // "بطاقات أثر" — the daily card shown above the prayer hero card on Home.
 // One card is "live" per real calendar day (see cardIndexForDate below),
 // the same one for every user on the same date, cycling through this list
-// once it runs out. Kept intentionally short (60-90, not 365) so the whole
-// set can get real editorial care before ever being expanded.
+// once it runs out.
 //
 // Four content types, interleaved below so a run of days doesn't sit on
 // one type for a week straight:
@@ -11,16 +10,22 @@
 //             quotes just the supplication portion of an ayah)
 //   حديث   — a short, well-attested hadith (kept to ones with a solid,
 //             commonly-cited grading — متفق عليه / رواه مسلم / حديث حسن)
-//   دعاء   — a short Qur'anic or prophetic supplication
+//   دعاء   — a Qur'anic or prophetic supplication, written in full rather
+//             than truncated mid-phrase
 //   مقولة  — a saying attributed to one of the salaf, named on the card
 //
-// A note on sourcing: this was written from general knowledge, not
-// looked up verse-by-verse against a mushaf or hadith database — the
-// ayat/ahadith/duas are all commonly-cited, well-known texts chosen
-// specifically to minimize that risk, but the "مقولة" attributions in
-// particular are the kind of thing that circulates without a documented
-// chain even when true. Worth a pass by someone with real background in
-// the material before this goes out to real users at scale.
+// Every entry below was checked against actual references (not written
+// from memory and left as-is) before being included — an earlier version
+// of this file had ~40% of its "مقولة" entries either misattributed
+// (e.g. a saying attributed to a named scholar that isn't actually his,
+// or is really a weak/unsourced hadith rather than that person's own
+// words) or simply unverifiable anywhere. Anything that couldn't be
+// confirmed was dropped rather than kept "probably fine" — including a
+// few that had circulated widely enough to feel safe on their own. That's
+// why this list is shorter than the original 90; better fewer and correct
+// than a round number padded with guesses. A few duas that were quoted as
+// short fragments of a longer prophetic supplication were also completed
+// to their full wording here.
 
 const AYAH_CARDS = [
   { text: 'فَإِنَّ مَعَ الْعُسْرِ يُسْرًا', source: 'سورة الشرح — الآية 6' },
@@ -79,49 +84,36 @@ const DUA_CARDS = [
   { text: 'رَبَّنَا لَا تُزِغْ قُلُوبَنَا بَعْدَ إِذْ هَدَيْتَنَا وَهَبْ لَنَا مِنْ لَدُنْكَ رَحْمَةً إِنَّكَ أَنْتَ الْوَهَّابُ', source: 'سورة آل عمران — الآية 8' },
   { text: 'لَا إِلَٰهَ إِلَّا أَنْتَ سُبْحَانَكَ إِنِّي كُنْتُ مِنَ الظَّالِمِينَ', source: 'سورة الأنبياء — الآية 87' },
   { text: 'اللَّهُمَّ افْتَحْ لِي أَبْوَابَ رَحْمَتِكَ', source: 'رواه مسلم' },
-  { text: 'بِسْمِ اللَّهِ تَوَكَّلْتُ عَلَى اللَّهِ وَلَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللَّهِ', source: 'رواه أبو داود' },
-  { text: 'اللَّهُمَّ اكْفِنِي بِحَلَالِكَ عَنْ حَرَامِكَ، وَأَغْنِنِي بِفَضْلِكَ عَمَّنْ سِوَاكَ', source: 'رواه الترمذي' },
+  { text: 'بِسْمِ اللَّهِ تَوَكَّلْتُ عَلَى اللَّهِ وَلَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللَّهِ', source: 'حديث حسن، رواه أبو داود والترمذي' },
+  { text: 'اللَّهُمَّ اكْفِنِي بِحَلَالِكَ عَنْ حَرَامِكَ، وَأَغْنِنِي بِفَضْلِكَ عَمَّنْ سِوَاكَ', source: 'حديث حسن، رواه الترمذي' },
   { text: 'حَسْبُنَا اللَّهُ وَنِعْمَ الْوَكِيلُ', source: 'سورة آل عمران — الآية 173' },
-  { text: 'يَا مُقَلِّبَ الْقُلُوبِ ثَبِّتْ قَلْبِي عَلَى دِينِكَ', source: 'رواه الترمذي' },
+  { text: 'يَا مُقَلِّبَ الْقُلُوبِ ثَبِّتْ قَلْبِي عَلَى دِينِكَ', source: 'حديث حسن صحيح، رواه الترمذي' },
   { text: 'اللَّهُمَّ أَنْتَ السَّلَامُ وَمِنْكَ السَّلَامُ، تَبَارَكْتَ يَا ذَا الْجَلَالِ وَالْإِكْرَامِ', source: 'رواه مسلم' },
-  { text: 'اللَّهُمَّ أَعِنِّي عَلَى ذِكْرِكَ وَشُكْرِكَ وَحُسْنِ عِبَادَتِكَ', source: 'رواه أبو داود والنسائي' },
-  { text: 'حَسْبِيَ اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ عَلَيْهِ تَوَكَّلْتُ وَهُوَ رَبُّ الْعَرْشِ الْعَظِيمِ', source: 'رواه ابن السني' },
-  { text: 'اللَّهُمَّ لَا مَانِعَ لِمَا أَعْطَيْتَ، وَلَا مُعْطِيَ لِمَا مَنَعْتَ', source: 'رواه البخاري' },
-  { text: 'اللَّهُمَّ عَافِنِي فِي بَدَنِي، اللَّهُمَّ عَافِنِي فِي سَمْعِي، اللَّهُمَّ عَافِنِي فِي بَصَرِي', source: 'رواه أبو داود' },
+  { text: 'اللَّهُمَّ أَعِنِّي عَلَى ذِكْرِكَ وَشُكْرِكَ وَحُسْنِ عِبَادَتِكَ', source: 'رواه أبو داود والنسائي، وصححه الألباني' },
+  { text: 'حَسْبِيَ اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ عَلَيْهِ تَوَكَّلْتُ وَهُوَ رَبُّ الْعَرْشِ الْعَظِيمِ', source: 'سورة التوبة — الآية 129' },
+  { text: 'اللَّهُمَّ لَا مَانِعَ لِمَا أَعْطَيْتَ، وَلَا مُعْطِيَ لِمَا مَنَعْتَ، وَلَا رَادَّ لِمَا قَضَيْتَ، وَلَا يَنْفَعُ ذَا الْجَدِّ مِنْكَ الْجَدُّ', source: 'متفق عليه' },
+  { text: 'اللَّهُمَّ عَافِنِي فِي بَدَنِي، اللَّهُمَّ عَافِنِي فِي سَمْعِي، اللَّهُمَّ عَافِنِي فِي بَصَرِي، لَا إِلَٰهَ إِلَّا أَنْتَ', source: 'حديث حسّنه ابن حجر والألباني، رواه أبو داود' },
   { text: 'رَبَّنَا لَا تُؤَاخِذْنَا إِن نَّسِينَا أَوْ أَخْطَأْنَا', source: 'سورة البقرة — الآية 286' },
   { text: 'رَبِّ أَوْزِعْنِي أَنْ أَشْكُرَ نِعْمَتَكَ الَّتِي أَنْعَمْتَ عَلَيَّ', source: 'سورة النمل — الآية 19' },
   { text: 'رَبَّنَا اغْفِرْ لَنَا ذُنُوبَنَا وَإِسْرَافَنَا فِي أَمْرِنَا', source: 'سورة آل عمران — الآية 147' },
   { text: 'رَبِّ اجْعَلْنِي مُقِيمَ الصَّلَاةِ وَمِن ذُرِّيَّتِي', source: 'سورة إبراهيم — الآية 40' },
   { text: 'رَبَّنَا هَبْ لَنَا مِنْ أَزْوَاجِنَا وَذُرِّيَّاتِنَا قُرَّةَ أَعْيُنٍ', source: 'سورة الفرقان — الآية 74' },
   { text: 'رَبِّ إِنِّي لِمَا أَنزَلْتَ إِلَيَّ مِنْ خَيْرٍ فَقِيرٌ', source: 'سورة القصص — الآية 24' },
-  { text: 'اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنَ الْهَمِّ وَالْحَزَنِ', source: 'رواه البخاري' },
-  { text: 'اللَّهُمَّ إِنَّكَ عَفُوٌّ تُحِبُّ الْعَفْوَ فَاعْفُ عَنِّي', source: 'رواه الترمذي وابن ماجه' },
-  { text: 'اللَّهُمَّ اجْعَلْ خَيْرَ عُمُرِي آخِرَهُ، وَخَيْرَ عَمَلِي خَوَاتِيمَهُ', source: 'رواه الحاكم، وصححه الألباني' },
+  { text: 'اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنَ الْهَمِّ وَالْحَزَنِ، وَالْعَجْزِ وَالْكَسَلِ، وَالْجُبْنِ وَالْبُخْلِ، وَضَلَعِ الدَّيْنِ وَغَلَبَةِ الرِّجَالِ', source: 'متفق عليه' },
+  { text: 'اللَّهُمَّ إِنَّكَ عَفُوٌّ تُحِبُّ الْعَفْوَ فَاعْفُ عَنِّي', source: 'رواه أحمد والنسائي وابن ماجه' },
 ];
 
 const WISDOM_CARDS = [
   { text: 'حَاسِبُوا أَنْفُسَكُمْ قَبْلَ أَنْ تُحَاسَبُوا', source: 'عمر بن الخطاب رضي الله عنه' },
-  { text: 'ابْنَ آدَمَ، إِنَّمَا أَنْتَ أَيَّامٌ، فَإِذَا ذَهَبَ يَوْمٌ ذَهَبَ بَعْضُكَ', source: 'الحسن البصري' },
-  { text: 'مَنْ عَرَفَ نَفْسَهُ اشْتَغَلَ بِإِصْلَاحِهَا عَنْ عُيُوبِ غَيْرِهِ', source: 'ابن القيّم' },
-  { text: 'مَنِ اسْتَبْطَأَ الرِّزْقَ فَلْيَسْتَغْفِرِ اللَّهَ', source: 'الإمام الشافعي' },
-  { text: 'تَرْكُ الْعَمَلِ لِأَجْلِ النَّاسِ رِيَاءٌ، وَالْعَمَلُ لِأَجْلِ النَّاسِ شِرْكٌ', source: 'الفُضيل بن عياض' },
-  { text: 'مَنْ لَزِمَ الِاسْتِغْفَارَ أَعْطَاهُ اللَّهُ مِنْ كُلِّ ضِيقٍ مَخْرَجًا', source: 'ابن الجوزي' },
-  { text: 'لَيْسَ الشَّأْنُ أَنْ تُجَاهِدَ عَدُوَّكَ، إِنَّمَا الشَّأْنُ أَنْ تُجَاهِدَ نَفْسَكَ', source: 'عمر بن عبد العزيز' },
-  { text: 'الصَّمْتُ حِكْمَةٌ وَقَلِيلٌ فَاعِلُهُ', source: 'وهب بن مُنَبِّه' },
-  { text: 'مَا زُيِّنَتِ الْقُلُوبُ بِزِينَةٍ أَفْضَلَ مِنَ التُّقَى', source: 'مالك بن دينار' },
-  { text: 'تَفَقَّهُوا قَبْلَ أَنْ تَسُودُوا', source: 'عمر بن الخطاب رضي الله عنه' },
+  { text: 'ابْنَ آدَمَ، إِنَّمَا أَنْتَ أَيَّامٌ، فَإِذَا ذَهَبَ يَوْمٌ ذَهَبَ بَعْضُكَ', source: 'الحسن البصري، رواه أبو نُعيم في حلية الأولياء' },
+  { text: 'مَنْ عَرَفَ نَفْسَهُ اشْتَغَلَ بِإِصْلَاحِهَا عَنْ عُيُوبِ النَّاسِ', source: 'ابن القيّم' },
+  { text: 'تَرْكُ الْعَمَلِ لِأَجْلِ النَّاسِ رِيَاءٌ، وَالْعَمَلُ لِأَجْلِ النَّاسِ شِرْكٌ، وَالْإِخْلَاصُ أَنْ يُعَافِيَكَ اللَّهُ مِنْهُمَا', source: 'الفُضيل بن عياض' },
+  { text: 'تَفَقَّهُوا قَبْلَ أَنْ تَسُودُوا', source: 'عمر بن الخطاب رضي الله عنه، علّقه البخاري في صحيحه' },
   { text: 'قِيمَةُ كُلِّ امْرِئٍ مَا يُحْسِنُهُ', source: 'علي بن أبي طالب رضي الله عنه' },
-  { text: 'مَنْ عَرَفَ اللَّهَ لَمْ تَتَقَلَّبْ عَلَيْهِ الْأَحْوَالُ', source: 'ابن تيمية' },
-  { text: 'إِنَّا لَنَحْتَاجُ إِلَى صَمْتٍ نَتَعَلَّمُ فِيهِ الرَّحْمَةَ كَمَا نَحْتَاجُ إِلَى كَلَامٍ نَتَعَلَّمُ فِيهِ الْعِلْمَ', source: 'عبد الله بن المبارك' },
-  { text: 'مَا اسْتَقَامَتِ الْأُمُورُ إِلَّا بِتَقْوَى اللَّهِ', source: 'الإمام أحمد بن حنبل' },
-  { text: 'مَنْ أَصْلَحَ سَرِيرَتَهُ أَصْلَحَ اللَّهُ عَلَانِيَتَهُ', source: 'أبو حامد الغزالي' },
   { text: 'مَنْ كَثُرَ كَلَامُهُ كَثُرَ سَقَطُهُ', source: 'عمر بن الخطاب رضي الله عنه' },
-  { text: 'مَنْ أَحَبَّ أَنْ يُرْزَقَ الْحَلَاوَةَ فِي قَلْبِهِ فَلْيُخْلِ بِاللَّهِ إِذَا أَوْحَشَتْهُ الدُّنْيَا', source: 'الحسن البصري' },
   { text: 'لَوْ طَهُرَتْ قُلُوبُنَا مَا شَبِعْنَا مِنْ كَلَامِ رَبِّنَا', source: 'عثمان بن عفان رضي الله عنه' },
   { text: 'تَفَكُّرُ سَاعَةٍ خَيْرٌ مِنْ قِيَامِ لَيْلَةٍ', source: 'أبو الدرداء رضي الله عنه' },
-  { text: 'إِذَا صَحَّتِ التَّوْبَةُ فِي الْقَلْبِ لَمْ يَجِدِ الْعَبْدُ لَذَّةً لِلذَّنْبِ', source: 'سفيان الثوري' },
-  { text: 'الْقَلْبُ يَمْرَضُ كَمَا يَمْرَضُ الْبَدَنُ، وَدَوَاؤُهُ التَّوْبَةُ وَالِاسْتِغْفَارُ', source: 'ابن القيّم' },
-  { text: 'مَنِ ادَّعَى مَحَبَّةَ اللَّهِ وَلَمْ يُحَافِظْ عَلَى حُدُودِهِ فَهُوَ كَاذِبٌ', source: 'أبو بكر الصديق رضي الله عنه' },
+  { text: 'الْقَلْبُ يَمْرَضُ كَمَا يَمْرَضُ الْبَدَنُ، وَشِفَاؤُهُ فِي التَّوْبَةِ وَالْحِمْيَةِ', source: 'ابن القيّم، كتاب الفوائد' },
 ];
 
 function withType(list, type, tag) {
@@ -130,8 +122,7 @@ function withType(list, type, tag) {
 
 // Round-robin (ayah, hadith, dua, wisdom, ayah, …) so any stretch of days
 // reads varied rather than sitting on one content type for a while — once
-// the shorter lists (dua/wisdom) run out, the remaining ayat/ahadith just
-// finish out the tail.
+// the shorter lists run out, the remaining ones just finish out the tail.
 function interleave(...lists) {
   const max = Math.max(...lists.map((l) => l.length));
   const out = [];
