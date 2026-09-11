@@ -31,7 +31,14 @@ export default function WeekRingStrip({ refreshSignal, selectedDate, onSelectDat
 
   const load = useCallback(async () => {
     try {
-      const res = await api.get('/stats/week');
+      // Anchor the 7-day window to the DEVICE's own local date, not
+      // whatever the server's clock/timezone thinks "today" is — without
+      // this, the backend defaulted to `new Date()` on its own (UTC)
+      // clock, which near local midnight in any timezone ahead of UTC
+      // computed a window that still ended on *yesterday*, so today's
+      // ring never showed up (and the last ring shown — "yesterday" —
+      // read as the current/selected day instead).
+      const res = await api.get(`/stats/week?endDate=${todayISO()}`);
       setDays(res.days);
     } catch (err) {
       // keep previous state; the row just won't update this time

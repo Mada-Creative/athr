@@ -82,13 +82,25 @@ async function getDayStats(req, res) {
 }
 
 async function getWeekStats(req, res) {
+  // `endDate` should always be the CALLER's own local "today" (the mobile
+  // client passes it explicitly) — the bare `new Date()` fallback below is
+  // this server's own clock, which is only ever right for a client in the
+  // same timezone as the server, and silently wrong near local midnight
+  // for anyone else (a UTC-vs-ahead-of-UTC user could get a window that's
+  // stuck one day behind — today's ring never appears, and yesterday's
+  // reads as "current" instead).
+  //
+  // Once we have the anchor date, everything below stays in UTC
+  // end-to-end (`Z` suffix on parse, `getUTCDate`/`setUTCDate`,
+  // `toISOString` on the way out) so the 7-day window itself doesn't
+  // depend on *this server's* timezone setting either.
   const { endDate } = req.query;
-  const end = endDate && isValidDateParam(endDate) ? new Date(endDate) : new Date();
+  const end = endDate && isValidDateParam(endDate) ? new Date(`${endDate}T00:00:00Z`) : new Date();
 
   const days = [];
   for (let i = 6; i >= 0; i -= 1) {
     const d = new Date(end);
-    d.setDate(d.getDate() - i);
+    d.setUTCDate(d.getUTCDate() - i);
     days.push(d.toISOString().slice(0, 10));
   }
 
