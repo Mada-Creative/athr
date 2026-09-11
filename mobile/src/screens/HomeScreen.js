@@ -17,6 +17,7 @@ import { useAuth } from '../context/AuthContext';
 import { todayISO, formatGregorian, formatWeekday, toHijri, greetingFor, voluntaryFastingDay } from '../utils/date';
 import usePrayerTimes, { formatCountdownWithSeconds, formatClock } from '../hooks/usePrayerTimes';
 import usePrayerNotifications from '../hooks/usePrayerNotifications';
+import useAthkarReminderNotifications from '../hooks/useAthkarReminderNotifications';
 import useDailyData from '../hooks/useDailyData';
 import ATHKAR_META, { ATHKAR_UNLOCK_PRAYER } from '../constants/athkarMeta';
 import { afterPrayerCategory } from '../constants/afterPrayerSlots';
@@ -41,7 +42,7 @@ export default function HomeScreen({ navigation }) {
   }, []);
   const hijri = toHijri(now);
   const { schedule, next } = usePrayerTimes();
-  const { stats, prayerLog, quran, loading, reload, toggleVoluntaryFasting } = useDailyData(date);
+  const { stats, prayerLog, loading, reload, toggleVoluntaryFasting } = useDailyData(date);
   // Only true for a genuine first load with nothing cached yet from a
   // previous successful fetch — a slow-but-normal request (a cold Heroku
   // dyno, a weak connection) shows this instead of a misleading "0%" ring.
@@ -96,13 +97,10 @@ export default function HomeScreen({ navigation }) {
 
   // amberDeep differs between light/dark, so this lives inside the
   // component (recomputed per theme) rather than as a module constant.
-  // Quran carries real daily progress (one "وِرد" done/not-done); Names and
-  // Duas are pure reference screens with no daily-completion concept, so
-  // they're left without progress fields — AthkarTile renders them as plain
-  // icon+title tiles instead of a 0-of-0 bar. Quran has no meaningful item
-  // count of its own (it's one daily wird, done or not) — just `completed`,
-  // no totalCount/completedCount, so AthkarTile shows a plain "تم"/"لم يتم"
-  // instead of a confusing "0 من 1".
+  // Quran used to carry its `completed` state here too, same as the athkar
+  // tiles did — same fix, same reason: Home is pure navigation, so it's a
+  // plain icon+title tile like Names/Duas, and whether today's wird is
+  // done only shows on Tracker.
   const MORE_LINKS = useMemo(
     () => [
       {
@@ -110,7 +108,6 @@ export default function HomeScreen({ navigation }) {
         title: 'وِرد القرآن',
         icon: 'book-outline',
         color: colors.amberDeep,
-        completed: quran?.completed,
         onPress: () => navigation.navigate('Quran'),
       },
       { key: 'names', title: 'أسماء الله الحسنى', icon: 'sparkles-outline', color: colors.sage, onPress: () => navigation.navigate('Names') },
@@ -132,10 +129,11 @@ export default function HomeScreen({ navigation }) {
           ]
         : []),
     ],
-    [colors, navigation, quran, fastingDay, prayerLog?.voluntaryFasting, onToggleFasting]
+    [colors, navigation, fastingDay, prayerLog?.voluntaryFasting, onToggleFasting]
   );
 
   usePrayerNotifications(schedule, user?.prayerNotifications);
+  useAthkarReminderNotifications(schedule);
 
   useFocusEffect(
     useCallback(() => {
