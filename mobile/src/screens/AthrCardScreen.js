@@ -8,7 +8,7 @@ import Bounce from '../components/Bounce';
 import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
 import typography from '../theme/typography';
-import ATHR_CARDS, { cardIndexForDate } from '../constants/athrCards';
+import ATHR_CARDS, { cardIndexForDate, isHadithSourced, HADITH_PREFIX } from '../constants/athrCards';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const CARD_WIDTH = SCREEN_WIDTH - spacing.lg * 2;
@@ -208,6 +208,11 @@ function CardBody({ card, isToday, colors, styles }) {
         ) : null}
       </View>
       <View style={styles.textWrap}>
+        {isHadithSourced(card) ? (
+          <AppText size={13.5} weight="semibold" color={colors.amberDeep} style={styles.hadithPrefix}>
+            {HADITH_PREFIX}
+          </AppText>
+        ) : null}
         <AppText size={22} color={colors.ink} style={styles.cardText}>
           {card.text}
         </AppText>
@@ -279,6 +284,7 @@ function createStyles(colors) {
       paddingVertical: 4,
     },
     textWrap: { flex: 1, justifyContent: 'center', marginTop: spacing.lg },
+    hadithPrefix: { textAlign: 'center', marginBottom: spacing.sm },
     cardText: { textAlign: 'center', lineHeight: 36, fontFamily: typography.fontDhikr },
     source: { textAlign: 'center', marginTop: spacing.sm },
     bottomRow: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.md },

@@ -195,5 +195,17 @@ function cardForDate(date = new Date()) {
   return ATHR_CARDS[cardIndexForDate(date)];
 }
 
+// A card is "a hadith of the Prophet ﷺ" if it's typed 'hadith', or if it's
+// a DUA_CARDS entry whose wording is actually his own supplication rather
+// than a Qur'anic one — a Qur'anic dua's source always starts with 'سورة',
+// so anything else in DUA_CARDS is a prophetic hadith too. آية and مقولة
+// cards are never his own words, so they never get this.
+const HADITH_PREFIX = 'قَالَ رَسُولُ اللَّهِ صَلَّى اللَّهُ عَلَيْهِ وَسَلَّمَ';
+
+function isHadithSourced(card) {
+  if (card.type === 'ayah' || card.type === 'wisdom') return false;
+  return !card.source.startsWith('سورة');
+}
+
 export default ATHR_CARDS;
-export { cardIndexForDate, cardForDate };
+export { cardIndexForDate, cardForDate, isHadithSourced, HADITH_PREFIX };
