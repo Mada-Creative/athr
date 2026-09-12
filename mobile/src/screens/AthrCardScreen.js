@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Animated, Dimensions, Image, Share, StyleSheet, View } from 'react-native';
-import { PanGestureHandler, State } from 'react-native-gesture-handler';
+import { GestureHandlerRootView, PanGestureHandler, State } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import AppText from '../components/AppText';
@@ -138,52 +138,63 @@ export default function AthrCardScreen({ navigation }) {
   }, [pos]);
 
   return (
-    <Screen scroll={false} contentStyle={{ flex: 1, paddingBottom: spacing.lg }}>
-      <View style={styles.topRow}>
-        <Bounce onPress={() => navigation.goBack()} style={styles.closeBtn}>
-          <Ionicons name="chevron-back" size={20} color={colors.ink} />
-        </Bounce>
-      </View>
+    // GestureHandlerRootView here, not just App.js's top-level one — this
+    // screen is presented as a native 'modal' (see RootNavigator.js), which
+    // react-native-screens renders as its own separate native surface, not
+    // a descendant of App.js's root view the way every plain 'card' screen
+    // is. gesture-handler's PanGestureHandler only recognizes touches
+    // inside a GestureHandlerRootView that actually covers the surface
+    // it's rendered on — without this, App.js's root view doesn't reach in
+    // here, so swipes were dead in both directions no matter what the
+    // gesture thresholds or the modal's own dismiss-gesture setting were.
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <Screen scroll={false} contentStyle={{ flex: 1, paddingBottom: spacing.lg }}>
+        <View style={styles.topRow}>
+          <Bounce onPress={() => navigation.goBack()} style={styles.closeBtn}>
+            <Ionicons name="chevron-back" size={20} color={colors.ink} />
+          </Bounce>
+        </View>
 
-      <View style={styles.stage}>
-        {backCard ? (
-          <Animated.View
-            style={[
-              styles.card,
-              styles.cardBack,
-              { transform: [{ translateX: backTranslateX }, { scale: backScale }], opacity: backOpacity },
-            ]}
-            pointerEvents="none"
+        <View style={styles.stage}>
+          {backCard ? (
+            <Animated.View
+              style={[
+                styles.card,
+                styles.cardBack,
+                { transform: [{ translateX: backTranslateX }, { scale: backScale }], opacity: backOpacity },
+              ]}
+              pointerEvents="none"
+            >
+              <CardBody card={backCard} isToday={backIndex === todayIndex} colors={colors} styles={styles} />
+            </Animated.View>
+          ) : null}
+
+          <PanGestureHandler
+            onGestureEvent={onGestureEvent}
+            onHandlerStateChange={onHandlerStateChange}
+            activeOffsetX={[-DIR_LOCK, DIR_LOCK]}
+            failOffsetY={[-24, 24]}
+            enabled={!transitioning}
           >
-            <CardBody card={backCard} isToday={backIndex === todayIndex} colors={colors} styles={styles} />
-          </Animated.View>
-        ) : null}
+            <Animated.View style={[styles.card, styles.cardFront, { transform: [{ translateX }, { rotate: frontRotate }] }]}>
+              <CardBody card={frontCard} isToday={pos === todayIndex} colors={colors} styles={styles} />
+            </Animated.View>
+          </PanGestureHandler>
+        </View>
 
-        <PanGestureHandler
-          onGestureEvent={onGestureEvent}
-          onHandlerStateChange={onHandlerStateChange}
-          activeOffsetX={[-DIR_LOCK, DIR_LOCK]}
-          failOffsetY={[-24, 24]}
-          enabled={!transitioning}
-        >
-          <Animated.View style={[styles.card, styles.cardFront, { transform: [{ translateX }, { rotate: frontRotate }] }]}>
-            <CardBody card={frontCard} isToday={pos === todayIndex} colors={colors} styles={styles} />
-          </Animated.View>
-        </PanGestureHandler>
-      </View>
-
-      <View style={styles.bottomRow}>
-        <AppText size={10} color={colors.inkFaint}>
-          اسحب يمين للتالي، شمال للسابق
-        </AppText>
-        <Bounce onPress={onShare} style={styles.shareBtn}>
-          <Ionicons name="share-outline" size={15} color={colors.accentSoft} />
-          <AppText weight="semibold" size={12.5} color={colors.accentSoft} style={{ marginRight: 5 }}>
-            مشاركة
+        <View style={styles.bottomRow}>
+          <AppText size={10} color={colors.inkFaint}>
+            اسحب يمين للتالي، شمال للسابق
           </AppText>
-        </Bounce>
-      </View>
-    </Screen>
+          <Bounce onPress={onShare} style={styles.shareBtn}>
+            <Ionicons name="share-outline" size={15} color={colors.accentSoft} />
+            <AppText weight="semibold" size={12.5} color={colors.accentSoft} style={{ marginRight: 5 }}>
+              مشاركة
+            </AppText>
+          </Bounce>
+        </View>
+      </Screen>
+    </GestureHandlerRootView>
   );
 }
 
