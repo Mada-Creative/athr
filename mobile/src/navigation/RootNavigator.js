@@ -61,7 +61,18 @@ function MainStack() {
       <Stack.Screen
         name="AthrCard"
         component={AthrCardScreen}
-        options={{ headerShown: false, presentation: 'modal' }}
+        // gestureEnabled: false — this is the only modal-presented screen
+        // in the whole stack (AthkarCounter/Duas, which share this exact
+        // same PanGestureHandler swipe pattern, are plain 'card' screens
+        // and swipe fine). A 'modal' presentation on iOS ships its own
+        // interactive swipe-to-dismiss gesture recognizer covering the
+        // same surface, and it was winning the touch over the screen's own
+        // horizontal PanGestureHandler — swiping did nothing, on a real
+        // device and not just a simulator/mouse quirk, because both are a
+        // native gesture-recognizer conflict, not a JS-side bug. The
+        // screen already has its own close button in topRow, so turning
+        // off the native dismiss gesture doesn't remove a way out.
+        options={{ headerShown: false, presentation: 'modal', gestureEnabled: false }}
       />
       <Stack.Screen name="Tracker" component={TrackerScreen} options={{ title: 'متابعة العبادات' }} />
       <Stack.Screen name="AthkarList" component={AthkarListScreen} options={{ title: 'الأذكار' }} />
