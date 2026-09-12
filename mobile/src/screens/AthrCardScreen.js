@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Dimensions, Image, Modal, Share, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, Animated, Dimensions, Image, Modal, Share, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -187,10 +187,19 @@ export default function AthrCardScreen({ navigation }) {
         await onShareText();
       }
     } catch (err) {
-      // capture failed (e.g. running in Expo Go, where the native module
-      // this needs isn't present) or the user dismissed the share sheet —
-      // either way there's nothing to recover, just don't leave the
-      // spinner stuck.
+      // In practice the only thing that lands here is capture() itself
+      // rejecting — running in Expo Go, where the native module this
+      // needs isn't present, being the expected case for now. Dismissing
+      // the native share sheet afterward isn't an error (expo-sharing
+      // resolves either way), and the text-share fallback above already
+      // swallows its own cancellation silently. Telling the user plainly
+      // beats a button that silently does nothing, especially while this
+      // feature is still experimental and being tried before a real
+      // build exists.
+      Alert.alert(
+        'مشاركة الصورة غير متاحة الآن',
+        'هذه الميزة تجريبية ولسا بتحتاج نسخة خاصة من التطبيق — جرّبي "مشاركة كنص" بدالها لهلق.'
+      );
     } finally {
       setSharingImage(false);
     }
@@ -329,7 +338,10 @@ function ShareMenu({ visible, loading, colors, onShareImage, onShareText, onClos
           )}
           <View style={{ flex: 1 }}>
             <AppText weight="semibold" size={14}>
-              كصورة
+              كصورة{' '}
+              <AppText size={11} color={colors.inkFaint}>
+                (تجريبي)
+              </AppText>
             </AppText>
             <AppText size={11.5} color={colors.inkSoft}>
               بطاقة جاهزة للمشاركة بأي مكان
