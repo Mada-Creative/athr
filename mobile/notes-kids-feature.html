@@ -1,0 +1,542 @@
+<title>أثر للأطفال</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@400..700&family=Cairo:wght@400;500;600;700&display=swap');
+
+  :root {
+    --bg: #FBF7F0;
+    --surface: #FFFFFF;
+    --surface-soft: #F3ECDD;
+    --ink: #2A2420;
+    --ink-soft: #6B6058;
+    --ink-faint: #A79A89;
+    --accent: #B87A2E;
+    --accent-ink: #7A5420;
+    --accent-soft: #F3E4C8;
+    --border: #E7DFD0;
+    --good: #3F6F60;
+    --good-soft: #DCEAE5;
+    --shadow: rgba(42, 36, 32, 0.08);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1B1712;
+      --surface: #241F19;
+      --surface-soft: #2E2619;
+      --ink: #F3ECDF;
+      --ink-soft: #C2B7A6;
+      --ink-faint: #8A8072;
+      --accent: #E0A94F;
+      --accent-ink: #F6D9A0;
+      --accent-soft: #3A2E1C;
+      --border: #3A3024;
+      --good: #7CB6A2;
+      --good-soft: #21332C;
+      --shadow: rgba(0, 0, 0, 0.4);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #1B1712;
+    --surface: #241F19;
+    --surface-soft: #2E2619;
+    --ink: #F3ECDF;
+    --ink-soft: #C2B7A6;
+    --ink-faint: #8A8072;
+    --accent: #E0A94F;
+    --accent-ink: #F6D9A0;
+    --accent-soft: #3A2E1C;
+    --border: #3A3024;
+    --good: #7CB6A2;
+    --good-soft: #21332C;
+    --shadow: rgba(0, 0, 0, 0.4);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    direction: rtl;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Cairo', Tahoma, sans-serif;
+    padding-inline: 20px;
+    padding-block: 40px 64px;
+  }
+
+  .page {
+    max-width: 720px;
+    margin-inline: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 34px;
+  }
+
+  h1, h2 {
+    font-family: 'Reem Kufi', 'Cairo', Tahoma, sans-serif;
+    text-wrap: balance;
+    margin: 0;
+  }
+
+  /* ---------- Header ---------- */
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--accent-ink);
+    background: var(--accent-soft);
+    padding: 5px 14px;
+    border-radius: 999px;
+    width: fit-content;
+  }
+
+  h1 {
+    font-size: clamp(30px, 6vw, 40px);
+    font-weight: 700;
+    color: var(--ink);
+    margin-top: 14px;
+  }
+
+  .lede {
+    font-size: 16.5px;
+    line-height: 1.9;
+    color: var(--ink-soft);
+    max-width: 62ch;
+    margin-top: 10px;
+  }
+
+  .context-note {
+    margin-top: 22px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 18px;
+    box-shadow: 0 2px 10px var(--shadow);
+  }
+  .context-note .dot {
+    flex-shrink: 0;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    margin-top: 8px;
+  }
+  .context-note p {
+    margin: 0;
+    font-size: 14.5px;
+    line-height: 1.8;
+    color: var(--ink-soft);
+  }
+
+  /* ---------- Sections ---------- */
+  section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  .section-num {
+    font-family: 'Reem Kufi', sans-serif;
+    font-size: 14px;
+    color: var(--ink-faint);
+    font-variant-numeric: tabular-nums;
+  }
+  h2 {
+    font-size: 21px;
+    font-weight: 600;
+  }
+
+  p.body-text {
+    font-size: 15.5px;
+    line-height: 1.9;
+    color: var(--ink-soft);
+    margin: 0;
+    max-width: 64ch;
+  }
+
+  /* ---------- Option cards (account model) ---------- */
+  .options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  @media (max-width: 620px) {
+    .options { grid-template-columns: 1fr; }
+  }
+  .option-card {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 16px;
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    position: relative;
+  }
+  .option-card.chosen {
+    border-color: var(--accent);
+    background: linear-gradient(180deg, var(--accent-soft), var(--surface) 55%);
+  }
+  .option-tag {
+    position: absolute;
+    top: -11px;
+    right: 16px;
+    background: var(--accent);
+    color: var(--surface);
+    font-size: 12px;
+    font-weight: 700;
+    padding: 3px 12px;
+    border-radius: 999px;
+  }
+  .option-card h3 {
+    margin: 4px 0 0;
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .option-card p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.75;
+    color: var(--ink-soft);
+  }
+
+  .info-box {
+    background: var(--surface-soft);
+    border-radius: 14px;
+    padding: 14px 18px;
+    font-size: 14px;
+    line-height: 1.8;
+    color: var(--ink-soft);
+    display: flex;
+    gap: 10px;
+  }
+  .info-box b { color: var(--ink); }
+
+  /* ---------- Confirmation flow ---------- */
+  .flow {
+    display: flex;
+    align-items: stretch;
+    gap: 10px;
+  }
+  @media (max-width: 620px) {
+    .flow { flex-direction: column; }
+    .flow .arrow { transform: rotate(90deg); align-self: center; }
+  }
+  .flow-step {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .flow-step .step-num {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: var(--accent-soft);
+    color: var(--accent-ink);
+    font-weight: 700;
+    font-size: 13px;
+    display: flex; align-items: center; justify-content: center;
+    font-variant-numeric: tabular-nums;
+  }
+  .flow-step h3 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+  }
+  .flow-step p {
+    margin: 0;
+    font-size: 13.5px;
+    line-height: 1.7;
+    color: var(--ink-soft);
+  }
+  .flow-step.confirmed {
+    border-color: var(--good);
+    background: linear-gradient(180deg, var(--good-soft), var(--surface) 60%);
+  }
+  .flow-step.confirmed .step-num {
+    background: var(--good);
+    color: var(--surface);
+  }
+  .arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink-faint);
+    font-size: 20px;
+    flex-shrink: 0;
+    width: 20px;
+  }
+
+  /* ---------- Gamification cards ---------- */
+  .game-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  @media (max-width: 620px) {
+    .game-grid { grid-template-columns: 1fr; }
+  }
+  .game-card {
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .game-card.pick {
+    border-color: var(--accent);
+  }
+  .game-card .pick-badge {
+    position: absolute;
+    top: 12px;
+    left: 14px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent-ink);
+    background: var(--accent-soft);
+    padding: 3px 9px;
+    border-radius: 999px;
+  }
+  .game-card .icon {
+    font-size: 22px;
+    line-height: 1;
+  }
+  .game-card h3 {
+    margin: 2px 0 0;
+    font-size: 15.5px;
+    font-weight: 700;
+  }
+  .game-card p {
+    margin: 0;
+    font-size: 13.5px;
+    line-height: 1.75;
+    color: var(--ink-soft);
+  }
+
+  .recommendation {
+    margin-top: 4px;
+    font-size: 14.5px;
+    line-height: 1.85;
+    color: var(--ink-soft);
+    background: var(--surface-soft);
+    border-radius: 14px;
+    padding: 14px 18px;
+  }
+  .recommendation b { color: var(--accent-ink); }
+
+  /* ---------- Open questions ---------- */
+  .qlist {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .qitem {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 13px 16px;
+  }
+  .qitem .box {
+    flex-shrink: 0;
+    width: 18px; height: 18px;
+    border: 2px solid var(--ink-faint);
+    border-radius: 5px;
+    margin-top: 3px;
+  }
+  .qitem p {
+    margin: 0;
+    font-size: 14.5px;
+    line-height: 1.75;
+    color: var(--ink);
+  }
+  .qitem span.sub {
+    display: block;
+    font-size: 13px;
+    color: var(--ink-faint);
+    margin-top: 3px;
+  }
+
+  /* ---------- Status footer ---------- */
+  .status {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    border-top: 1px solid var(--border);
+    padding-top: 24px;
+  }
+  .status .icon { font-size: 18px; }
+  .status p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.8;
+    color: var(--ink-soft);
+  }
+  .status b { color: var(--ink); }
+</style>
+
+<div class="page">
+
+  <header>
+    <span class="eyebrow">أثر · ملاحظة تخطيط</span>
+    <h1>أثر للأطفال</h1>
+    <p class="lede">
+      ملخص الأفكار يلي حكينا فيها اليوم عن ميزة تشجّع الأطفال على الصلاة بإشراف كامل من الأهل —
+      جاهز تراجعه بهدوء لما توصل عالبيت وتقرر وين منبلش.
+    </p>
+    <div class="context-note">
+      <span class="dot"></span>
+      <p>هاد الملخص مبني على نقاش صوتي وانت سواق، فمرتب هون بالترتيب يلي حكينا فيه، من غير ما يفوتنا شي.</p>
+    </div>
+  </header>
+
+  <section>
+    <div class="section-head">
+      <span class="section-num">01</span>
+      <h2>نموذج حساب الطفل</h2>
+    </div>
+    <p class="body-text">
+      كتير من الأطفال ما إلهم تلفون خاص فيهن، فالاتجاه يلي وصلنا له هو إنه كل شي يصير من تلفون الأهل نفسه —
+      بدون ما الطفل يحتاج جهاز مستقل إطلاقًا.
+    </p>
+    <div class="options">
+      <div class="option-card chosen">
+        <span class="option-tag">الاتجاه المرجّح</span>
+        <h3>بروفايل داخل حساب الأهل</h3>
+        <p>الأهل بيضيفوا "بروفايل طفل" من جوا تطبيقهم هم. الطفل بياخد التلفون ويعلّم على اللي صلاه، وكل شي — الإضافة والمتابعة والتأكيد — بمكان واحد.</p>
+      </div>
+      <div class="option-card">
+        <h3>حساب مستقل للطفل</h3>
+        <p>الطفل يسجل دخول لحاله على جهازه الخاص، وحساب الأهل مربوط فيه كـ"مشرف" يشوف ويتحكم عن بعد. أعقد تقنيًا وما بيغطي الأطفال بدون تلفون.</p>
+      </div>
+    </div>
+    <div class="info-box">
+      <span>💡</span>
+      <div><b>ملاحظة:</b> إذا الطفل معه تلفونه الخاص لاحقًا، منقدر نضيف وضع اختياري يحط فيه علاماته من جهازه هو — بس التأكيد النهائي بيضل دايمًا لازم يصير على تلفون الأهل (السبب بالقسم الجاي).</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <span class="section-num">02</span>
+      <h2>آلية "تأكيد الأهل" عبر Face ID</h2>
+    </div>
+    <p class="body-text">
+      الفكرة: الطفل بيعلّم إنه صلى، بس العلامة ما بتصير نهائية إلا لما الأهل يأكدوها فعليًا ببصمة وجههم — هيك في رقابة حقيقية مش مجرد ضغطة زر.
+    </p>
+    <div class="flow">
+      <div class="flow-step">
+        <span class="step-num">١</span>
+        <h3>الطفل يعلّم</h3>
+        <p>بيحط ✓ ع الصلاة أو الذكر يلي خلّصه.</p>
+      </div>
+      <span class="arrow">←</span>
+      <div class="flow-step">
+        <span class="step-num">٢</span>
+        <h3>بانتظار التأكيد</h3>
+        <p>الحالة بتضل معلّقة، مش محسوبة بعد.</p>
+      </div>
+      <span class="arrow">←</span>
+      <div class="flow-step confirmed">
+        <span class="step-num">٣</span>
+        <h3>تأكيد الأهل</h3>
+        <p>الأهل يحطوا Face ID تبعهم فتتأكد ✅ وتضاف نجمة.</p>
+      </div>
+    </div>
+    <div class="info-box">
+      <span>🔒</span>
+      <div><b>قيد تقني مهم:</b> الـ Face ID بيشتغل بس مع صاحب الجهاز المسجّل عليه. يعني حتى لو الطفل عنده تلفونه الخاص، التأكيد لازم يصير على تلفون الأهل — وهاد بالضبط يلي بيخلي هالميزة أضمن ضد الغش.</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <span class="section-num">03</span>
+      <h2>أفكار التحفيز (Gamification)</h2>
+    </div>
+    <p class="body-text">ستة أفكار ناقشناها لتشجيع الأطفال، كلها بعيدة عن أي منافسة مؤذية أو مقارنة بين الإخوة.</p>
+    <div class="game-grid">
+      <div class="game-card pick">
+        <span class="pick-badge">مقترح</span>
+        <span class="icon">🌱</span>
+        <h3>رفيق بيكبر معاك</h3>
+        <p>شخصية لطيفة (فانوس أو نجمة) بتكبر وتضيء أكتر كل ما الطفل يواظب على صلاته.</p>
+      </div>
+      <div class="game-card pick">
+        <span class="pick-badge">مقترح</span>
+        <span class="icon">🔥</span>
+        <h3>سلسلة الأيام المتتالية</h3>
+        <p>عداد أيام متواصلة صلى فيها كل الصلوات، مع احتفال بصري عند أرقام مهمة زي 7 أو 30 يوم.</p>
+      </div>
+      <div class="game-card pick">
+        <span class="pick-badge">مقترح</span>
+        <span class="icon">🎁</span>
+        <h3>نجوم تتحول لمكافأة حقيقية</h3>
+        <p>كل صلاة مؤكدة = نجمة، والأهل هم يلي بيحددوا شو بتساوي (نزهة، هدية صغيرة...).</p>
+      </div>
+      <div class="game-card">
+        <span class="icon">🏅</span>
+        <h3>شارات إنجاز</h3>
+        <p>"أول أسبوع كامل"، "حافظت على الفجر 10 أيام"، "قرأت سورة الكهف يوم جمعة".</p>
+      </div>
+      <div class="game-card">
+        <span class="icon">🎨</span>
+        <h3>تخصيص بسيط</h3>
+        <p>فتح ألوان أو ملصقات جديدة لبروفايل الطفل بالنقاط يلي جمعها.</p>
+      </div>
+      <div class="game-card">
+        <span class="icon">📅</span>
+        <h3>تقويم ملوّن</h3>
+        <p>شهر كامل، وكل يوم صلى فيه كل شي بيصير لونه مميز — إحساس "الشهر المعبّى".</p>
+      </div>
+    </div>
+    <div class="recommendation">
+      <b>رأيي:</b> المزيج الأقوى هو الرفيق المتنامي + السلسلة + المكافأة الحقيقية من الأهل — بسيط تقنيًا، وبيربط التحفيز الرقمي بشي واقعي بدل ما يضل أرقام على شاشة.
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <span class="section-num">04</span>
+      <h2>قرارات لسا معلّقة</h2>
+    </div>
+    <p class="body-text">هاي النقاط يلي بنحتاج قرارك فيها لما توصل عالبيت:</p>
+    <div class="qlist">
+      <div class="qitem">
+        <span class="box"></span>
+        <p>نبلش نصمم ميزة الأطفال بالتوازي الحين، أو نأجلها لحد ما نخلّص موضوع الشهادة وبناء EAS؟</p>
+      </div>
+      <div class="qitem">
+        <span class="box"></span>
+        <p>من الستة أفكار تحفيز، أي وحدة الأقرب لقلبك — التوصية المقترحة، ولا مزيج مختلف؟</p>
+      </div>
+      <div class="qitem">
+        <span class="box"></span>
+        <p>شو أولوية الصلاحيات يلي بيد الأهل: اختيار الصلوات المتابَعة، تقرير التقدم، المكافآت، ولا التذكيرات؟
+        <span class="sub">ممكن كلها مع الوقت، بس شو الأهم نبلش فيه؟</span></p>
+      </div>
+    </div>
+  </section>
+
+  <div class="status">
+    <span class="icon">📍</span>
+    <p><b>وضع الشهادة/EAS:</b> موقوف مؤقتًا عند خطوة إنشاء شهادة توزيع جديدة يدويًا من موقع أبل (بعد ما لقينا طريقة نتجاوز فيها مشكلة تسجيل الدخول المكسورة بـ eas-cli). جاهزين نكمّل فيها أو نبلش بميزة الأطفال — قرارك.</p>
+  </div>
+
+</div>
