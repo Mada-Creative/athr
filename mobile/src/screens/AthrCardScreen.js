@@ -2,13 +2,13 @@ import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Animated, Dimensions, Image, Modal, Share, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import ViewShot from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import Screen from '../components/Screen';
 import AppText from '../components/AppText';
 import Bounce from '../components/Bounce';
 import { useTheme } from '../context/ThemeContext';
+import { light as lightPalette, dark as darkPalette } from '../theme/palettes';
 import { radius, spacing } from '../theme/spacing';
 import typography from '../theme/typography';
 import ATHR_CARDS, { cardIndexForDate, isHadithSourced, HADITH_PREFIX } from '../constants/athrCards';
@@ -23,8 +23,20 @@ const DIR_LOCK = 10;
 // (same gesture as AthkarCounterScreen) to browse back and forward through
 // the whole cycle. No counter/ring here, just the card.
 export default function AthrCardScreen({ navigation }) {
-  const { colors } = useTheme();
+  const { colors, scheme } = useTheme();
   const styles = createStyles(colors);
+  // The share image's background deliberately uses the *opposite* theme's
+  // own app background (dark app bg behind the card in light mode, light
+  // app bg in dark mode) rather than an invented color — still genuinely
+  // "أثر's colors", just always contrasting with whatever theme the
+  // person sharing is currently in, instead of one fixed color that could
+  // wash out against a light card in light mode or disappear in dark mode.
+  const shareBgColor = scheme === 'dark' ? lightPalette.background : darkPalette.background;
+  // Paired with shareBgColor above so the watermark line reads on
+  // whichever background actually ends up showing — the opposite
+  // theme's own "ink" (primary text) color, not a fixed white that would
+  // vanish on a light background in dark mode.
+  const shareBgTextColor = scheme === 'dark' ? lightPalette.ink : darkPalette.ink;
   const todayIndex = useMemo(() => cardIndexForDate(new Date()), []);
   const [pos, setPos] = useState(todayIndex);
   const [previewDir, setPreviewDir] = useState(null);
@@ -55,7 +67,17 @@ export default function AthrCardScreen({ navigation }) {
       // completion callback instead guarantees the swap only ever happens
       // once the old card is actually fully off screen, whatever the
       // device's real frame timing was.
-      Animated.timing(translateX, { toValue: exitTo, duration: 240, useNativeDriver: true }).start(() => {
+      //
+      // That alone didn't fully clear the flicker, though — this same
+      // translateX is also set directly from JS every drag frame (see
+      // panGesture's onUpdate below), and a native-driven .timing()
+      // mixed with plain JS .setValue() calls on the same Animated.Value
+      // is its own known source of native/JS state briefly disagreeing
+      // (one more frame where the rendered transform lags the value
+      // React just committed). useNativeDriver:false here keeps this
+      // value JS-driven end to end, matching how the gesture already
+      // updates it, so there's nothing left to fall out of sync.
+      Animated.timing(translateX, { toValue: exitTo, duration: 240, useNativeDriver: false }).start(() => {
         setPos((p) => (dir === 'next' ? (p + 1) % ATHR_CARDS.length : (p - 1 + ATHR_CARDS.length) % ATHR_CARDS.length));
         translateX.setValue(0);
         setPreviewDir(null);
@@ -67,7 +89,7 @@ export default function AthrCardScreen({ navigation }) {
   );
 
   const springBack = useCallback(() => {
-    Animated.spring(translateX, { toValue: 0, useNativeDriver: true, speed: 20, bounciness: 6 }).start(() => {
+    Animated.spring(translateX, { toValue: 0, useNativeDriver: false, speed: 20, bounciness: 6 }).start(() => {
       setPreviewDir(null);
       dirLockedRef.current = false;
     });
@@ -161,6 +183,15 @@ export default function AthrCardScreen({ navigation }) {
 
   const onShareText = useCallback(async () => {
     setShareMenuVisible(false);
+    // The RN Modal below animates its dismiss over ~300ms; calling
+    // Share.share() in the very same tick asks iOS to present the native
+    // share sheet while that dismiss transition is still in progress, and
+    // it silently does nothing — no error, no sheet, exactly the "مش
+    // شغالة" reported. onShareImage never hit this because capture()
+    // itself already takes long enough to clear the modal's animation;
+    // text-share has nothing else to wait on, so it needs this delay
+    // explicitly.
+    await new Promise((resolve) => setTimeout(resolve, 350));
     const c = ATHR_CARDS[pos];
     try {
       await Share.share({
@@ -270,7 +301,15 @@ export default function AthrCardScreen({ navigation }) {
           size, which risks not laying out its children at all. */}
       <View style={styles.offscreen} pointerEvents="none">
         <ViewShot ref={shareViewRef} options={{ format: 'png', quality: 1, result: 'tmpfile' }}>
-          <ShareableCard card={frontCard} isToday={pos === todayIndex} cardSize={cardSize} colors={colors} styles={styles} />
+          <ShareableCard
+            card={frontCard}
+            isToday={pos === todayIndex}
+            cardSize={cardSize}
+            bgColor={shareBgColor}
+            textColor={shareBgTextColor}
+            colors={colors}
+            styles={styles}
+          />
         </ViewShot>
       </View>
 
@@ -294,17 +333,17 @@ export default function AthrCardScreen({ navigation }) {
 // (back/share buttons, the swipe hint). Sized to `cardSize`, measured off
 // that real on-screen card, so it's the same size on this device too, not
 // a separately guessed one.
-function ShareableCard({ card, isToday, cardSize, colors, styles }) {
+function ShareableCard({ card, isToday, cardSize, bgColor, textColor, colors, styles }) {
   if (!cardSize) return null;
   return (
-    <LinearGradient colors={[colors.amber, colors.gold]} style={styles.shareBg}>
+    <View style={[styles.shareBg, { backgroundColor: bgColor }]}>
       <View style={[styles.card, styles.shareCardSurface, { width: cardSize.width, height: cardSize.height }]}>
         <CardBody card={card} isToday={isToday} colors={colors} styles={styles} />
       </View>
-      <AppText weight="bold" size={13.5} color={colors.white} style={{ marginTop: spacing.lg }}>
+      <AppText weight="bold" size={13.5} color={textColor} style={{ marginTop: spacing.lg }}>
         بطاقات أثر
       </AppText>
-    </LinearGradient>
+    </View>
   );
 }
 

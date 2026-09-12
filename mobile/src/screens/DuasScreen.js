@@ -47,7 +47,15 @@ export default function DuasScreen() {
       // "snap" once translateX reset. The animation's own completion
       // callback guarantees the swap only happens once the old card is
       // actually fully off screen.
-      Animated.timing(translateX, { toValue: exitTo, duration: 240, useNativeDriver: true }).start(() => {
+      //
+      // That alone didn't fully clear the flicker, though — this same
+      // translateX is also set directly from JS every drag frame (see
+      // panGesture's onUpdate below), and a native-driven .timing() mixed
+      // with plain JS .setValue() calls on the same Animated.Value is its
+      // own known source of native/JS state briefly disagreeing.
+      // useNativeDriver:false here keeps this value JS-driven end to end,
+      // matching how the gesture already updates it.
+      Animated.timing(translateX, { toValue: exitTo, duration: 240, useNativeDriver: false }).start(() => {
         setPos((p) => (dir === 'next' ? (p + 1) % duas.length : (p - 1 + duas.length) % duas.length));
         translateX.setValue(0);
         setPreviewDir(null);
@@ -59,7 +67,7 @@ export default function DuasScreen() {
   );
 
   const springBack = useCallback(() => {
-    Animated.spring(translateX, { toValue: 0, useNativeDriver: true, speed: 20, bounciness: 6 }).start(() => {
+    Animated.spring(translateX, { toValue: 0, useNativeDriver: false, speed: 20, bounciness: 6 }).start(() => {
       setPreviewDir(null);
       dirLockedRef.current = false;
     });

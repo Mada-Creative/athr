@@ -125,7 +125,15 @@ export default function AthkarCounterScreen({ route, navigation }) {
       // "snap" once translateX reset. The animation's own completion
       // callback guarantees the swap only happens once the old card is
       // actually fully off screen.
-      Animated.timing(translateX, { toValue: exitTo, duration: 240, useNativeDriver: true }).start(() => {
+      //
+      // That alone didn't fully clear the flicker, though — this same
+      // translateX is also set directly from JS every drag frame (see
+      // panGesture's onUpdate below), and a native-driven .timing() mixed
+      // with plain JS .setValue() calls on the same Animated.Value is its
+      // own known source of native/JS state briefly disagreeing.
+      // useNativeDriver:false here keeps this value JS-driven end to end,
+      // matching how the gesture already updates it.
+      Animated.timing(translateX, { toValue: exitTo, duration: 240, useNativeDriver: false }).start(() => {
         setPos((p) => (dir === 'next' ? (p + 1) % order.length : (p - 1 + order.length) % order.length));
         translateX.setValue(0);
         setPreviewDir(null);
@@ -137,7 +145,7 @@ export default function AthkarCounterScreen({ route, navigation }) {
   );
 
   const springBack = useCallback(() => {
-    Animated.spring(translateX, { toValue: 0, useNativeDriver: true, speed: 20, bounciness: 6 }).start(() => {
+    Animated.spring(translateX, { toValue: 0, useNativeDriver: false, speed: 20, bounciness: 6 }).start(() => {
       setPreviewDir(null);
       dirLockedRef.current = false;
     });
@@ -250,13 +258,22 @@ export default function AthkarCounterScreen({ route, navigation }) {
             ]}
             pointerEvents="none"
           >
-            <CardBody item={backItem} count={counts[backItemIndex]} meta={meta} colors={colors} styles={styles} onPress={() => {}} />
+            <CardBody
+              itemKey={backItemIndex}
+              item={backItem}
+              count={counts[backItemIndex]}
+              meta={meta}
+              colors={colors}
+              styles={styles}
+              onPress={() => {}}
+            />
           </Animated.View>
         ) : null}
 
         <GestureDetector gesture={panGesture}>
           <Animated.View style={[styles.card, styles.cardFront, { transform: [{ translateX }, { rotate: frontRotate }] }]}>
             <CardBody
+              itemKey={itemIndex}
               item={frontItem}
               count={counts[itemIndex]}
               meta={meta}
@@ -276,7 +293,7 @@ export default function AthkarCounterScreen({ route, navigation }) {
   );
 }
 
-function CardBody({ item, count, meta, colors, styles, onPress, onComplete }) {
+function CardBody({ itemKey, item, count, meta, colors, styles, onPress, onComplete }) {
   const done = count >= item.repeat;
   return (
     <>
@@ -296,7 +313,7 @@ function CardBody({ item, count, meta, colors, styles, onPress, onComplete }) {
         </AppText>
       ) : null}
       <View style={styles.footer}>
-        <AthkarCountRing count={count} target={item.repeat} onPress={onPress} onComplete={onComplete} />
+        <AthkarCountRing itemKey={itemKey} count={count} target={item.repeat} onPress={onPress} onComplete={onComplete} />
         <AppText size={12} color={colors.inkFaint} style={{ marginTop: spacing.sm }}>
           {done ? 'أحسنت — بننتقل تلقائيًا' : 'اضغط للعدّ'}
         </AppText>
