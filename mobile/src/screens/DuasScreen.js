@@ -39,14 +39,21 @@ export default function DuasScreen() {
       setTransitioning(true);
       setPreviewDir(dir);
       const exitTo = dir === 'next' ? SCREEN_WIDTH * 1.3 : -SCREEN_WIDTH * 1.3;
-      Animated.timing(translateX, { toValue: exitTo, duration: 240, useNativeDriver: true }).start();
-      setTimeout(() => {
+      // The card swap used to run off a fixed setTimeout(250) guessed to be
+      // "just after" this 240ms animation — on a slower/dropped frame, the
+      // timer could fire before the exit animation actually finished, so
+      // the new card's content swapped in while the old one was still
+      // visibly mid-slide: a one-frame flash of the wrong text, then a
+      // "snap" once translateX reset. The animation's own completion
+      // callback guarantees the swap only happens once the old card is
+      // actually fully off screen.
+      Animated.timing(translateX, { toValue: exitTo, duration: 240, useNativeDriver: true }).start(() => {
         setPos((p) => (dir === 'next' ? (p + 1) % duas.length : (p - 1 + duas.length) % duas.length));
         translateX.setValue(0);
         setPreviewDir(null);
         dirLockedRef.current = false;
         setTransitioning(false);
-      }, 250);
+      });
     },
     [transitioning, translateX]
   );
