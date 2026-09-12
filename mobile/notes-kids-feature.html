@@ -327,6 +327,72 @@
     color: var(--ink-soft);
   }
 
+  /* ---------- Companion growth + certificate extension ---------- */
+  .extension-card {
+    position: relative;
+    border: 1.5px solid var(--good);
+    border-radius: 16px;
+    padding: 20px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: linear-gradient(180deg, var(--good-soft), var(--surface) 48%);
+  }
+  .new-badge {
+    position: absolute;
+    top: -11px;
+    right: 16px;
+    background: var(--good);
+    color: var(--surface);
+    font-size: 12px;
+    font-weight: 700;
+    padding: 3px 12px;
+    border-radius: 999px;
+  }
+  .ext-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .ext-head .icon { font-size: 22px; }
+  .ext-head h3 {
+    margin: 0;
+    font-size: 16.5px;
+    font-weight: 700;
+  }
+  .extension-card p {
+    margin: 0;
+    font-size: 14.5px;
+    line-height: 1.85;
+    color: var(--ink-soft);
+  }
+  .stage-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 4px 0;
+  }
+  .stage-chip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--ink-soft);
+    min-width: 56px;
+  }
+  .stage-chip .em { font-size: 26px; }
+  .stage-chip.cert {
+    color: var(--good);
+    font-weight: 700;
+  }
+  .stage-arrow {
+    color: var(--ink-faint);
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
   .recommendation {
     margin-top: 4px;
     font-size: 14.5px;
@@ -506,8 +572,31 @@
         <p>شهر كامل، وكل يوم صلى فيه كل شي بيصير لونه مميز — إحساس "الشهر المعبّى".</p>
       </div>
     </div>
+    <div class="extension-card">
+      <span class="new-badge">إضافة جديدة</span>
+      <div class="ext-head">
+        <span class="icon">🎓</span>
+        <h3>امتداد على فكرة الرفيق: شهادة لكل جولة</h3>
+      </div>
+      <p>
+        الرفيق ما بيكبر بشكل عشوائي — إله جولات واضحة (مثلاً كل 30 يوم = جولة، شهر هجري كامل).
+        لما الطفل يخلّص جولة، الرفيق بينتقل لشكله الجديد، وبنفس اللحظة التطبيق يطلّع
+        <b>"شهادة تقدير"</b> باسم الطفل والعادة يلي كوّنها والتاريخ.
+      </p>
+      <div class="stage-row">
+        <div class="stage-chip"><span class="em">🌱</span>جولة ١</div>
+        <span class="stage-arrow">←</span>
+        <div class="stage-chip"><span class="em">🌿</span>جولة ٢</div>
+        <span class="stage-arrow">←</span>
+        <div class="stage-chip"><span class="em">🌳</span>جولة ٣</div>
+        <span class="stage-arrow">←</span>
+        <div class="stage-chip cert"><span class="em">📜</span>شهادة تقدير</div>
+      </div>
+      <p>الأهل يقدروا يحفظوا الشهادة كصورة أو يطبعوها — شي ملموس يفتخر فيه الطفل، مو بس رقم عالشاشة.</p>
+    </div>
     <div class="recommendation">
       <b>رأيي:</b> المزيج الأقوى هو الرفيق المتنامي + السلسلة + المكافأة الحقيقية من الأهل — بسيط تقنيًا، وبيربط التحفيز الرقمي بشي واقعي بدل ما يضل أرقام على شاشة.
+      الشهادة فوق منطقيًا بتضم مباشرة لهاد المزيج.
     </div>
   </section>
 
@@ -530,6 +619,10 @@
         <span class="box"></span>
         <p>شو أولوية الصلاحيات يلي بيد الأهل: اختيار الصلوات المتابَعة، تقرير التقدم، المكافآت، ولا التذكيرات؟
         <span class="sub">ممكن كلها مع الوقت، بس شو الأهم نبلش فيه؟</span></p>
+      </div>
+      <div class="qitem">
+        <span class="box"></span>
+        <p>مدة "الجولة" الواحدة قبل ما يتغير شكل الرفيق وتطلع الشهادة — 30 يوم (شهر هجري) مناسبة، ولا مدة تانية أقصر/أطول؟</p>
       </div>
     </div>
   </section>
