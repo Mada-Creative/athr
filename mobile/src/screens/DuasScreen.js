@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Animated, Dimensions, StyleSheet, View } from 'react-native';
-import { PanGestureHandler, State } from 'react-native-gesture-handler';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Screen from '../components/Screen';
 import AppText from '../components/AppText';
 import { useTheme } from '../context/ThemeContext';
@@ -58,37 +58,40 @@ export default function DuasScreen() {
     });
   }, [translateX]);
 
-  const onGestureEvent = useMemo(
+  // Modern Gesture.Pan() API rather than the old PanGestureHandler +
+  // onGestureEvent/onHandlerStateChange pair — that old API silently never
+  // recognized the gesture at all on a real device with this project's
+  // actual RN/gesture-handler versions (AthrCardScreen/AthkarCounterScreen,
+  // same code, had the identical symptom despite one being a modal and the
+  // other not, so it was never a modal-vs-card issue). translateX stays a
+  // plain Animated.Value (no Reanimated in this project); onUpdate/onEnd
+  // run on the JS thread without needing Reanimated's worklets.
+  const panGesture = useMemo(
     () =>
-      Animated.event([{ nativeEvent: { translationX: translateX } }], {
-        useNativeDriver: true,
-        listener: (e) => {
-          const dx = e.nativeEvent.translationX;
-          if (!dirLockedRef.current && Math.abs(dx) > DIR_LOCK) {
+      Gesture.Pan()
+        .activeOffsetX([-DIR_LOCK, DIR_LOCK])
+        .failOffsetY([-24, 24])
+        .enabled(!transitioning)
+        .onUpdate((e) => {
+          translateX.setValue(e.translationX);
+          if (!dirLockedRef.current && Math.abs(e.translationX) > DIR_LOCK) {
             dirLockedRef.current = true;
-            setPreviewDir(dx > 0 ? 'next' : 'prev');
+            setPreviewDir(e.translationX > 0 ? 'next' : 'prev');
           }
-        },
-      }),
-    [translateX]
-  );
-
-  const onHandlerStateChange = useCallback(
-    (e) => {
-      if (e.nativeEvent.oldState !== State.ACTIVE) return;
-      if (!dirLockedRef.current) {
-        translateX.setValue(0);
-        return;
-      }
-      const { translationX, velocityX } = e.nativeEvent;
-      const passedThreshold = Math.abs(translationX) > SWIPE_THRESHOLD || Math.abs(velocityX) > VELOCITY_THRESHOLD;
-      if (passedThreshold) {
-        commitTo(translationX >= 0 ? 'next' : 'prev');
-      } else {
-        springBack();
-      }
-    },
-    [commitTo, springBack, translateX]
+        })
+        .onEnd((e) => {
+          if (!dirLockedRef.current) {
+            translateX.setValue(0);
+            return;
+          }
+          const passedThreshold = Math.abs(e.translationX) > SWIPE_THRESHOLD || Math.abs(e.velocityX) > VELOCITY_THRESHOLD;
+          if (passedThreshold) {
+            commitTo(e.translationX >= 0 ? 'next' : 'prev');
+          } else {
+            springBack();
+          }
+        }),
+    [transitioning, commitTo, springBack, translateX]
   );
 
   const frontDua = duas[pos];
@@ -150,17 +153,11 @@ export default function DuasScreen() {
           </Animated.View>
         ) : null}
 
-        <PanGestureHandler
-          onGestureEvent={onGestureEvent}
-          onHandlerStateChange={onHandlerStateChange}
-          activeOffsetX={[-DIR_LOCK, DIR_LOCK]}
-          failOffsetY={[-24, 24]}
-          enabled={!transitioning}
-        >
+        <GestureDetector gesture={panGesture}>
           <Animated.View style={[styles.card, styles.cardFront, { transform: [{ translateX }, { rotate: frontRotate }] }]}>
             <CardBody dua={frontDua} colors={colors} styles={styles} />
           </Animated.View>
-        </PanGestureHandler>
+        </GestureDetector>
       </View>
 
       <AppText size={11} color={colors.inkFaint} style={styles.swipeHint}>

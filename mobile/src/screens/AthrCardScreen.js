@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Animated, Dimensions, Image, Share, StyleSheet, View } from 'react-native';
-import { GestureHandlerRootView, PanGestureHandler, State } from 'react-native-gesture-handler';
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import AppText from '../components/AppText';
@@ -60,37 +60,44 @@ export default function AthrCardScreen({ navigation }) {
     });
   }, [translateX]);
 
-  const onGestureEvent = useMemo(
+  // Modern Gesture.Pan() API rather than the old PanGestureHandler +
+  // onGestureEvent/onHandlerStateChange component pair — the old API is
+  // what this screen (and AthkarCounterScreen/DuasScreen, same code)
+  // shipped with originally, and on this project's actual RN/gesture-
+  // handler versions it turned out to not even recognize the gesture at
+  // all on a real device (card wouldn't budge, no animation, exactly as
+  // if no swipe had happened) — not a modal-vs-card thing, since
+  // AthkarCounterScreen isn't a modal and had the identical symptom. This
+  // is gesture-handler's own currently-recommended way to build a pan
+  // gesture; translateX stays a plain Animated.Value (no Reanimated in
+  // this project) and gets updated from the JS thread in onUpdate/onEnd,
+  // which doesn't need Reanimated's worklets to work.
+  const panGesture = useMemo(
     () =>
-      Animated.event([{ nativeEvent: { translationX: translateX } }], {
-        useNativeDriver: true,
-        listener: (e) => {
-          const dx = e.nativeEvent.translationX;
-          if (!dirLockedRef.current && Math.abs(dx) > DIR_LOCK) {
+      Gesture.Pan()
+        .activeOffsetX([-DIR_LOCK, DIR_LOCK])
+        .failOffsetY([-24, 24])
+        .enabled(!transitioning)
+        .onUpdate((e) => {
+          translateX.setValue(e.translationX);
+          if (!dirLockedRef.current && Math.abs(e.translationX) > DIR_LOCK) {
             dirLockedRef.current = true;
-            setPreviewDir(dx > 0 ? 'next' : 'prev');
+            setPreviewDir(e.translationX > 0 ? 'next' : 'prev');
           }
-        },
-      }),
-    [translateX]
-  );
-
-  const onHandlerStateChange = useCallback(
-    (e) => {
-      if (e.nativeEvent.oldState !== State.ACTIVE) return;
-      if (!dirLockedRef.current) {
-        translateX.setValue(0);
-        return;
-      }
-      const { translationX, velocityX } = e.nativeEvent;
-      const passedThreshold = Math.abs(translationX) > SWIPE_THRESHOLD || Math.abs(velocityX) > VELOCITY_THRESHOLD;
-      if (passedThreshold) {
-        commitTo(translationX >= 0 ? 'next' : 'prev');
-      } else {
-        springBack();
-      }
-    },
-    [commitTo, springBack, translateX]
+        })
+        .onEnd((e) => {
+          if (!dirLockedRef.current) {
+            translateX.setValue(0);
+            return;
+          }
+          const passedThreshold = Math.abs(e.translationX) > SWIPE_THRESHOLD || Math.abs(e.velocityX) > VELOCITY_THRESHOLD;
+          if (passedThreshold) {
+            commitTo(e.translationX >= 0 ? 'next' : 'prev');
+          } else {
+            springBack();
+          }
+        }),
+    [transitioning, commitTo, springBack, translateX]
   );
 
   const frontCard = ATHR_CARDS[pos];
@@ -169,17 +176,11 @@ export default function AthrCardScreen({ navigation }) {
             </Animated.View>
           ) : null}
 
-          <PanGestureHandler
-            onGestureEvent={onGestureEvent}
-            onHandlerStateChange={onHandlerStateChange}
-            activeOffsetX={[-DIR_LOCK, DIR_LOCK]}
-            failOffsetY={[-24, 24]}
-            enabled={!transitioning}
-          >
+          <GestureDetector gesture={panGesture}>
             <Animated.View style={[styles.card, styles.cardFront, { transform: [{ translateX }, { rotate: frontRotate }] }]}>
               <CardBody card={frontCard} isToday={pos === todayIndex} colors={colors} styles={styles} />
             </Animated.View>
-          </PanGestureHandler>
+          </GestureDetector>
         </View>
 
         <View style={styles.bottomRow}>
