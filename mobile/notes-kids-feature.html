@@ -393,6 +393,70 @@
     flex-shrink: 0;
   }
 
+  /* ---------- Milestone / reward schedule ---------- */
+  .milestone-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .milestone-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px 16px;
+  }
+  @media (max-width: 480px) {
+    .milestone-row { flex-wrap: wrap; }
+    .milestone-row .treat { width: 100%; order: 3; }
+  }
+  .milestone-row .day-badge {
+    flex-shrink: 0;
+    width: 50px; height: 50px;
+    border-radius: 50%;
+    background: var(--accent-soft);
+    color: var(--accent-ink);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    line-height: 1.1;
+  }
+  .milestone-row .day-badge .num {
+    font-size: 16px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .milestone-row .day-badge .unit { font-size: 9px; }
+  .milestone-row.evergreen .day-badge {
+    background: var(--good-soft);
+    color: var(--good);
+  }
+  .milestone-row .stage {
+    flex-shrink: 0;
+    width: 56px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+  .milestone-row .stage .em { font-size: 22px; }
+  .milestone-row .stage .label {
+    font-size: 10px;
+    color: var(--ink-faint);
+    text-align: center;
+  }
+  .milestone-row .treat {
+    flex: 1;
+    min-width: 0;
+    font-size: 13.5px;
+    line-height: 1.75;
+    color: var(--ink-soft);
+  }
+  .milestone-row .treat b { color: var(--ink); }
+
   .recommendation {
     margin-top: 4px;
     font-size: 14.5px;
@@ -572,37 +636,87 @@
         <p>شهر كامل، وكل يوم صلى فيه كل شي بيصير لونه مميز — إحساس "الشهر المعبّى".</p>
       </div>
     </div>
-    <div class="extension-card">
-      <span class="new-badge">إضافة جديدة</span>
-      <div class="ext-head">
-        <span class="icon">🎓</span>
-        <h3>امتداد على فكرة الرفيق: شهادة لكل جولة</h3>
-      </div>
-      <p>
-        الرفيق ما بيكبر بشكل عشوائي — إله جولات واضحة (مثلاً كل 30 يوم = جولة، شهر هجري كامل).
-        لما الطفل يخلّص جولة، الرفيق بينتقل لشكله الجديد، وبنفس اللحظة التطبيق يطلّع
-        <b>"شهادة تقدير"</b> باسم الطفل والعادة يلي كوّنها والتاريخ.
-      </p>
-      <div class="stage-row">
-        <div class="stage-chip"><span class="em">🌱</span>جولة ١</div>
-        <span class="stage-arrow">←</span>
-        <div class="stage-chip"><span class="em">🌿</span>جولة ٢</div>
-        <span class="stage-arrow">←</span>
-        <div class="stage-chip"><span class="em">🌳</span>جولة ٣</div>
-        <span class="stage-arrow">←</span>
-        <div class="stage-chip cert"><span class="em">📜</span>شهادة تقدير</div>
-      </div>
-      <p>الأهل يقدروا يحفظوا الشهادة كصورة أو يطبعوها — شي ملموس يفتخر فيه الطفل، مو بس رقم عالشاشة.</p>
-    </div>
     <div class="recommendation">
       <b>رأيي:</b> المزيج الأقوى هو الرفيق المتنامي + السلسلة + المكافأة الحقيقية من الأهل — بسيط تقنيًا، وبيربط التحفيز الرقمي بشي واقعي بدل ما يضل أرقام على شاشة.
-      الشهادة فوق منطقيًا بتضم مباشرة لهاد المزيج.
     </div>
   </section>
 
   <section>
     <div class="section-head">
       <span class="section-num">04</span>
+      <h2>نظام النمو والمكافآت (تفصيل)</h2>
+    </div>
+    <p class="body-text">
+      بالاعتماد على علم تكوين العادات: البداية لازم تكون سريعة وسهلة عشان الحافز يترسّخ بدري، وبعدين المسافة بين
+      المحطات تكبر تدريجيًا. وبنفس الوقت، لازم يكون في <b>نمو محسوس كل يوم</b> — مو بس عند المحطات — عشان الطفل
+      يعيش المتعة باليوميات نفسها مو بس بلحظة الوصول.
+    </p>
+    <div class="extension-card">
+      <span class="new-badge">إضافة جديدة</span>
+      <div class="ext-head">
+        <span class="icon">🌳</span>
+        <h3>النمو اليومي — قبل كل شي</h3>
+      </div>
+      <p>
+        كل يوم كامل (مش بس عند المحطات)، الشجرة بتضيف تفصيلة صغيرة بحد ذاتها — ورقة جديدة، لمعة إضافية،
+        غصن صغير. الطفل يشوف التغيّر بعينه ويحسّه كل يوم، حتى وهو لسا بعيد عن أقرب محطة.
+      </p>
+    </div>
+
+    <p class="body-text" style="margin-top:6px;">
+      جدول المحطات الست يلي حددتها (7 · 14 · 21 · 30 · 45 · 60 يوم)، مع اقتراح لشكل الشجرة ونوع المكافأة الواقعية
+      من الأهل بكل وحدة:
+    </p>
+    <div class="milestone-list">
+      <div class="milestone-row">
+        <div class="day-badge"><span class="num">٧</span><span class="unit">أيام</span></div>
+        <div class="stage"><span class="em">🌱</span><span class="label">بادرة</span></div>
+        <div class="treat"><b>مكافأة مادية بسيطة:</b> حلوى مفضّلة أو نزهة قصيرة — سريعة وسهلة، الهدف بس تثبيت أول نجاح.</div>
+      </div>
+      <div class="milestone-row">
+        <div class="day-badge"><span class="num">١٤</span><span class="unit">يوم</span></div>
+        <div class="stage"><span class="em">🌿</span><span class="label">نبتة</span></div>
+        <div class="treat"><b>نشاط مشترك:</b> لعبة أو فيلم عائلي يختاره هو بنفسه.</div>
+      </div>
+      <div class="milestone-row">
+        <div class="day-badge"><span class="num">٢١</span><span class="unit">يوم</span></div>
+        <div class="stage"><span class="em">🍃</span><span class="label">نبتة قوية</span></div>
+        <div class="treat"><b>هدية صغيرة ملموسة</b> يختارها بنفسه.</div>
+      </div>
+      <div class="milestone-row">
+        <div class="day-badge"><span class="num">٣٠</span><span class="unit">يوم</span></div>
+        <div class="stage"><span class="em">🌳</span><span class="label">شجرة شابة</span></div>
+        <div class="treat"><b>يوم كامل يخطط له هو:</b> يقرر برنامج العائلة ليوم كامل.</div>
+      </div>
+      <div class="milestone-row">
+        <div class="day-badge"><span class="num">٤٥</span><span class="unit">يوم</span></div>
+        <div class="stage"><span class="em">🌸</span><span class="label">شجرة مزهرة</span></div>
+        <div class="treat"><b>امتياز/ثقة (مو مادي):</b> مسؤولية جديدة أو حرية إضافية يمنحها الأهل — بداية التحول من المكافأة المادية للمعنوية.</div>
+      </div>
+      <div class="milestone-row">
+        <div class="day-badge"><span class="num">٦٠</span><span class="unit">يوم</span></div>
+        <div class="stage"><span class="em">🌳✨</span><span class="label">شجرة مثمرة</span></div>
+        <div class="treat"><b>احتفال عائلي حقيقي</b> يشارك فيه الكل — إنجاز شهرين متواصلين.</div>
+      </div>
+      <div class="milestone-row evergreen">
+        <div class="day-badge"><span class="num">∞</span><span class="unit">مستمر</span></div>
+        <div class="stage"><span class="em">🍂</span><span class="label">مواسم جديدة</span></div>
+        <div class="treat"><b>النمو ما بيتوقف عند الـ60:</b> كل 30 يوم إضافي بيفتح "موسم" جديد للشجرة (شكل/ألوان مختلفة) مع شهادة جديدة — بدون سقف، طول ما الطفل مستمر.</div>
+      </div>
+    </div>
+    <div class="info-box">
+      <span>🧭</span>
+      <div>
+        <b>الفكرة من وراء الترتيب:</b> المكافآت الأولى (7-21 يوم) مادية وسريعة عشان تبني الحافز بسرعة.
+        بعد المنتصف (45 يوم فما فوق)، المكافأة بتتحول تدريجيًا من "شي ماديّ بياخده" إلى "ثقة/امتياز بيكتسبه" —
+        هيك منربط العادة بهويته ("أنا حدا بيصلي") بدل ما تضل معلّقة بجايزة خارجية، وهاد أهم شرط لثبات العادة على المدى الطويل.
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <span class="section-num">05</span>
       <h2>قرارات لسا معلّقة</h2>
     </div>
     <p class="body-text">هاي النقاط يلي بنحتاج قرارك فيها لما توصل عالبيت:</p>
@@ -622,7 +736,7 @@
       </div>
       <div class="qitem">
         <span class="box"></span>
-        <p>مدة "الجولة" الواحدة قبل ما يتغير شكل الرفيق وتطلع الشهادة — 30 يوم (شهر هجري) مناسبة، ولا مدة تانية أقصر/أطول؟</p>
+        <p>جدول المحطات صار محسوم (7 · 14 · 21 · 30 · 45 · 60 يوم ثم كل 30 يوم بلا سقف). بس تأكيد بسيط: قلت "خمسين يوم" بالأول — خليتها 45 لأنها بتكمل النمط، إذا قصدك فعلاً 50 خبرني.</p>
       </div>
     </div>
   </section>
