@@ -19,7 +19,7 @@ import usePrayerNotifications from '../hooks/usePrayerNotifications';
 import useAthkarReminderNotifications from '../hooks/useAthkarReminderNotifications';
 import useFridaySunnahNotifications from '../hooks/useFridaySunnahNotifications';
 import useDailyData from '../hooks/useDailyData';
-import ATHKAR_META, { ATHKAR_UNLOCK_PRAYER } from '../constants/athkarMeta';
+import ATHKAR_META from '../constants/athkarMeta';
 import { afterPrayerCategory } from '../constants/afterPrayerSlots';
 
 const FARD_ORDER = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
@@ -89,6 +89,12 @@ export default function HomeScreen({ navigation }) {
   // used to do inline) so both can be merged into one ordered list — needed
   // to put "سنن يوم الجمعة" first on Fridays, which means reordering across
   // what used to be two separate arrays.
+  //
+  // Never locked, on any of these — the "opens once its time starts"
+  // gating stays a Tracker-only concept (that's where marking a specific
+  // time-bound task done actually lives). Home is pure navigation to go
+  // read something, and there's no reason to stop someone from reading
+  // أذكار المساء early just because عصر hasn't happened yet.
   const athkarHomeTiles = useMemo(
     () =>
       ['wakeup', 'morning', 'prayerAthkar', 'evening', 'sleep'].map((key) => {
@@ -98,24 +104,15 @@ export default function HomeScreen({ navigation }) {
         const meta =
           key === 'prayerAthkar' ? { ...ATHKAR_META[afterPrayerCategory('fajr')], title: 'أذكار الصلاة' } : ATHKAR_META[key];
         const category = key === 'prayerAthkar' ? prayerAthkarCategory : key;
-        // Same "opens once its time starts" gating as TrackerScreen's
-        // prayer columns — the merged tile is never locked (there's always
-        // *some* prayer's athkar it can open, even overnight before fajr,
-        // via the isha fallback above).
-        const unlockPrayerKey = key === 'prayerAthkar' ? null : ATHKAR_UNLOCK_PRAYER[key];
-        const unlockPrayer = unlockPrayerKey ? schedule.find((s) => s.key === unlockPrayerKey) : null;
-        const locked = Boolean(unlockPrayerKey) && (!unlockPrayer || now < unlockPrayer.time);
         return {
           key,
           title: meta.title,
           icon: meta.icon,
           color: meta.color,
-          locked,
-          lockNote: unlockPrayer ? `يفتح بعد صلاة ${unlockPrayer.label}` : undefined,
           onPress: () => navigation.navigate('AthkarCounter', { category }),
         };
       }),
-    [schedule, now, prayerAthkarCategory, navigation]
+    [prayerAthkarCategory, navigation]
   );
 
   // Only truthy on Monday/Thursday — the tile below only shows up those
