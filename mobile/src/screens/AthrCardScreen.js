@@ -13,13 +13,6 @@ import { radius, spacing } from '../theme/spacing';
 import typography from '../theme/typography';
 import ATHR_CARDS, { cardIndexForDate, isHadithSourced, HADITH_PREFIX } from '../constants/athrCards';
 
-// The image-share card is rendered at this fixed size regardless of the
-// device's own screen width — captured at a high pixelRatio (see
-// ViewShot options below) so the exported PNG is crisp on any phone that
-// opens it, not just this one.
-const SHARE_CARD_WIDTH = 320;
-const SHARE_CARD_HEIGHT = 460;
-
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const CARD_WIDTH = SCREEN_WIDTH - spacing.lg * 2;
 const SWIPE_THRESHOLD = 90;
@@ -156,6 +149,15 @@ export default function AthrCardScreen({ navigation }) {
   const [shareMenuVisible, setShareMenuVisible] = useState(false);
   const [sharingImage, setSharingImage] = useState(false);
   const shareViewRef = useRef(null);
+  // Measured off the real on-screen card (styles.card fills its flex
+  // parent, so it has no fixed size of its own to read) so the share
+  // image's card is the exact same size as what's actually on screen on
+  // this device — not a separately guessed size that drifts from it.
+  const [cardSize, setCardSize] = useState(null);
+  const onCardLayout = useCallback((e) => {
+    const { width, height } = e.nativeEvent.layout;
+    setCardSize((prev) => (prev && prev.width === width && prev.height === height ? prev : { width, height }));
+  }, []);
 
   const onShareText = useCallback(async () => {
     setShareMenuVisible(false);
@@ -238,7 +240,10 @@ export default function AthrCardScreen({ navigation }) {
           ) : null}
 
           <GestureDetector gesture={panGesture}>
-            <Animated.View style={[styles.card, styles.cardFront, { transform: [{ translateX }, { rotate: frontRotate }] }]}>
+            <Animated.View
+              onLayout={onCardLayout}
+              style={[styles.card, styles.cardFront, { transform: [{ translateX }, { rotate: frontRotate }] }]}
+            >
               <CardBody card={frontCard} isToday={pos === todayIndex} colors={colors} styles={styles} />
             </Animated.View>
           </GestureDetector>
@@ -265,7 +270,7 @@ export default function AthrCardScreen({ navigation }) {
           size, which risks not laying out its children at all. */}
       <View style={styles.offscreen} pointerEvents="none">
         <ViewShot ref={shareViewRef} options={{ format: 'png', quality: 1, result: 'tmpfile' }}>
-          <ShareableCard card={frontCard} colors={colors} styles={styles} />
+          <ShareableCard card={frontCard} isToday={pos === todayIndex} cardSize={cardSize} colors={colors} styles={styles} />
         </ViewShot>
       </View>
 
@@ -281,39 +286,23 @@ export default function AthrCardScreen({ navigation }) {
   );
 }
 
-function ShareableCard({ card, colors, styles }) {
+// Reuses CardBody as-is (same mark/tag/text/source layout the real reading
+// card uses) rather than a separately laid-out mini version — the ask was
+// explicitly for the shared card to look and measure exactly like the one
+// on screen, logo top-right, tag up top, source down at the bottom, same
+// spacing between them, just without the surrounding screen chrome
+// (back/share buttons, the swipe hint). Sized to `cardSize`, measured off
+// that real on-screen card, so it's the same size on this device too, not
+// a separately guessed one.
+function ShareableCard({ card, isToday, cardSize, colors, styles }) {
+  if (!cardSize) return null;
   return (
     <LinearGradient colors={[colors.amber, colors.gold]} style={styles.shareBg}>
-      <View style={styles.shareLogoRow}>
-        <View style={styles.shareLogoWrap}>
-          <Image source={require('../../assets/logo.png')} style={styles.markImg} resizeMode="cover" />
-        </View>
-        <AppText weight="bold" size={17} color={colors.white}>
-          أثر
-        </AppText>
+      <View style={[styles.card, styles.shareCardSurface, { width: cardSize.width, height: cardSize.height }]}>
+        <CardBody card={card} isToday={isToday} colors={colors} styles={styles} />
       </View>
-
-      <View style={styles.shareCard}>
-        <View style={styles.tag}>
-          <AppText size={12} weight="bold" color={colors.amberDeep}>
-            {card.tag}
-          </AppText>
-        </View>
-        {isHadithSourced(card) ? (
-          <AppText size={12.5} weight="semibold" color={colors.amberDeep} style={styles.hadithPrefix}>
-            {HADITH_PREFIX}
-          </AppText>
-        ) : null}
-        <AppText size={17} color={colors.ink} style={[styles.cardText, { marginTop: spacing.sm }]}>
-          {card.text}
-        </AppText>
-        <AppText size={11} color={colors.inkSoft} style={styles.source}>
-          {card.source}
-        </AppText>
-      </View>
-
       <AppText weight="bold" size={13.5} color={colors.white} style={{ marginTop: spacing.lg }}>
-        حمّل تطبيق أثر 🌙
+        بطاقات أثر
       </AppText>
     </LinearGradient>
   );
@@ -503,37 +492,28 @@ function createStyles(colors) {
     // Fixed pixel offset, not a percentage — parked far outside the
     // visible screen for ViewShot to capture without ever being seen.
     offscreen: { position: 'absolute', top: -4000, left: 0 },
+    // Sized to fit its children (the card + the watermark line below it)
+    // rather than a fixed width/height — the card itself carries the real
+    // size (see shareCardSurface), this is just the breathing room around
+    // it so it reads as "a card floating on a background", not edge to
+    // edge, since the whole point is this image gets shared standalone
+    // outside the app.
     shareBg: {
-      width: SHARE_CARD_WIDTH,
-      height: SHARE_CARD_HEIGHT,
       alignItems: 'center',
       justifyContent: 'center',
-      paddingHorizontal: spacing.lg,
+      paddingHorizontal: spacing.xl,
+      paddingVertical: spacing.xxl,
     },
-    shareLogoRow: {
-      position: 'absolute',
-      top: spacing.lg,
-      flexDirection: 'row-reverse',
-      alignItems: 'center',
-      gap: spacing.sm,
-    },
-    shareLogoWrap: {
-      width: 30,
-      height: 30,
-      borderRadius: radius.pill,
-      overflow: 'hidden',
-      backgroundColor: '#FAF5EC',
-    },
-    // The actual card, floating on the gradient background rather than
-    // filling it edge to edge — this is the "stays looking like a card,
-    // away from the frame's own edges" look asked for, since the whole
-    // point is this image gets shared standalone outside the app.
-    shareCard: {
-      width: '100%',
-      backgroundColor: colors.surface,
-      borderRadius: radius.lg,
-      padding: spacing.lg,
-      alignItems: 'center',
+    // Same visual surface as the real card (styles.card) — background,
+    // border, radius, padding, shadow — just not position:'absolute'
+    // filling a flex parent, since this one stands alone off-screen with
+    // its own explicit width/height (see cardSize in AthrCardScreen).
+    shareCardSurface: {
+      position: 'relative',
+      top: undefined,
+      left: undefined,
+      right: undefined,
+      bottom: undefined,
     },
   });
 }
