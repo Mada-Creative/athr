@@ -378,6 +378,13 @@ function createStyles(colors) {
       // backdrop, so this never flips with the theme (a themed background
       // here would show as a mismatched square behind it in dark mode).
       backgroundColor: '#FAF5EC',
+      overflow: 'hidden',
+      // The source PNG is the wordmark centered on a lot of empty canvas,
+      // so a plain cover-fit shrinks that empty margin along with it and
+      // the mark reads as a near-blank circle at this size. Scaling up
+      // (clipped by overflow:hidden above) zooms past that padding — same
+      // fix as AthrCardScreen's mark badge.
+      transform: [{ scale: 1.6 }],
     },
     heroCard: {
       // Fixed dark ink surface — deliberately doesn't invert with the theme.

@@ -152,7 +152,9 @@ function createStyles(colors) {
       borderWidth: 1,
       borderColor: colors.border,
     },
-    markImg: { width: '100%', height: '100%' },
+    // Same zoom-past-the-padding fix as AthrCardScreen's mark — see the
+    // comment there.
+    markImg: { width: '100%', height: '100%', transform: [{ scale: 1.6 }] },
     txt: {
       fontFamily: typography.fontDhikr,
       fontSize: 13.5,

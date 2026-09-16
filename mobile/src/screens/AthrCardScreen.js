@@ -501,7 +501,12 @@ function createStyles(colors) {
       borderWidth: 1,
       borderColor: colors.border,
     },
-    markImg: { width: '100%', height: '100%' },
+    // The source PNG is the wordmark centered on a lot of empty canvas
+    // (the glyphs only fill about half the frame), so at this size a plain
+    // cover-fit just shrinks that empty margin along with it and the mark
+    // reads as a blank circle. Scaling the image up (clipped by the
+    // circle's overflow:hidden above) zooms past that padding.
+    markImg: { width: '100%', height: '100%', transform: [{ scale: 1.6 }] },
     tagRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: spacing.xs, alignSelf: 'center', marginTop: spacing.sm },
     tag: {
       borderRadius: radius.pill,
