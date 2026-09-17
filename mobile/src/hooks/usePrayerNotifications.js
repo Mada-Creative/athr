@@ -12,6 +12,14 @@ const PRAYER_LABELS = {
 
 const ID_PREFIX = 'athr-prayer-';
 
+// Android locks a notification's sound to its *channel*, unlike iOS where
+// each notification carries its own sound — a single "prayers" channel
+// can't give the fajr adhan, the other-prayer adhan, and the reminder three
+// different sounds. Three channels, one per sound, is the only way.
+const CHANNEL_ADHAN = 'prayers-adhan';
+const CHANNEL_ADHAN_FAJR = 'prayers-adhan-fajr';
+const CHANNEL_REMINDER = 'prayers-reminder';
+
 async function ensurePermission() {
   const current = await Notifications.getPermissionsAsync();
   if (current.granted) return true;
@@ -58,12 +66,21 @@ export default function usePrayerNotifications(schedule, settings) {
         if (prayer.time <= now) continue; // already passed today
 
         if (atAdhan) {
+          // Fajr gets its own recording (carries "الصلاة خير من النوم", the
+          // line unique to the fajr call to prayer) — every other prayer
+          // shares the plain adhan clip. Both are short excerpts, not the
+          // full multi-minute adhan: iOS silently falls back to the default
+          // sound for any custom notification sound over 30 seconds.
+          const isFajr = prayer.key === 'fajr';
           await Notifications.scheduleNotificationAsync({
             identifier: `${ID_PREFIX}${prayer.key}-adhan`,
             content: {
               title: 'حان وقت الصلاة',
               body: `حان الآن وقت صلاة ${PRAYER_LABELS[prayer.key] || prayer.label}`,
-              sound: true,
+              // iOS reads this per-notification; Android ignores it and uses
+              // whatever sound the channelId below was created with instead.
+              sound: isFajr ? 'adhan_fajr.wav' : 'adhan.wav',
+              ...(Platform.OS === 'android' ? { channelId: isFajr ? CHANNEL_ADHAN_FAJR : CHANNEL_ADHAN } : null),
             },
             trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: prayer.time },
           });
@@ -77,7 +94,8 @@ export default function usePrayerNotifications(schedule, settings) {
               content: {
                 title: 'تذكير بموعد الصلاة',
                 body: `تبقّى ${reminderMinutes} دقيقة على صلاة ${PRAYER_LABELS[prayer.key] || prayer.label}`,
-                sound: true,
+                sound: 'prayer_reminder.wav',
+                ...(Platform.OS === 'android' ? { channelId: CHANNEL_REMINDER } : null),
               },
               trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: reminderTime },
             });
@@ -95,9 +113,22 @@ export default function usePrayerNotifications(schedule, settings) {
 
 export async function ensureAndroidNotificationChannel() {
   if (Platform.OS !== 'android') return;
-  await Notifications.setNotificationChannelAsync('prayers', {
-    name: 'مواعيد الصلاة',
+  // Android reads a resource name (no extension, from res/raw) rather than
+  // the bundle filename iOS uses — the expo-notifications config plugin
+  // copies the same source files to both places at build time.
+  await Notifications.setNotificationChannelAsync(CHANNEL_ADHAN, {
+    name: 'أذان الصلاة',
     importance: Notifications.AndroidImportance.HIGH,
-    sound: 'default',
+    sound: 'adhan',
+  });
+  await Notifications.setNotificationChannelAsync(CHANNEL_ADHAN_FAJR, {
+    name: 'أذان الفجر',
+    importance: Notifications.AndroidImportance.HIGH,
+    sound: 'adhan_fajr',
+  });
+  await Notifications.setNotificationChannelAsync(CHANNEL_REMINDER, {
+    name: 'تذكير الصلاة',
+    importance: Notifications.AndroidImportance.HIGH,
+    sound: 'prayer_reminder',
   });
 }

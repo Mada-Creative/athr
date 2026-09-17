@@ -54,7 +54,17 @@
       "expo-splash-screen",
       "expo-status-bar",
       "expo-web-browser",
-      "expo-apple-authentication"
+      "expo-apple-authentication",
+      [
+        "expo-notifications",
+        {
+          "sounds": [
+            "./assets/sounds/adhan.wav",
+            "./assets/sounds/adhan_fajr.wav",
+            "./assets/sounds/prayer_reminder.wav"
+          ]
+        }
+      ]
     ]
   }
 }
