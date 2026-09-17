@@ -1,6 +1,6 @@
 import 'react-native-gesture-handler';
 import React, { useCallback, useEffect } from 'react';
-import { LogBox, View } from 'react-native';
+import { I18nManager, LogBox, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -36,22 +36,34 @@ Notifications.setNotificationHandler({
   }),
 });
 
-// Deliberately NOT calling I18nManager.forceRTL here, even though the app
-// is Arabic-first. The screens themselves fake RTL manually throughout
-// (flexDirection: 'row-reverse', explicit right/left positions, etc.),
-// tuned and verified that way because forceRTL never visually activates
-// under Expo Go (a single shared host app that can't restart itself per
-// project), which is where this whole app was built and tested. The first
-// real native build (TestFlight) that actually let forceRTL take effect
-// exposed the conflict this causes: React Native auto-mirrors
-// 'row'/'row-reverse' once I18nManager.isRTL is genuinely true, so every
-// hand-reversed row got reversed a second time and came out backwards
-// again (confirmed — the Home screen's greeting logo swapped from the
-// right side to the left). Turning real RTL on is a legitimate
-// improvement (it's also what fixes native, non-RN chrome like the
-// stack navigator's push/pop direction), but it means migrating every
-// hand-reversed row to plain 'row' first — a real pass through the
-// screens, not a one-line toggle. Left off until that pass happens.
+// Explicitly force RTL OFF — not just "don't turn it on". The screens fake
+// RTL manually throughout (flexDirection: 'row-reverse', explicit right/
+// left positions, etc.), tuned and verified that way under Expo Go, where
+// forceRTL never visually activates (it's a single shared host app that
+// can't restart itself per project). The first real native build
+// (TestFlight) that actually let a real isRTL=true take effect exposed the
+// conflict: React Native auto-mirrors 'row'/'row-reverse' once isRTL is
+// genuinely true, so every hand-reversed row got mirrored a second time
+// and came out backwards (confirmed on the Home screen's greeting logo).
+//
+// Simply removing the old forceRTL(true) call turned out not to be enough
+// on its own to fix that, though — I18nManager's RTL flag is persisted
+// natively on the device (in UserDefaults on iOS), independent of the app
+// bundle, and survives across builds/updates. A device that ever ran a
+// build calling forceRTL(true) keeps isRTL=true from then on even once
+// later code stops calling it — nothing ever tells it to go back. A fresh
+// install can also default to RTL on its own depending on device locale,
+// now that the app declares Arabic as a supported locale (see app.json).
+// So this needs an active, unconditional forceRTL(false) every launch, not
+// silence. Turning on *real* RTL (which would also fix native, non-RN
+// chrome like the stack navigator's push/pop direction) is still a
+// legitimate improvement to make later, but needs an actual pass
+// converting the hand-reversed rows to plain 'row' first — not a one-line
+// toggle.
+if (I18nManager.isRTL || I18nManager.doLeftAndRightSwapInRTL) {
+  I18nManager.allowRTL(false);
+  I18nManager.forceRTL(false);
+}
 
 LogBox.ignoreLogs(['new NativeEventEmitter']);
 
