@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, Switch, TouchableOpacity, View } from 'react-native';
+import { Alert, I18nManager, StyleSheet, Switch, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import AppText from '../components/AppText';
@@ -49,6 +49,15 @@ export default function SettingsScreen() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  // Debug-only escape hatch — see the toggle below for why this exists.
+  const [rtlOn, setRtlOn] = useState(I18nManager.isRTL);
+
+  const onToggleRealRTL = (value) => {
+    I18nManager.allowRTL(value);
+    I18nManager.forceRTL(value);
+    setRtlOn(value);
+    Alert.alert('لازم إعادة تشغيل', 'سكّر التطبيق تمامًا من قائمة التطبيقات المفتوحة وافتحه من جديد عشان يبين التغيير.');
+  };
 
   const onSave = async () => {
     setError(null);
@@ -173,6 +182,27 @@ export default function SettingsScreen() {
               </AppText>
             </TouchableOpacity>
           ))}
+        </View>
+      </Card>
+
+      <AppText weight="bold" size={16} style={{ marginTop: spacing.xl, marginBottom: spacing.sm }}>
+        تجربة: اتجاه الواجهة (تجريبي)
+      </AppText>
+      <AppText size={12} color={colors.inkSoft} style={{ marginBottom: spacing.sm }}>
+        عشان نجرب اتجاه RTL الحقيقي بدون ما ننتظر بناء نسخة جديدة كل مرة — بعد التبديل، سكّر التطبيق تمامًا وافتحه من
+        جديد.
+      </AppText>
+      <Card>
+        <View style={styles.notifRow}>
+          <Switch value={rtlOn} onValueChange={onToggleRealRTL} trackColor={{ true: colors.amber }} />
+          <View style={{ flex: 1 }}>
+            <AppText size={14} weight="semibold">
+              تفعيل RTL الحقيقي (نظام التشغيل)
+            </AppText>
+            <AppText size={11.5} color={colors.inkSoft} style={{ marginTop: 2 }}>
+              الحالة الحالية: {rtlOn ? 'مفعّل' : 'معطّل — الوضع الافتراضي حاليًا'}
+            </AppText>
+          </View>
         </View>
       </Card>
 
