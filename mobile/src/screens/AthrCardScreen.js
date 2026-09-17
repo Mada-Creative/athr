@@ -252,7 +252,12 @@ export default function AthrCardScreen({ navigation }) {
       <Screen scroll={false} contentStyle={{ flex: 1, paddingBottom: spacing.lg }}>
         <View style={styles.topRow}>
           <Bounce onPress={() => navigation.goBack()} style={styles.closeBtn}>
-            <Ionicons name="chevron-back" size={20} color={colors.ink} />
+            {/* This is a back/close action, not a "see more" disclosure —
+                the opposite semantic from every other chevron in the app,
+                which all point left (toward where deeper content/the next
+                item sits, reading right-to-left). A back/exit action reads
+                the other way: outward, to the right. */}
+            <Ionicons name="chevron-forward" size={20} color={colors.ink} />
           </Bounce>
         </View>
 
