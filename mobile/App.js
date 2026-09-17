@@ -1,6 +1,6 @@
 import 'react-native-gesture-handler';
 import React, { useCallback, useEffect } from 'react';
-import { I18nManager, LogBox, View } from 'react-native';
+import { LogBox, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -36,18 +36,22 @@ Notifications.setNotificationHandler({
   }),
 });
 
-// The whole app is Arabic-first, so force RTL layout direction once at boot.
-// This flag only actually takes visual effect after the *native* app
-// process restarts (a real device install, TestFlight, or a custom dev
-// client) — Expo Go is a single shared host app that can't restart itself
-// per-project on a JS reload, so RTL never visually activates there no
-// matter how many times the bundle reloads. It's still correct to set
-// this now: a real build reads it at native launch and renders properly
-// RTL from the first frame.
-if (!I18nManager.isRTL) {
-  I18nManager.allowRTL(true);
-  I18nManager.forceRTL(true);
-}
+// Deliberately NOT calling I18nManager.forceRTL here, even though the app
+// is Arabic-first. The screens themselves fake RTL manually throughout
+// (flexDirection: 'row-reverse', explicit right/left positions, etc.),
+// tuned and verified that way because forceRTL never visually activates
+// under Expo Go (a single shared host app that can't restart itself per
+// project), which is where this whole app was built and tested. The first
+// real native build (TestFlight) that actually let forceRTL take effect
+// exposed the conflict this causes: React Native auto-mirrors
+// 'row'/'row-reverse' once I18nManager.isRTL is genuinely true, so every
+// hand-reversed row got reversed a second time and came out backwards
+// again (confirmed — the Home screen's greeting logo swapped from the
+// right side to the left). Turning real RTL on is a legitimate
+// improvement (it's also what fixes native, non-RN chrome like the
+// stack navigator's push/pop direction), but it means migrating every
+// hand-reversed row to plain 'row' first — a real pass through the
+// screens, not a one-line toggle. Left off until that pass happens.
 
 LogBox.ignoreLogs(['new NativeEventEmitter']);
 
