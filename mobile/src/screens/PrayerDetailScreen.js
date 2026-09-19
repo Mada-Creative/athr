@@ -1,0 +1,173 @@
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import Screen from '../components/Screen';
+import AppText from '../components/AppText';
+import Card from '../components/Card';
+import { useTheme } from '../context/ThemeContext';
+import { radius, spacing } from '../theme/spacing';
+import usePrayerTimes, { formatClock, formatCountdownWithSeconds } from '../hooks/usePrayerTimes';
+
+// Purely informational — this screen never marks a prayer as prayed.
+// Marking happens on the Tracker tab; this one is for "when, and based on
+// what location" only, which is why it carries the location/method controls.
+export default function PrayerDetailScreen() {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
+  const {
+    schedule,
+    next,
+    permissionDenied,
+    locationLabel,
+    locating,
+    methodLabel,
+    isStaleLocation,
+    refreshLocation,
+    lastThirdOfNight,
+  } = usePrayerTimes();
+  const [now, setNow] = useState(new Date());
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const remainingToNext = next ? next.time.getTime() - now.getTime() : null;
+  const displayRemaining = remainingToNext != null && remainingToNext < 0 ? remainingToNext + 24 * 60 * 60 * 1000 : remainingToNext;
+
+  return (
+    <Screen>
+      <AppText weight="bold" size={22}>
+        مواقيت الصلاة
+      </AppText>
+      <AppText color={colors.inkSoft} size={13.5} style={{ marginTop: 4, marginBottom: spacing.lg }}>
+        عرض فقط — علّم صلاتك من صفحة المتابعة
+      </AppText>
+
+      <Card style={styles.locationCard}>
+        <View style={styles.locationRow}>
+          <Ionicons name="location-outline" size={18} color={colors.amberDeep} />
+          <View style={{ flex: 1 }}>
+            <AppText weight="semibold" size={13.5}>
+              {locating ? 'جارٍ تحديد الموقع...' : locationLabel || 'الموقع الحالي'}
+            </AppText>
+            <AppText size={11.5} color={colors.inkSoft} style={{ marginTop: 2 }}>
+              طريقة الحساب (تلقائية حسب موقعك): {methodLabel}
+            </AppText>
+          </View>
+        </View>
+
+        <View style={styles.locationActions}>
+          <TouchableOpacity style={styles.locationBtn} onPress={refreshLocation} disabled={locating}>
+            <Ionicons name="refresh-outline" size={14} color={colors.ink} />
+            <AppText size={12.5} weight="semibold" style={{ marginRight: 4 }}>
+              تحديث الموقع
+            </AppText>
+          </TouchableOpacity>
+        </View>
+
+        {permissionDenied ? (
+          <AppText size={11.5} color={colors.clay} style={{ marginTop: spacing.sm }}>
+            إذن الموقع غير مفعّل — المواقيت المعروضة حسب آخر موقع معروف أو مكة المكرمة تقديريًا
+          </AppText>
+        ) : isStaleLocation ? (
+          <AppText size={11.5} color={colors.inkSoft} style={{ marginTop: spacing.sm }}>
+            تعذّر تحديد موقعك الحالي — المواقيت المعروضة حسب آخر موقع معروف
+          </AppText>
+        ) : null}
+      </Card>
+
+      {schedule.map((prayer) => {
+        const isNext = next?.key === prayer.key;
+        const hasPassed = prayer.time < now && !isNext;
+
+        return (
+          <View key={prayer.key} style={[styles.row, isNext && styles.rowActive]}>
+            <View style={styles.rowMain}>
+              <AppText weight="bold" size={16} color={isNext ? colors.white : colors.ink}>
+                {prayer.label}
+              </AppText>
+              <AppText size={12} color={isNext ? colors.accentSoft : colors.inkSoft} style={{ marginTop: 2 }}>
+                {hasPassed ? 'مضت' : isNext ? 'القادمة' : 'لاحقًا اليوم'}
+              </AppText>
+            </View>
+
+            <View style={{ alignItems: 'flex-end' }}>
+              <AppText weight="bold" size={18} color={isNext ? colors.white : colors.ink} style={{ direction: 'ltr' }}>
+                {formatClock(prayer.time)}
+              </AppText>
+              {isNext ? (
+                <AppText size={12} color={colors.gold} style={{ marginTop: 2, direction: 'ltr' }}>
+                  بعد {formatCountdownWithSeconds(displayRemaining)}
+                </AppText>
+              ) : null}
+            </View>
+          </View>
+        );
+      })}
+
+      {lastThirdOfNight ? (
+        <Card style={styles.qiyamCard}>
+          <View style={styles.qiyamRow}>
+            <View style={styles.qiyamIcon}>
+              <Ionicons name="moon-outline" size={18} color={colors.amberDeep} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <AppText weight="semibold" size={14}>
+                الثلث الأخير من الليل
+              </AppText>
+              <AppText size={11.5} color={colors.inkSoft} style={{ marginTop: 2 }}>
+                وقت مستحب لقيام الليل والدعاء، الليلة
+              </AppText>
+            </View>
+            <AppText weight="bold" size={17} style={{ direction: 'ltr' }}>
+              {formatClock(lastThirdOfNight)}
+            </AppText>
+          </View>
+        </Card>
+      ) : null}
+    </Screen>
+  );
+}
+
+function createStyles(colors) {
+  return StyleSheet.create({
+  locationCard: { marginBottom: spacing.lg },
+  locationRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: spacing.sm },
+  locationActions: { flexDirection: 'row-reverse', gap: spacing.sm, marginTop: spacing.md },
+  locationBtn: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.pill,
+    paddingVertical: 6,
+    paddingHorizontal: spacing.md,
+  },
+  row: {
+    flexDirection: 'row-reverse',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    padding: spacing.lg,
+    marginBottom: spacing.sm,
+  },
+  // Fixed dark surface (like a solid button) — never inverts with the
+  // theme, so the white text/time on it never washes out in dark mode.
+  rowActive: { backgroundColor: colors.accentDark, borderColor: colors.accentDark },
+  rowMain: { flex: 1 },
+  qiyamCard: { marginTop: spacing.md },
+  qiyamRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: spacing.md },
+  qiyamIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: radius.pill,
+    backgroundColor: colors.amberSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  });
+}
