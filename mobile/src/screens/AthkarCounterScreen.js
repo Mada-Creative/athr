@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Dimensions, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import Screen from '../components/Screen';
 import AppText from '../components/AppText';
@@ -229,11 +230,18 @@ export default function AthkarCounterScreen({ route, navigation }) {
       })
     : 0;
 
+  const doneCount = items.reduce((sum, it, i) => sum + (counts[i] >= it.repeat ? 1 : 0), 0);
+
   return (
     <Screen scroll={false} contentStyle={{ flex: 1, paddingBottom: spacing.lg }}>
-      <AppText size={12.5} color={colors.inkFaint} style={styles.posLabel}>
-        {pos + 1} من {items.length}
-      </AppText>
+      <View style={styles.headerRow}>
+        <View style={[styles.headerIconWrap, { backgroundColor: `${meta.color}1F` }]}>
+          <Ionicons name={meta.icon} size={17} color={meta.color} />
+        </View>
+        <AppText size={12.5} color={colors.inkFaint} style={styles.posLabel}>
+          {pos + 1} من {items.length} — أنجزت {doneCount}
+        </AppText>
+      </View>
 
       <View style={styles.dotsRow}>
         {items.map((it, i) => (
@@ -241,7 +249,7 @@ export default function AthkarCounterScreen({ route, navigation }) {
             key={i}
             style={[
               styles.dot,
-              i === itemIndex && styles.dotCurrent,
+              i === itemIndex && [styles.dotCurrent, { backgroundColor: meta.color }],
               i !== itemIndex && counts[i] >= it.repeat && styles.dotDone,
             ]}
           />
@@ -254,6 +262,7 @@ export default function AthkarCounterScreen({ route, navigation }) {
             style={[
               styles.card,
               styles.cardBack,
+              { borderTopColor: meta.color },
               { transform: [{ translateX: backTranslateX }, { scale: backScale }], opacity: backOpacity },
             ]}
             pointerEvents="none"
@@ -271,7 +280,14 @@ export default function AthkarCounterScreen({ route, navigation }) {
         ) : null}
 
         <GestureDetector gesture={panGesture}>
-          <Animated.View style={[styles.card, styles.cardFront, { transform: [{ translateX }, { rotate: frontRotate }] }]}>
+          <Animated.View
+            style={[
+              styles.card,
+              styles.cardFront,
+              { borderTopColor: meta.color },
+              { transform: [{ translateX }, { rotate: frontRotate }] },
+            ]}
+          >
             <CardBody
               itemKey={itemIndex}
               item={frontItem}
@@ -298,7 +314,8 @@ function CardBody({ itemKey, item, count, meta, colors, styles, onPress, onCompl
   return (
     <>
       <View style={[styles.tag, { backgroundColor: `${meta.color}22` }]}>
-        <AppText size={12} weight="bold" color={meta.color}>
+        <Ionicons name={meta.icon} size={13} color={meta.color} />
+        <AppText size={12} weight="bold" color={meta.color} style={{ marginRight: 4 }}>
           {item.label || meta.title}
         </AppText>
       </View>
@@ -307,10 +324,16 @@ function CardBody({ itemKey, item, count, meta, colors, styles, onPress, onCompl
           {item.text}
         </AppText>
       </View>
+      {/* The reward/virtue behind this dhikr — deliberately its own tinted
+          callout rather than a plain gray citation line, so it reads as a
+          reason to actually finish the count, not just a footnote. */}
       {item.source ? (
-        <AppText size={11.5} color={colors.inkSoft} style={styles.source}>
-          {item.source}
-        </AppText>
+        <View style={[styles.virtueBox, { backgroundColor: `${meta.color}14`, borderColor: `${meta.color}33` }]}>
+          <Ionicons name="sparkles-outline" size={14} color={meta.color} style={{ marginTop: 1 }} />
+          <AppText size={12} color={colors.inkSoft} style={styles.virtueText}>
+            {item.source}
+          </AppText>
+        </View>
       ) : null}
       <View style={styles.footer}>
         <AthkarCountRing itemKey={itemKey} count={count} target={item.repeat} onPress={onPress} onComplete={onComplete} />
@@ -324,7 +347,21 @@ function CardBody({ itemKey, item, count, meta, colors, styles, onPress, onCompl
 
 function createStyles(colors) {
   return StyleSheet.create({
-    posLabel: { textAlign: 'center', marginTop: spacing.xs, fontVariant: ['tabular-nums'] },
+    headerRow: {
+      flexDirection: 'row-reverse',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.xs,
+      marginTop: spacing.xs,
+    },
+    headerIconWrap: {
+      width: 26,
+      height: 26,
+      borderRadius: radius.pill,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    posLabel: { fontVariant: ['tabular-nums'] },
     dotsRow: {
       flexDirection: 'row-reverse',
       flexWrap: 'wrap',
@@ -335,7 +372,7 @@ function createStyles(colors) {
       marginBottom: spacing.md,
     },
     dot: { width: 6, height: 6, borderRadius: radius.pill, backgroundColor: colors.border },
-    dotCurrent: { width: 18, borderRadius: 4, backgroundColor: colors.amber },
+    dotCurrent: { width: 18, borderRadius: 4 },
     dotDone: { backgroundColor: colors.sage },
     stage: { flex: 1, position: 'relative' },
     card: {
@@ -347,6 +384,7 @@ function createStyles(colors) {
       backgroundColor: colors.surface,
       borderWidth: 1,
       borderColor: colors.border,
+      borderTopWidth: 4,
       borderRadius: radius.lg,
       padding: spacing.xl,
       shadowColor: colors.shadow,
@@ -358,6 +396,8 @@ function createStyles(colors) {
     cardFront: { zIndex: 2 },
     cardBack: { zIndex: 1 },
     tag: {
+      flexDirection: 'row-reverse',
+      alignItems: 'center',
       alignSelf: 'center',
       borderRadius: radius.pill,
       paddingHorizontal: spacing.md,
@@ -365,7 +405,17 @@ function createStyles(colors) {
     },
     textWrap: { flex: 1, justifyContent: 'center', marginTop: spacing.lg },
     cardText: { textAlign: 'center', lineHeight: 34, fontFamily: typography.fontDhikr },
-    source: { textAlign: 'center', marginTop: spacing.sm },
+    virtueBox: {
+      flexDirection: 'row-reverse',
+      alignItems: 'flex-start',
+      gap: 6,
+      borderWidth: 1,
+      borderRadius: radius.md,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      marginTop: spacing.md,
+    },
+    virtueText: { flex: 1, lineHeight: 18, textAlign: 'right' },
     footer: { alignItems: 'center', marginTop: spacing.lg },
     swipeHint: { textAlign: 'center', marginTop: spacing.sm, marginBottom: spacing.xs },
   });
