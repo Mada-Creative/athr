@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
+import { pickAdhanHadith, pickJamaahHadith } from '../constants/prayerHadiths';
 
 const PRAYER_LABELS = {
   fajr: 'الفجر',
@@ -72,11 +73,16 @@ export default function usePrayerNotifications(schedule, settings) {
           // full multi-minute adhan: iOS silently falls back to the default
           // sound for any custom notification sound over 30 seconds.
           const isFajr = prayer.key === 'fajr';
+          // A hadith on the virtue of prayer (or, periodically, that
+          // specific prayer's own hadith — the rawatib one for dhuhr, the
+          // "البردين" one for fajr/asr, etc.) so the notification is a
+          // reason to get up, not just a clock announcement.
+          const adhanHadith = pickAdhanHadith(prayer.key, prayer.time);
           await Notifications.scheduleNotificationAsync({
             identifier: `${ID_PREFIX}${prayer.key}-adhan`,
             content: {
               title: 'حان وقت الصلاة',
-              body: `حان الآن وقت صلاة ${PRAYER_LABELS[prayer.key] || prayer.label}`,
+              body: `حان الآن وقت صلاة ${PRAYER_LABELS[prayer.key] || prayer.label}\n\n"${adhanHadith.text}"\n— ${adhanHadith.source}`,
               // iOS reads this per-notification; Android ignores it and uses
               // whatever sound the channelId below was created with instead.
               sound: isFajr ? 'adhan_fajr.wav' : 'adhan.wav',
@@ -89,11 +95,16 @@ export default function usePrayerNotifications(schedule, settings) {
         if (reminderMinutes) {
           const reminderTime = new Date(prayer.time.getTime() - reminderMinutes * 60 * 1000);
           if (reminderTime > now) {
+            // The reminder's whole point is the window to still get up and
+            // go — always a jama'ah/walking-to-the-mosque hadith, not a
+            // general one, to actually push toward that instead of just
+            // flagging the time.
+            const jamaahHadith = pickJamaahHadith(prayer.key, prayer.time);
             await Notifications.scheduleNotificationAsync({
               identifier: `${ID_PREFIX}${prayer.key}-reminder`,
               content: {
                 title: 'تذكير بموعد الصلاة',
-                body: `تبقّى ${reminderMinutes} دقيقة على صلاة ${PRAYER_LABELS[prayer.key] || prayer.label}`,
+                body: `تبقّى ${reminderMinutes} دقيقة على صلاة ${PRAYER_LABELS[prayer.key] || prayer.label} — قم وأدركها في جماعة\n\n"${jamaahHadith.text}"\n— ${jamaahHadith.source}`,
                 sound: 'prayer_reminder.wav',
                 ...(Platform.OS === 'android' ? { channelId: CHANNEL_REMINDER } : null),
               },
