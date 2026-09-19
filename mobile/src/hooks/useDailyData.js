@@ -3,6 +3,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from '../api/client';
 import { enqueueAction, flushPendingActions } from '../utils/pendingActions';
 import { AFTER_PRAYER_SLOTS, afterPrayerCategory } from '../constants/afterPrayerSlots';
+import { cancelForgotReminder } from './usePrayerNotifications';
+import { todayISO } from '../utils/date';
 
 const ATHKAR_CONTENT_FALLBACK_KEYS = [
   'morning',
@@ -129,6 +131,15 @@ export default function useDailyData(date) {
       }));
       const path = `/prayers/${date}/toggle`;
       const body = { group, key, value: !currentValue };
+      // Marking a fard prayer done today cancels its "did you forget?"
+      // check-in immediately — no reason to wait for the next unrelated
+      // reschedule to notice it's no longer needed. Guarded to today only:
+      // this identifier isn't date-namespaced (only one day's worth is ever
+      // scheduled at a time), so cancelling it while editing a past date's
+      // log would wrongly clear today's real pending one.
+      if (group === 'fard' && !currentValue && date === todayISO()) {
+        cancelForgotReminder(key);
+      }
       try {
         const res = await api.patch(path, body);
         setPrayerLog(res.log);

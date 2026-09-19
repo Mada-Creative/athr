@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { pickAdhanHadith, pickJamaahHadith } from '../constants/prayerHadiths';
+import navigationRef from '../navigation/navigationRef';
 
 const PRAYER_LABELS = {
   fajr: 'الفجر',
@@ -12,6 +13,11 @@ const PRAYER_LABELS = {
 };
 
 const ID_PREFIX = 'athr-prayer-';
+
+// How long after adhan time to check in if the prayer still isn't marked
+// done in the tracker — long enough that it isn't a false alarm the moment
+// adhan is called, short enough to still be a timely nudge to get up.
+const FORGOT_OFFSET_MIN = 30;
 
 // Android locks a notification's sound to its *channel*, unlike iOS where
 // each notification carries its own sound — a single "prayers" channel
@@ -36,23 +42,22 @@ async function clearPreviousSchedule() {
 
 /**
  * (Re)schedules today's remaining prayer notifications whenever the computed
- * prayer schedule or the user's notification settings change. This only
- * covers "while the app has run today at least once" — a full background
- * scheduler (days ahead, survives reinstall) would need a native background
- * task and is out of scope for this pass.
+ * prayer schedule, the user's notification settings, or today's prayer log
+ * changes. This only covers "while the app has run today at least once" — a
+ * full background scheduler (days ahead, survives reinstall) would need a
+ * native background task and is out of scope for this pass.
  */
-export default function usePrayerNotifications(schedule, settings) {
+export default function usePrayerNotifications(schedule, settings, prayerLog) {
   const atAdhan = Boolean(settings?.atAdhan);
   const reminderMinutes = settings?.reminderMinutes ?? null;
+  const excused = Boolean(prayerLog?.excused);
+  // A stable key that changes whenever any fard prayer's done-state
+  // changes, without re-running the effect on every unrelated prayerLog
+  // update (nawafil toggles, etc.) — used only as a dependency below.
+  const fardKey = schedule?.map((p) => `${p.key}:${Boolean(prayerLog?.fard?.[p.key])}`).join(',');
 
   useEffect(() => {
     if (!schedule?.length) return undefined;
-    if (!atAdhan && !reminderMinutes) {
-      // Nothing to schedule — but still clear anything left over from a
-      // previous session where notifications were on.
-      clearPreviousSchedule();
-      return undefined;
-    }
 
     let cancelled = false;
 
@@ -64,7 +69,29 @@ export default function usePrayerNotifications(schedule, settings) {
       const now = new Date();
 
       for (const prayer of schedule) {
-        if (prayer.time <= now) continue; // already passed today
+        // The "did you forget to mark this?" check-in is independent of
+        // the atAdhan/reminderMinutes settings below (it's a tracker
+        // accountability nudge, not an adhan announcement), and — unlike
+        // those — can still be worth scheduling even after adhan time
+        // itself has passed, as long as its own 30-minute mark hasn't.
+        if (!excused && !prayerLog?.fard?.[prayer.key]) {
+          const forgotTime = new Date(prayer.time.getTime() + FORGOT_OFFSET_MIN * 60 * 1000);
+          if (forgotTime > now) {
+            const label = PRAYER_LABELS[prayer.key] || prayer.label;
+            await Notifications.scheduleNotificationAsync({
+              identifier: `${ID_PREFIX}${prayer.key}-forgot`,
+              content: {
+                title: 'هل نسيت الصلاة؟',
+                body: `مرّ نص ساعة على أذان ${label} ولسا ما علّمتها بالمتابعة — إذا صليتها أشّرها بالتطبيق، وإذا لسا قم صلّها الآن 🕌`,
+                sound: true,
+                data: { screen: 'Tracker' },
+              },
+              trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: forgotTime },
+            });
+          }
+        }
+
+        if (prayer.time <= now) continue; // already passed — nothing else to schedule for it
 
         if (atAdhan) {
           // Fajr gets its own recording (carries "الصلاة خير من النوم", the
@@ -118,9 +145,32 @@ export default function usePrayerNotifications(schedule, settings) {
     return () => {
       cancelled = true;
     };
-    // Re-run once per day of prayer times, and whenever the settings change.
-  }, [schedule?.[0]?.time?.toDateString(), atAdhan, reminderMinutes]);
+    // Re-run once per day of prayer times, whenever the settings change, and
+    // whenever any fard prayer's done-state changes (so marking one done —
+    // or the excused toggle — cancels/skips its forgot-check immediately
+    // rather than waiting for the next unrelated reschedule).
+  }, [schedule?.[0]?.time?.toDateString(), atAdhan, reminderMinutes, excused, fardKey]);
+
+  useEffect(() => {
+    const sub = Notifications.addNotificationResponseReceivedListener((response) => {
+      const data = response.notification.request.content.data;
+      if (data?.screen === 'Tracker' && navigationRef.isReady()) {
+        navigationRef.navigate('Tracker');
+      }
+    });
+    return () => sub.remove();
+  }, []);
 }
+
+// Called from useDailyData's togglePrayer right when a fard prayer is
+// marked done, so the "did you forget?" check-in for it doesn't fire a
+// half hour later for something already prayed. A harmless no-op if that
+// notification was never scheduled or already fired/was cancelled.
+async function cancelForgotReminder(prayerKey) {
+  await Notifications.cancelScheduledNotificationAsync(`${ID_PREFIX}${prayerKey}-forgot`).catch(() => {});
+}
+
+export { cancelForgotReminder };
 
 export async function ensureAndroidNotificationChannel() {
   if (Platform.OS !== 'android') return;

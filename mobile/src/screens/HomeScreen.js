@@ -179,7 +179,7 @@ export default function HomeScreen({ navigation }) {
     return [{ ...fridayTile, highlighted: true }, ...combined.filter((t) => t.key !== 'fridaySunnah')];
   }, [athkarHomeTiles, MORE_LINKS, isFriday, colors.gold, navigation]);
 
-  usePrayerNotifications(schedule, user?.prayerNotifications);
+  usePrayerNotifications(schedule, user?.prayerNotifications, prayerLog);
   useAthkarReminderNotifications(schedule);
   useFridaySunnahNotifications(schedule);
 
