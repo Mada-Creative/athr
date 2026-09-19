@@ -113,6 +113,7 @@ export default function usePrayerNotifications(schedule, settings, prayerLog) {
               // iOS reads this per-notification; Android ignores it and uses
               // whatever sound the channelId below was created with instead.
               sound: isFajr ? 'adhan_fajr.wav' : 'adhan.wav',
+              data: { screen: 'Tracker' },
               ...(Platform.OS === 'android' ? { channelId: isFajr ? CHANNEL_ADHAN_FAJR : CHANNEL_ADHAN } : null),
             },
             trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: prayer.time },
@@ -133,6 +134,7 @@ export default function usePrayerNotifications(schedule, settings, prayerLog) {
                 title: 'تذكير بموعد الصلاة',
                 body: `تبقّى ${reminderMinutes} دقيقة على صلاة ${PRAYER_LABELS[prayer.key] || prayer.label} — قم وأدركها في جماعة\n\n"${jamaahHadith.text}"\n— ${jamaahHadith.source}`,
                 sound: 'prayer_reminder.wav',
+                data: { screen: 'Tracker' },
                 ...(Platform.OS === 'android' ? { channelId: CHANNEL_REMINDER } : null),
               },
               trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: reminderTime },

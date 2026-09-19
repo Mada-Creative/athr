@@ -24,12 +24,18 @@ import RootNavigator from './src/navigation/RootNavigator';
 import { ensureAndroidNotificationChannel } from './src/hooks/usePrayerNotifications';
 import useAthrCardNotifications from './src/hooks/useAthrCardNotifications';
 import useFastingNotifications from './src/hooks/useFastingNotifications';
+import foregroundState from './src/utils/foregroundState';
 
-// Show prayer-time notifications as a banner + sound even while the app is
-// open, instead of silently queuing them for the notification tray.
+// While the app is actually open and in the foreground, InAppNotificationBanner
+// (mounted in RootNavigator) shows the app's own banner for a notification the
+// instant it's delivered — showing the OS banner on top of that too would be a
+// redundant, differently-styled duplicate of the same alert. So the OS banner
+// only shows when the app isn't in the foreground to see the in-app one;
+// shouldShowList stays true either way so it's still in the notification
+// history, and the sound always plays.
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowBanner: true,
+    shouldShowBanner: !foregroundState.active,
     shouldShowList: true,
     shouldPlaySound: true,
     shouldSetBadge: false,

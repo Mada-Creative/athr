@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import navigationRef from './navigationRef';
+import InAppNotificationBanner from '../components/InAppNotificationBanner';
 
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -186,6 +187,7 @@ export default function RootNavigator() {
       <NavigationContainer ref={navigationRef}>
         <MainStack />
       </NavigationContainer>
+      <InAppNotificationBanner />
     </View>
   );
 }
