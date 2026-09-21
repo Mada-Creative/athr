@@ -142,6 +142,13 @@ export default function HomeScreen({ navigation }) {
       },
       { key: 'names', title: 'أسماء الله الحسنى', icon: 'sparkles-outline', color: colors.sage, onPress: () => navigation.navigate('Names') },
       { key: 'duas', title: 'أدعية مأثورة', icon: 'hand-left-outline', color: colors.clay, onPress: () => navigation.navigate('Duas') },
+      {
+        key: 'mosques',
+        title: 'خريطة المساجد',
+        icon: 'business-outline',
+        color: '#4E7FA8',
+        onPress: () => navigation.navigate('MosqueMap'),
+      },
       // Only on Monday/Thursday. Unlike the athkar tiles above (which are
       // pure navigation now — see the comment on them), there's no "read"
       // screen to send this one to: marking it *is* the whole interaction,

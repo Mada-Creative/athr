@@ -79,6 +79,10 @@ async function request(path, { method = 'GET', body, auth = true } = {}) {
   if (!response.ok) {
     const err = new Error(data?.message || 'حدث خطأ غير متوقع');
     err.status = response.status;
+    // The full parsed body, not just its message — some endpoints (mosque
+    // submission's duplicate-suggestion response, e.g.) put structured data
+    // on an error response that a caller needs beyond a display string.
+    err.data = data;
     throw err;
   }
 
