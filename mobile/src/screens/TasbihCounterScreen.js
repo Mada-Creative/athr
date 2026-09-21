@@ -1,5 +1,5 @@
-import React, { useEffect, useLayoutEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Animated, StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
@@ -10,6 +10,7 @@ import { radius, spacing } from '../theme/spacing';
 import typography from '../theme/typography';
 import { api } from '../api/client';
 import { enqueueAction } from '../utils/pendingActions';
+import TASBIH_VIRTUES from '../constants/tasbihVirtues';
 
 export default function TasbihCounterScreen({ route, navigation }) {
   const { id, text } = route.params;
@@ -18,6 +19,16 @@ export default function TasbihCounterScreen({ route, navigation }) {
   const [count, setCount] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  const virtue = TASBIH_VIRTUES[text];
+
+  // A small scale "pop" on every tap — same motion language as the athkar
+  // counter's ring (AthkarCountRing), so counting a dhikr feels the same
+  // whether it's a scripted one with a fixed target or a free tally here.
+  const pop = useRef(new Animated.Value(1)).current;
+  const doPop = () => {
+    pop.setValue(0.88);
+    Animated.spring(pop, { toValue: 1, useNativeDriver: true, speed: 26, bounciness: 14 }).start();
+  };
 
   useLayoutEffect(() => {
     navigation.setOptions({ title: text });
@@ -37,6 +48,7 @@ export default function TasbihCounterScreen({ route, navigation }) {
 
   const onTap = async () => {
     setCount((c) => c + 1);
+    doPop();
     setError(null);
     try {
       if (Haptics?.selectionAsync) Haptics.selectionAsync();
@@ -96,13 +108,24 @@ export default function TasbihCounterScreen({ route, navigation }) {
             brown in dark mode — a fixed dark text color would (and did)
             all but disappear against it there. `ink` flips the opposite
             way, so it reads clearly against amberSoft in both themes. */}
-        <AppText weight="bold" size={64} color={colors.ink}>
-          {count}
-        </AppText>
-        <AppText size={13} color={colors.inkSoft} style={{ marginTop: spacing.xs }}>
-          اضغط للعدّ
-        </AppText>
+        <Animated.View style={{ alignItems: 'center', transform: [{ scale: pop }] }}>
+          <AppText weight="bold" size={64} color={colors.ink}>
+            {count}
+          </AppText>
+          <AppText size={13} color={colors.inkSoft} style={{ marginTop: spacing.xs }}>
+            اضغط للعدّ
+          </AppText>
+        </Animated.View>
       </Bounce>
+
+      {virtue ? (
+        <View style={styles.virtueBox}>
+          <Ionicons name="sparkles-outline" size={14} color={colors.amberDeep} style={{ marginTop: 1 }} />
+          <AppText size={12.5} color={colors.inkSoft} style={styles.virtueText}>
+            {virtue.text} — {virtue.source}
+          </AppText>
+        </View>
+      ) : null}
 
       {error ? (
         <AppText size={12} color={colors.clay} style={{ marginTop: spacing.md, textAlign: 'center' }}>
@@ -133,11 +156,28 @@ function createStyles(colors) {
       borderColor: colors.amber,
       alignItems: 'center',
       justifyContent: 'center',
+      shadowColor: colors.shadow,
+      shadowOpacity: 1,
+      shadowRadius: 20,
+      shadowOffset: { width: 0, height: 10 },
+      elevation: 5,
     },
+    virtueBox: {
+      flexDirection: 'row-reverse',
+      alignItems: 'flex-start',
+      gap: 6,
+      backgroundColor: colors.amberSoft,
+      borderRadius: radius.md,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      marginTop: spacing.xl,
+      maxWidth: 320,
+    },
+    virtueText: { flex: 1, lineHeight: 18, textAlign: 'right' },
     resetBtn: {
       flexDirection: 'row-reverse',
       alignItems: 'center',
-      marginTop: spacing.xxl,
+      marginTop: spacing.lg,
       paddingHorizontal: spacing.lg,
       paddingVertical: spacing.sm,
       borderRadius: radius.pill,

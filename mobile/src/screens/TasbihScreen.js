@@ -97,13 +97,26 @@ export default function TasbihScreen({ navigation }) {
             </AppText>
 
             <View style={styles.presetsRow}>
-              {PRESETS.map((text) => (
-                <Bounce key={text} style={styles.presetChip} onPress={() => onPickPreset(text)}>
-                  <AppText size={14} color={colors.ink} style={styles.dhikrText}>
-                    {text}
-                  </AppText>
-                </Bounce>
-              ))}
+              {PRESETS.map((text) => {
+                const existing = counters.find((c) => c.text === text);
+                return (
+                  <Bounce key={text} style={styles.presetChip} onPress={() => onPickPreset(text)}>
+                    <AppText size={14} color={colors.ink} style={styles.dhikrText}>
+                      {text}
+                    </AppText>
+                    {/* Surfaces progress already made on a preset right where you'd
+                        tap to resume it, instead of only in the list further down —
+                        a fresh, never-started preset shows no badge at all. */}
+                    {existing?.count > 0 ? (
+                      <View style={styles.presetBadge}>
+                        <AppText size={11} weight="bold" color={colors.amberDeep}>
+                          {existing.count}
+                        </AppText>
+                      </View>
+                    ) : null}
+                  </Bounce>
+                );
+              })}
             </View>
 
             <View style={styles.customRow}>
@@ -170,12 +183,24 @@ function createStyles(colors) {
     dhikrText: { fontFamily: typography.fontDhikr },
     presetsRow: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: spacing.sm },
     presetChip: {
+      flexDirection: 'row-reverse',
+      alignItems: 'center',
+      gap: 6,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
       borderRadius: radius.pill,
       backgroundColor: colors.amberSoft,
       borderWidth: 1,
       borderColor: colors.border,
+    },
+    presetBadge: {
+      minWidth: 20,
+      height: 20,
+      paddingHorizontal: 5,
+      borderRadius: radius.pill,
+      backgroundColor: colors.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     customRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: spacing.sm, marginTop: spacing.lg },
     customInput: {
