@@ -15,7 +15,6 @@
     "assetBundlePatterns": [
       "**/*"
     ],
-    "newArchEnabled": false,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "app.athr.mobile",
