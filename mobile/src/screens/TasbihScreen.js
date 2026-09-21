@@ -89,12 +89,26 @@ export default function TasbihScreen({ navigation }) {
         contentContainerStyle={{ paddingBottom: spacing.xl }}
         ListHeaderComponent={
           <View>
-            <AppText weight="bold" size={20}>
-              العدّاد
-            </AppText>
-            <AppText size={13} color={colors.inkSoft} style={{ marginTop: 4, marginBottom: spacing.lg }}>
-              اختر ذكرًا لتبدأ عدّه، أو أضف ذكرًا خاصًا بك
-            </AppText>
+            <View style={styles.headerRow}>
+              <View style={styles.headerIconWrap}>
+                <Ionicons name="sparkles-outline" size={19} color={colors.amberDeep} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <AppText weight="bold" size={20}>
+                  العدّاد
+                </AppText>
+                <AppText size={13} color={colors.inkSoft} style={{ marginTop: 2 }}>
+                  اختر ذكرًا لتبدأ عدّه، أو أضف ذكرًا خاصًا بك
+                </AppText>
+              </View>
+            </View>
+
+            <View style={styles.sectionLabelRow}>
+              <Ionicons name="flash-outline" size={13} color={colors.inkFaint} />
+              <AppText size={12} weight="semibold" color={colors.inkFaint}>
+                مختارات سريعة
+              </AppText>
+            </View>
 
             <View style={styles.presetsRow}>
               {PRESETS.map((text) => {
@@ -146,15 +160,21 @@ export default function TasbihScreen({ navigation }) {
             ) : null}
 
             {counters.length > 0 && (
-              <AppText weight="bold" size={15} style={{ marginTop: spacing.xl, marginBottom: spacing.sm }}>
-                عدّاداتك
-              </AppText>
+              <View style={[styles.sectionLabelRow, { marginTop: spacing.xl }]}>
+                <Ionicons name="list-outline" size={13} color={colors.inkFaint} />
+                <AppText size={12} weight="semibold" color={colors.inkFaint}>
+                  عدّاداتك
+                </AppText>
+              </View>
             )}
           </View>
         }
         renderItem={({ item }) => (
           <Bounce scaleTo={0.97} onPress={() => openCounter(item)}>
             <Card style={styles.counterCard}>
+              <View style={styles.counterIconWrap}>
+                <Ionicons name="ellipse-outline" size={16} color={colors.amberDeep} />
+              </View>
               <AppText size={16} style={[styles.dhikrText, { flex: 1 }]}>
                 {item.text}
               </AppText>
@@ -168,9 +188,12 @@ export default function TasbihScreen({ navigation }) {
         )}
         ListEmptyComponent={
           !loading ? (
-            <AppText size={13} color={colors.inkFaint} style={{ textAlign: 'center', marginTop: spacing.lg }}>
-              لا يوجد عدّادات بعد
-            </AppText>
+            <View style={styles.emptyState}>
+              <Ionicons name="add-circle-outline" size={28} color={colors.inkFaint} />
+              <AppText size={13} color={colors.inkFaint} style={{ textAlign: 'center', marginTop: spacing.sm }}>
+                لا يوجد عدّادات بعد — اختر ذكرًا من الأعلى لتبدأ
+              </AppText>
+            </View>
           ) : null
         }
       />
@@ -181,17 +204,42 @@ export default function TasbihScreen({ navigation }) {
 function createStyles(colors) {
   return StyleSheet.create({
     dhikrText: { fontFamily: typography.fontDhikr },
+    headerRow: {
+      flexDirection: 'row-reverse',
+      alignItems: 'center',
+      gap: spacing.sm,
+      marginBottom: spacing.lg,
+    },
+    headerIconWrap: {
+      width: 40,
+      height: 40,
+      borderRadius: radius.pill,
+      backgroundColor: colors.amberSoft,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    sectionLabelRow: {
+      flexDirection: 'row-reverse',
+      alignItems: 'center',
+      gap: 5,
+      marginBottom: spacing.sm,
+    },
     presetsRow: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: spacing.sm },
     presetChip: {
       flexDirection: 'row-reverse',
       alignItems: 'center',
       gap: 6,
       paddingHorizontal: spacing.md,
-      paddingVertical: spacing.sm,
+      paddingVertical: spacing.sm + 2,
       borderRadius: radius.pill,
       backgroundColor: colors.amberSoft,
       borderWidth: 1,
       borderColor: colors.border,
+      shadowColor: colors.shadow,
+      shadowOpacity: 1,
+      shadowRadius: 6,
+      shadowOffset: { width: 0, height: 3 },
+      elevation: 1,
     },
     presetBadge: {
       minWidth: 20,
@@ -225,8 +273,17 @@ function createStyles(colors) {
     counterCard: {
       flexDirection: 'row-reverse',
       alignItems: 'center',
+      gap: spacing.sm,
       justifyContent: 'space-between',
       marginBottom: spacing.sm,
+    },
+    counterIconWrap: {
+      width: 30,
+      height: 30,
+      borderRadius: radius.pill,
+      backgroundColor: colors.amberSoft,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     countBadge: {
       minWidth: 40,
@@ -236,6 +293,10 @@ function createStyles(colors) {
       backgroundColor: colors.amberSoft,
       alignItems: 'center',
       justifyContent: 'center',
+    },
+    emptyState: {
+      alignItems: 'center',
+      paddingVertical: spacing.xl,
     },
   });
 }
