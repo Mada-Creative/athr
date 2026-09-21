@@ -9,6 +9,7 @@ import ProgressRing from '../components/ProgressRing';
 import LiveClock from '../components/LiveClock';
 import Bounce from '../components/Bounce';
 import AthkarTile from '../components/AthkarTile';
+import MosqueMapLauncher from '../components/MosqueMapLauncher';
 import AthrCardStack, { HERO_OVERLAP } from '../components/AthrCardStack';
 import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
@@ -142,13 +143,6 @@ export default function HomeScreen({ navigation }) {
       },
       { key: 'names', title: 'أسماء الله الحسنى', icon: 'sparkles-outline', color: colors.sage, onPress: () => navigation.navigate('Names') },
       { key: 'duas', title: 'أدعية مأثورة', icon: 'hand-left-outline', color: colors.clay, onPress: () => navigation.navigate('Duas') },
-      {
-        key: 'mosques',
-        title: 'خريطة المساجد',
-        icon: 'business-outline',
-        color: '#4E7FA8',
-        onPress: () => navigation.navigate('MosqueMap'),
-      },
       // Only on Monday/Thursday. Unlike the athkar tiles above (which are
       // pure navigation now — see the comment on them), there's no "read"
       // screen to send this one to: marking it *is* the whole interaction,
@@ -203,7 +197,10 @@ export default function HomeScreen({ navigation }) {
   }, [reload]);
 
   return (
-    <Screen refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.amber} />}>
+    <Screen
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.amber} />}
+      overlay={<MosqueMapLauncher />}
+    >
       <View style={styles.topBar}>
         <LiveClock size={17} />
         <View style={styles.topBarIcons}>

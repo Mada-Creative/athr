@@ -21,7 +21,12 @@ import openDirections from '../utils/openDirections';
 const DEFAULT_DELTA = 0.05;
 const NEAREST_DELTA = 0.01;
 
-export default function MosqueMapScreen() {
+// `onRequestClose` is only passed when this renders inside
+// MosqueMapLauncher's floating-circle overlay on Home (no navigation
+// header there to provide a back button) — omitted when reached by a
+// normal stack push (e.g. a future deep link), where the header's own
+// back arrow already does the job.
+export default function MosqueMapScreen({ onRequestClose }) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
   const mapRef = useRef(null);
@@ -165,6 +170,12 @@ export default function MosqueMapScreen() {
               />
             ))}
           </MapView>
+
+          {onRequestClose ? (
+            <Bounce style={styles.closeBtn} onPress={onRequestClose}>
+              <Ionicons name="close" size={18} color={colors.ink} />
+            </Bounce>
+          ) : null}
 
           <Bounce style={styles.nearestBtn} onPress={onGoNearest} disabled={searchingNearest}>
             {searchingNearest ? (
@@ -312,6 +323,25 @@ function createStyles(colors) {
       paddingHorizontal: spacing.lg,
       paddingVertical: spacing.sm,
       borderRadius: radius.pill,
+    },
+    closeBtn: {
+      position: 'absolute',
+      top: spacing.lg,
+      right: spacing.lg,
+      width: 34,
+      height: 34,
+      borderRadius: radius.pill,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 5,
+      shadowColor: '#000',
+      shadowOpacity: 0.15,
+      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 3 },
+      elevation: 4,
     },
     nearestBtn: {
       position: 'absolute',
