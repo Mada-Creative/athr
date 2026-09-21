@@ -10,7 +10,7 @@ import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
 import { api } from '../api/client';
 import openDirections from '../utils/openDirections';
-import { fetchOsmMosques, regionToBounds } from '../utils/osmMosques';
+import { fetchOsmMosques, fetchNearestOsmMosque, haversineMeters, regionToBounds } from '../utils/osmMosques';
 
 // No `provider` prop on purpose — react-native-maps defaults to Apple Maps
 // on iOS (zero setup, zero cost) and Google Maps on Android (the only map
@@ -21,6 +21,10 @@ import { fetchOsmMosques, regionToBounds } from '../utils/osmMosques';
 // isn't worth the extra setup.
 const DEFAULT_DELTA = 0.05;
 const NEAREST_DELTA = 0.01;
+// Mirrors the backend's own NEAREST_MAX_METERS (mosqueController.js) — how
+// far "أقرب مسجد مني" is willing to look on the OSM side too, so neither
+// source gets a wider search radius than the other.
+const NEAREST_MAX_METERS = 30000;
 
 // `onRequestClose` is only passed when this renders inside
 // MosqueMapLauncher's floating-circle overlay on Home (no navigation
@@ -106,14 +110,29 @@ export default function MosqueMapScreen({ onRequestClose }) {
     if (!userCoords) return;
     setSearchingNearest(true);
     try {
-      const res = await api.get(`/mosques/nearest?latitude=${userCoords.latitude}&longitude=${userCoords.longitude}`);
-      if (!res.mosque) {
+      // Our own database and OpenStreetMap searched side by side — neither
+      // one alone is the full picture (ours is community-vetted but sparse
+      // so far, OSM is broad but not reviewed by anyone here), so whichever
+      // candidate is actually closer to the user wins, not whichever
+      // source happened to answer first.
+      const [dbRes, osmResult] = await Promise.all([
+        api.get(`/mosques/nearest?latitude=${userCoords.latitude}&longitude=${userCoords.longitude}`).catch(() => ({ mosque: null })),
+        fetchNearestOsmMosque(userCoords, NEAREST_MAX_METERS),
+      ]);
+
+      const candidates = [];
+      if (dbRes.mosque) candidates.push({ ...dbRes.mosque, distance: haversineMeters(userCoords, dbRes.mosque) });
+      if (osmResult?.mosque) candidates.push({ ...osmResult.mosque, distance: osmResult.distance });
+
+      if (!candidates.length) {
         Alert.alert('لا يوجد مسجد قريب', 'ما في مساجد مسجّلة ضمن مسافة معقولة من موقعك بعد — كن أول من يضيف واحدًا!');
         return;
       }
-      setSelected(res.mosque);
+      candidates.sort((a, b) => a.distance - b.distance);
+      const nearestMosque = candidates[0];
+      setSelected(nearestMosque);
       mapRef.current?.animateToRegion(
-        { latitude: res.mosque.latitude, longitude: res.mosque.longitude, latitudeDelta: NEAREST_DELTA, longitudeDelta: NEAREST_DELTA },
+        { latitude: nearestMosque.latitude, longitude: nearestMosque.longitude, latitudeDelta: NEAREST_DELTA, longitudeDelta: NEAREST_DELTA },
         400
       );
     } catch (err) {

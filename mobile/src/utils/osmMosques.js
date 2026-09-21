@@ -34,6 +34,61 @@ export function regionToBounds(region) {
   };
 }
 
+// Plain haversine, no library — used to compare a candidate from our own
+// database against a candidate from OSM on equal footing (neither API
+// returns a ready-made distance), and to rank OSM's own results since
+// Overpass returns whatever matched an `around` radius unsorted.
+const EARTH_RADIUS_M = 6371000;
+export function haversineMeters(a, b) {
+  const toRad = (deg) => (deg * Math.PI) / 180;
+  const dLat = toRad(b.latitude - a.latitude);
+  const dLon = toRad(b.longitude - a.longitude);
+  const lat1 = toRad(a.latitude);
+  const lat2 = toRad(b.latitude);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
+  return 2 * EARTH_RADIUS_M * Math.asin(Math.sqrt(h));
+}
+
+// Overpass's `around` filter does the radius search directly around a
+// point (rather than a bbox), which is the shape "أقرب مسجد مني" actually
+// wants — but it returns matches unsorted, so the closest one still has to
+// be picked out client-side.
+export async function fetchNearestOsmMosque(coords, radiusMeters) {
+  const query = `[out:json][timeout:15];node["amenity"="place_of_worship"]["religion"="muslim"](around:${radiusMeters},${coords.latitude},${coords.longitude});out body;`;
+  try {
+    const res = await fetch(OVERPASS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `data=${encodeURIComponent(query)}`,
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const candidates = (data.elements || [])
+      .filter((el) => el.lat != null && el.lon != null)
+      .map((el) => ({
+        id: `osm-${el.id}`,
+        name: el.tags?.name || el.tags?.['name:ar'] || 'مسجد',
+        latitude: el.lat,
+        longitude: el.lon,
+        source: 'osm',
+      }));
+    if (!candidates.length) return null;
+
+    let nearest = candidates[0];
+    let nearestDistance = haversineMeters(coords, nearest);
+    for (const candidate of candidates.slice(1)) {
+      const distance = haversineMeters(coords, candidate);
+      if (distance < nearestDistance) {
+        nearest = candidate;
+        nearestDistance = distance;
+      }
+    }
+    return { mosque: nearest, distance: nearestDistance };
+  } catch (err) {
+    return null;
+  }
+}
+
 export async function fetchOsmMosques(bounds, { force = false } = {}) {
   if (!force && !boundsChangedEnough(bounds)) return null;
 
