@@ -1,15 +1,15 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Dimensions, RefreshControl, StyleSheet, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Dimensions, Image, RefreshControl, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import Screen from '../components/Screen';
 import AppText from '../components/AppText';
 import Card from '../components/Card';
 import ProgressRing from '../components/ProgressRing';
+import LiveClock from '../components/LiveClock';
 import Bounce from '../components/Bounce';
 import AthkarTile from '../components/AthkarTile';
 import MosqueMapLauncher from '../components/MosqueMapLauncher';
-import CollapsingHomeHeader from '../components/CollapsingHomeHeader';
 import AthrCardStack, { HERO_OVERLAP } from '../components/AthrCardStack';
 import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
@@ -52,15 +52,6 @@ export default function HomeScreen({ navigation }) {
   // content — see useDailyData's cache-first offline fallback.
   const showingFirstLoad = loading && !stats;
   const [refreshing, setRefreshing] = useState(false);
-  // Drives CollapsingHomeHeader — a plain scroll-position value, not
-  // useNativeDriver'd, since the header animates layout properties (height,
-  // marginTop) that the native driver can't touch.
-  const scrollY = useRef(new Animated.Value(0)).current;
-  const onHeaderScroll = useMemo(
-    () => Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: false }),
-    [scrollY]
-  );
-  const greetingText = `${greetingFor(now)}${!isGuest && user?.name ? `، ${user.name.split(' ')[0]}` : ''}`;
 
   const remainingToNext = next ? next.time.getTime() - now.getTime() : null;
   const displayRemaining =
@@ -208,11 +199,36 @@ export default function HomeScreen({ navigation }) {
   return (
     <Screen
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.amber} />}
-      header={<CollapsingHomeHeader scrollY={scrollY} navigation={navigation} now={now} hijri={hijri} greetingText={greetingText} />}
       overlay={<MosqueMapLauncher />}
-      onScroll={onHeaderScroll}
-      scrollEventThrottle={16}
     >
+      <View style={styles.topBar}>
+        <LiveClock size={17} />
+        <View style={styles.topBarIcons}>
+          <Bounce onPress={() => navigation.navigate('Search')} style={styles.iconBtn}>
+            <Ionicons name="search-outline" size={19} color={colors.ink} />
+          </Bounce>
+          <Bounce onPress={() => navigation.navigate('Settings')} style={styles.iconBtn}>
+            <Ionicons name="settings-outline" size={19} color={colors.ink} />
+          </Bounce>
+        </View>
+      </View>
+
+      <View style={styles.greetingRow}>
+        <Image source={require('../../assets/logo.png')} style={styles.greetingLogo} resizeMode="cover" />
+        <View style={{ flex: 1 }}>
+          <AppText weight="bold" size={22}>
+            {greetingFor(now)}
+            {!isGuest && user?.name ? `، ${user.name.split(' ')[0]}` : ''}
+          </AppText>
+          <AppText color={colors.inkSoft} size={13.5} style={{ marginTop: 4 }}>
+            {formatWeekday(now)}، {formatGregorian(now)} — {hijri.day} {hijri.month} {hijri.year}هـ{' '}
+            <AppText color={colors.inkFaint} size={11.5}>
+              (تقريبي)
+            </AppText>
+          </AppText>
+        </View>
+      </View>
+
       <AthrCardStack date={now} onPress={() => navigation.navigate('AthrCard')} />
 
       {/* zIndex here isn't decorative — AthrCardStack's own internal
@@ -340,6 +356,40 @@ export default function HomeScreen({ navigation }) {
 
 function createStyles(colors) {
   return StyleSheet.create({
+    topBar: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between' },
+    topBarIcons: { flexDirection: 'row-reverse', gap: spacing.sm },
+    iconBtn: {
+      width: 38,
+      height: 38,
+      borderRadius: radius.pill,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    greetingRow: {
+      flexDirection: 'row-reverse',
+      alignItems: 'center',
+      gap: spacing.md,
+      marginTop: spacing.lg,
+    },
+    greetingLogo: {
+      width: 44,
+      height: 44,
+      borderRadius: radius.pill,
+      // Fixed — the logo artwork itself is drawn on this same cream
+      // backdrop, so this never flips with the theme (a themed background
+      // here would show as a mismatched square behind it in dark mode).
+      backgroundColor: '#FAF5EC',
+      overflow: 'hidden',
+      // The source PNG is the wordmark centered on a lot of empty canvas,
+      // so a plain cover-fit shrinks that empty margin along with it and
+      // the mark reads as a near-blank circle at this size. Scaling up
+      // (clipped by overflow:hidden above) zooms past that padding — same
+      // fix as AthrCardScreen's mark badge.
+      transform: [{ scale: 1.6 }],
+    },
     heroCard: {
       // Fixed dark ink surface — deliberately doesn't invert with the theme.
       backgroundColor: colors.accentDark,
