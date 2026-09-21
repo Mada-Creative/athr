@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Dimensions, StyleSheet, View } from 'react-native';
+import { Animated, Dimensions, ScrollView, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -19,6 +19,22 @@ const CARD_WIDTH = SCREEN_WIDTH - spacing.lg * 2;
 const SWIPE_THRESHOLD = 90;
 const VELOCITY_THRESHOLD = 800;
 const DIR_LOCK = 10;
+
+// The card's text area has a fixed height (the ring/footer below it take a
+// fixed share of the card), but dhikr length varies wildly — from a few
+// words up to the three Quls read back to back (~450 characters). A fixed
+// font size sized for the short ones silently clipped the long ones behind
+// the ring/footer, with no visual sign anything was missing — a real user
+// report caught this happening on "أصبحنا وأصبح الملك لله...", آية الكرسي,
+// and المعوذات الثلاث, which are exactly the three longest texts in the
+// whole list. Scaling the font down as the text gets longer keeps every
+// dhikr fitting in the same layout instead of needing a different one.
+function dhikrFontSize(length) {
+  if (length > 380) return 14;
+  if (length > 250) return 16;
+  if (length > 150) return 18;
+  return 20;
+}
 
 // One dhikr, full-screen, one at a time — swipe right for the next, left
 // for the previous, tap the ring to count. Replaces the old scrolling list
@@ -311,6 +327,7 @@ export default function AthkarCounterScreen({ route, navigation }) {
 
 function CardBody({ itemKey, item, count, meta, colors, styles, onPress, onComplete }) {
   const done = count >= item.repeat;
+  const fontSize = dhikrFontSize(item.text.length);
   return (
     <>
       <View style={[styles.tag, { backgroundColor: `${meta.color}22` }]}>
@@ -320,9 +337,16 @@ function CardBody({ itemKey, item, count, meta, colors, styles, onPress, onCompl
         </AppText>
       </View>
       <View style={styles.textWrap}>
-        <AppText size={20} color={colors.ink} style={styles.cardText}>
-          {item.text}
-        </AppText>
+        {/* A ScrollView even for text that fits — it centers via
+            contentContainerStyle exactly like a plain View would, but if a
+            device is small enough that even the scaled-down font from
+            dhikrFontSize still doesn't fit, this scrolls instead of
+            silently clipping behind the ring/footer below it. */}
+        <ScrollView contentContainerStyle={styles.textScrollContent} showsVerticalScrollIndicator={false}>
+          <AppText size={fontSize} color={colors.ink} style={[styles.cardText, { lineHeight: Math.round(fontSize * 1.65) }]}>
+            {item.text}
+          </AppText>
+        </ScrollView>
       </View>
       {/* The reward/virtue behind this dhikr — deliberately its own tinted
           callout rather than a plain gray citation line, so it reads as a
@@ -403,8 +427,9 @@ function createStyles(colors) {
       paddingHorizontal: spacing.md,
       paddingVertical: 5,
     },
-    textWrap: { flex: 1, justifyContent: 'center', marginTop: spacing.lg },
-    cardText: { textAlign: 'center', lineHeight: 34, fontFamily: typography.fontDhikr },
+    textWrap: { flex: 1, marginTop: spacing.lg },
+    textScrollContent: { flexGrow: 1, justifyContent: 'center' },
+    cardText: { textAlign: 'center', fontFamily: typography.fontDhikr },
     virtueBox: {
       flexDirection: 'row-reverse',
       alignItems: 'flex-start',
