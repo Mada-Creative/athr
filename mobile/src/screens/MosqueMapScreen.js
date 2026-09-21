@@ -216,6 +216,11 @@ export default function MosqueMapScreen({ onRequestClose }) {
                 key={m.id}
                 coordinate={{ latitude: m.latitude, longitude: m.longitude }}
                 title={m.name}
+                // The default native callout (a plain title/description
+                // bubble) would otherwise pop up on tap and visually
+                // compete with our own bottom detail card — one consistent
+                // source of "you tapped a pin" info, not two.
+                calloutEnabled={false}
                 pinColor={selected?.id === m.id ? colors.sage : colors.inkFaint}
                 onPress={() => setSelected(m)}
               />
@@ -226,6 +231,7 @@ export default function MosqueMapScreen({ onRequestClose }) {
                 coordinate={{ latitude: m.latitude, longitude: m.longitude }}
                 title={m.name}
                 description={m.city}
+                calloutEnabled={false}
                 pinColor={selected?.id === m.id ? colors.sage : colors.amber}
                 onPress={() => setSelected(m)}
               />
