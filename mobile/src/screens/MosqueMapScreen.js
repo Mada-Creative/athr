@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Animated, Keyboard, Platform, StyleSheet, TextInput, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
@@ -203,7 +203,15 @@ export default function MosqueMapScreen({ onRequestClose }) {
             initialRegion={region}
             showsUserLocation
             showsMyLocationButton={false}
-            onPress={() => setSelected(null)}
+            // react-native-maps fires the map's own onPress for a marker tap
+            // too (not just a genuine background tap) — without this guard,
+            // tapping a pin would set `selected` to that mosque and then
+            // immediately clear it again in the same gesture, which is
+            // exactly why direct pin taps never opened the detail card while
+            // "أقرب مسجد مني" (which never touches this handler) always did.
+            onPress={(e) => {
+              if (e.nativeEvent.action !== 'marker-press') setSelected(null);
+            }}
             onRegionChangeComplete={onRegionChangeComplete}
           >
             {/* Already mapped on OpenStreetMap — shown so the "+" flow is
@@ -321,6 +329,30 @@ function AddMosqueCard({ coords, colors, styles, onClose, onCreated, onSuggestio
   const [name, setName] = useState('');
   const [city, setCity] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  // A manual keyboard listener driving a translateY, not KeyboardAvoidingView
+  // — KeyboardAvoidingView wraps its child in its own measuring container,
+  // which was quietly overriding this card's row-reverse layout (the
+  // buttons stretched into their own rows instead of sitting beside the
+  // input) even with the keyboard closed. This keeps the card's resting
+  // layout identical to a plain View and only shifts it once a keyboard is
+  // actually on screen.
+  const translateY = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const animateTo = (value, duration) =>
+      Animated.timing(translateY, { toValue: value, duration: duration || 220, useNativeDriver: true }).start();
+    const showSub = Keyboard.addListener(showEvent, (e) => {
+      const shift = Math.max(0, (e.endCoordinates?.height || 0) - spacing.xl);
+      animateTo(-shift, e.duration);
+    });
+    const hideSub = Keyboard.addListener(hideEvent, (e) => animateTo(0, e?.duration));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, [translateY]);
 
   useEffect(() => {
     (async () => {
@@ -358,11 +390,7 @@ function AddMosqueCard({ coords, colors, styles, onClose, onCreated, onSuggestio
   };
 
   return (
-    // "position" (not "padding"/"height") is the one behavior that moves an
-    // already absolutely-positioned view — this card sits pinned to the
-    // bottom of the map (styles.detailCard), so it needs to slide up above
-    // the keyboard rather than resize in place.
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'position' : undefined} style={styles.detailCard}>
+    <Animated.View style={[styles.detailCard, { transform: [{ translateY }] }]}>
       <View style={{ flex: 1 }}>
         <AppText weight="bold" size={14} style={{ marginBottom: spacing.xs }}>
           إضافة مسجد في موقعك الحالي
@@ -389,7 +417,7 @@ function AddMosqueCard({ coords, colors, styles, onClose, onCreated, onSuggestio
       <Bounce style={styles.detailBtnGhost} onPress={onClose}>
         <Ionicons name="close" size={16} color={colors.inkFaint} />
       </Bounce>
-    </KeyboardAvoidingView>
+    </Animated.View>
   );
 }
 
