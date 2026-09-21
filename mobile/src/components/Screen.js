@@ -4,7 +4,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import { spacing } from '../theme/spacing';
 
-export default function Screen({ children, scroll = true, contentStyle, refreshControl, overlay }) {
+export default function Screen({
+  children,
+  scroll = true,
+  contentStyle,
+  refreshControl,
+  overlay,
+  onScroll,
+  scrollEventThrottle,
+}) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
   const Wrapper = scroll ? ScrollView : View;
@@ -13,6 +21,8 @@ export default function Screen({ children, scroll = true, contentStyle, refreshC
         contentContainerStyle: [styles.content, contentStyle],
         showsVerticalScrollIndicator: false,
         refreshControl,
+        onScroll,
+        scrollEventThrottle,
       }
     : { style: [styles.content, contentStyle] };
 

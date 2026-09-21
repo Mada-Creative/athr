@@ -7,6 +7,7 @@ import AppText from '../components/AppText';
 import Card from '../components/Card';
 import Bounce from '../components/Bounce';
 import { useTheme } from '../context/ThemeContext';
+import { useTabBarScroll } from '../context/TabBarScrollContext';
 import { radius, spacing } from '../theme/spacing';
 import typography from '../theme/typography';
 import { api } from '../api/client';
@@ -16,9 +17,10 @@ import { api } from '../api/client';
 // typed in and added as a custom counter below.
 const PRESETS = ['سبحان الله', 'الحمد لله', 'الله أكبر', 'لا إله إلا الله', 'أستغفر الله', 'لا حول ولا قوة إلا بالله', 'سبحان الله وبحمده'];
 
-export default function TasbihScreen({ navigation }) {
+export default function TasbihScreen({ navigation, route }) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
+  const registerScroll = useTabBarScroll();
   const [counters, setCounters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [customText, setCustomText] = useState('');
@@ -86,7 +88,9 @@ export default function TasbihScreen({ navigation }) {
         data={counters}
         keyExtractor={(item) => item._id}
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ paddingBottom: spacing.xl }}
+        onScroll={registerScroll(route.key)}
+        scrollEventThrottle={16}
+        contentContainerStyle={{ paddingBottom: spacing.xxl * 3 }}
         ListHeaderComponent={
           <View>
             <View style={styles.headerRow}>

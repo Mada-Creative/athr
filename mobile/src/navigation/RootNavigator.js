@@ -16,7 +16,7 @@ import typography from '../theme/typography';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import UpgradeAccountScreen from '../screens/UpgradeAccountScreen';
-import HomeScreen from '../screens/HomeScreen';
+import MainTabs from './MainTabs';
 import AthkarCounterScreen from '../screens/AthkarCounterScreen';
 import AthkarListScreen from '../screens/AthkarListScreen';
 import QuranScreen from '../screens/QuranScreen';
@@ -24,17 +24,13 @@ import QuranSurahListScreen from '../screens/QuranSurahListScreen';
 import QuranReaderScreen from '../screens/QuranReaderScreen';
 import NamesScreen from '../screens/NamesScreen';
 import DuasScreen from '../screens/DuasScreen';
-import QiblaScreen from '../screens/QiblaScreen';
 import PrayerDetailScreen from '../screens/PrayerDetailScreen';
-import WeeklyStatsScreen from '../screens/WeeklyStatsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import AddTaskScreen from '../screens/AddTaskScreen';
 import SearchScreen from '../screens/SearchScreen';
 import TrackerScreen from '../screens/TrackerScreen';
-import TasbihScreen from '../screens/TasbihScreen';
 import TasbihCounterScreen from '../screens/TasbihCounterScreen';
 import AthrCardScreen from '../screens/AthrCardScreen';
-import MosqueMapScreen from '../screens/MosqueMapScreen';
 import FridaySunnahScreen from '../screens/FridaySunnahScreen';
 
 const Stack = createNativeStackNavigator();
@@ -42,9 +38,11 @@ const Stack = createNativeStackNavigator();
 // There is no logged-out state to gate on any more — the app always has a
 // session (guest or real) by the time isBooting clears, so this single
 // stack is the whole app; Login/Register/Upgrade are just screens someone
-// can reach from Settings, not a separate branch. There's also no bottom
-// tab bar — Home is the one landing page and everything else (Tracker,
-// Athkar, prayer times, tasbih, stats, more) is one tap away from its menu.
+// can reach from Settings, not a separate branch. "Home" itself is now
+// MainTabs (a bottom tab navigator: الرئيسية/القبلة/العدّاد/إحصائياتي/
+// الخريطة) — everything else here is one tap away from one of those tabs,
+// same as before, just reached through a nested navigator instead of a
+// single flat screen.
 function MainStack() {
   const { colors } = useTheme();
   const stackHeaderOptions = {
@@ -59,7 +57,7 @@ function MainStack() {
 
   return (
     <Stack.Navigator screenOptions={stackHeaderOptions}>
-      <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="Home" component={MainTabs} options={{ headerShown: false }} />
       <Stack.Screen
         name="AthrCard"
         component={AthrCardScreen}
@@ -84,11 +82,7 @@ function MainStack() {
       <Stack.Screen name="Names" component={NamesScreen} options={{ title: 'أسماء الله الحسنى' }} />
       <Stack.Screen name="Duas" component={DuasScreen} options={{ title: 'أدعية' }} />
       <Stack.Screen name="FridaySunnah" component={FridaySunnahScreen} options={{ title: 'سنن يوم الجمعة' }} />
-      <Stack.Screen name="Qibla" component={QiblaScreen} options={{ title: 'القبلة' }} />
-      <Stack.Screen name="MosqueMap" component={MosqueMapScreen} options={{ title: 'خريطة المساجد' }} />
       <Stack.Screen name="PrayerDetail" component={PrayerDetailScreen} options={{ title: 'مواقيت الصلاة' }} />
-      <Stack.Screen name="WeeklyStats" component={WeeklyStatsScreen} options={{ title: 'الإحصائيات' }} />
-      <Stack.Screen name="Tasbih" component={TasbihScreen} options={{ title: 'العدّاد' }} />
       <Stack.Screen name="TasbihCounter" component={TasbihCounterScreen} options={{ title: '' }} />
       <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'الإعدادات' }} />
       <Stack.Screen

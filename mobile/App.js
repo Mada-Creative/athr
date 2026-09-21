@@ -2,6 +2,7 @@ import 'react-native-gesture-handler';
 import React, { useCallback, useEffect } from 'react';
 import { I18nManager, LogBox, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Notifications from 'expo-notifications';
@@ -86,15 +87,25 @@ function AppShell({ fontsLoaded, onLayoutRootView }) {
   }
 
   return (
-    // Required for react-native-gesture-handler's handlers to work reliably
-    // (the athkar card's swipe, in particular) — without this root wrapper
-    // gesture recognition is flaky-to-broken on Android in particular.
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }} onLayout={onLayoutRootView}>
-      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-      <AuthProvider>
-        <RootNavigator />
-      </AuthProvider>
-    </GestureHandlerRootView>
+    // SafeAreaProvider first — required by @react-navigation/bottom-tabs
+    // (MainTabs' floating tab bar reads its `insets` prop from this) and by
+    // any future useSafeAreaInsets() call; the app previously got by
+    // without one since native-stack's headers are real native chrome that
+    // doesn't need it and every screen used the plain SafeAreaView
+    // component instead of the hook.
+    //
+    // GestureHandlerRootView is required for react-native-gesture-handler's
+    // handlers to work reliably (the athkar card's swipe, in particular) —
+    // without this root wrapper gesture recognition is flaky-to-broken on
+    // Android in particular.
+    <SafeAreaProvider>
+      <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }} onLayout={onLayoutRootView}>
+        <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+        <AuthProvider>
+          <RootNavigator />
+        </AuthProvider>
+      </GestureHandlerRootView>
+    </SafeAreaProvider>
   );
 }
 

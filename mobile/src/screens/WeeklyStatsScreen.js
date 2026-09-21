@@ -5,6 +5,7 @@ import Screen from '../components/Screen';
 import AppText from '../components/AppText';
 import Card from '../components/Card';
 import { useTheme } from '../context/ThemeContext';
+import { useTabBarScroll } from '../context/TabBarScrollContext';
 import { radius, spacing } from '../theme/spacing';
 import { api } from '../api/client';
 import { todayISO } from '../utils/date';
@@ -118,9 +119,10 @@ function CategoryCard({ meta, days, colors, styles }) {
   );
 }
 
-export default function WeeklyStatsScreen() {
+export default function WeeklyStatsScreen({ route }) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
+  const registerScroll = useTabBarScroll();
   const [days, setDays] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -157,7 +159,11 @@ export default function WeeklyStatsScreen() {
   const visibleCategories = CATEGORY_META.filter((meta) => meta.always || catTotals[meta.key]?.total > 0);
 
   return (
-    <Screen>
+    <Screen
+      onScroll={registerScroll(route.key)}
+      scrollEventThrottle={16}
+      contentStyle={{ paddingBottom: spacing.xxl * 3 }}
+    >
       <AppText weight="bold" size={22}>
         إحصائيات الأسبوع
       </AppText>

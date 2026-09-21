@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Animated, Keyboard, Platform, StyleSheet, TextInput, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import AppText from '../components/AppText';
@@ -26,14 +27,17 @@ const NEAREST_DELTA = 0.01;
 // source gets a wider search radius than the other.
 const NEAREST_MAX_METERS = 30000;
 
-// `onRequestClose` is only passed when this renders inside
-// MosqueMapLauncher's floating-circle overlay on Home (no navigation
-// header there to provide a back button) — omitted when reached by a
-// normal stack push (e.g. a future deep link), where the header's own
-// back arrow already does the job.
-export default function MosqueMapScreen({ onRequestClose }) {
+export default function MosqueMapScreen() {
   const { colors } = useTheme();
   const styles = createStyles(colors);
+  const insets = useSafeAreaInsets();
+  // FloatingTabBar floats over this screen too (it's one of the tabs) —
+  // this screen's own Screen deliberately excludes the bottom safe-area
+  // edge (the map should draw edge-to-edge), so its own bottom-pinned
+  // controls need enough clearance to clear the tab bar's own footprint
+  // (see FloatingTabBar's BAR_MAX_HEIGHT/BAR_MAX_BOTTOM) rather than
+  // hiding behind or overlapping it.
+  const bottomClearance = insets.bottom + 90;
   const mapRef = useRef(null);
   const [region, setRegion] = useState(null);
   const [userCoords, setUserCoords] = useState(null);
@@ -246,12 +250,6 @@ export default function MosqueMapScreen({ onRequestClose }) {
             ))}
           </MapView>
 
-          {onRequestClose ? (
-            <Bounce style={styles.closeBtn} onPress={onRequestClose}>
-              <Ionicons name="close" size={18} color={colors.ink} />
-            </Bounce>
-          ) : null}
-
           <Bounce style={styles.nearestBtn} onPress={onGoNearest} disabled={searchingNearest}>
             {searchingNearest ? (
               <ActivityIndicator size="small" color={colors.white} />
@@ -264,7 +262,7 @@ export default function MosqueMapScreen({ onRequestClose }) {
           </Bounce>
 
           {!selected ? (
-            <Bounce style={styles.addBtn} onPress={() => setSelected({ __addFlow: true })}>
+            <Bounce style={[styles.addBtn, { bottom: bottomClearance }]} onPress={() => setSelected({ __addFlow: true })}>
               <Ionicons name="add" size={26} color={colors.white} />
             </Bounce>
           ) : null}
@@ -274,6 +272,7 @@ export default function MosqueMapScreen({ onRequestClose }) {
               coords={userCoords}
               colors={colors}
               styles={styles}
+              bottomClearance={bottomClearance}
               onClose={() => setSelected(null)}
               onCreated={(mosque) => {
                 setSelected(null);
@@ -288,7 +287,7 @@ export default function MosqueMapScreen({ onRequestClose }) {
               }}
             />
           ) : selected ? (
-            <View style={styles.detailCard}>
+            <View style={[styles.detailCard, { bottom: bottomClearance }]}>
               <View style={{ flex: 1 }}>
                 <AppText weight="bold" size={15}>
                   {selected.name}
@@ -325,7 +324,7 @@ export default function MosqueMapScreen({ onRequestClose }) {
 // whole point is "you're standing at the mosque right now", so it reuses
 // the location this screen already has rather than re-requesting a GPS fix
 // a few seconds later on a fresh screen.
-function AddMosqueCard({ coords, colors, styles, onClose, onCreated, onSuggestion }) {
+function AddMosqueCard({ coords, colors, styles, bottomClearance, onClose, onCreated, onSuggestion }) {
   const [name, setName] = useState('');
   const [city, setCity] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -390,7 +389,7 @@ function AddMosqueCard({ coords, colors, styles, onClose, onCreated, onSuggestio
   };
 
   return (
-    <Animated.View style={[styles.detailCard, { transform: [{ translateY }] }]}>
+    <Animated.View style={[styles.detailCard, { bottom: bottomClearance, transform: [{ translateY }] }]}>
       <View style={{ flex: 1 }}>
         <AppText weight="bold" size={14} style={{ marginBottom: spacing.xs }}>
           إضافة مسجد في موقعك الحالي
@@ -431,25 +430,6 @@ function createStyles(colors) {
       paddingHorizontal: spacing.lg,
       paddingVertical: spacing.sm,
       borderRadius: radius.pill,
-    },
-    closeBtn: {
-      position: 'absolute',
-      top: spacing.lg,
-      right: spacing.lg,
-      width: 34,
-      height: 34,
-      borderRadius: radius.pill,
-      backgroundColor: colors.surface,
-      borderWidth: 1,
-      borderColor: colors.border,
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 5,
-      shadowColor: '#000',
-      shadowOpacity: 0.15,
-      shadowRadius: 8,
-      shadowOffset: { width: 0, height: 3 },
-      elevation: 4,
     },
     nearestBtn: {
       position: 'absolute',

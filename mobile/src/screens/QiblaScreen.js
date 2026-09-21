@@ -6,6 +6,7 @@ import * as Haptics from 'expo-haptics';
 import Screen from '../components/Screen';
 import AppText from '../components/AppText';
 import { useTheme } from '../context/ThemeContext';
+import { useTabBarScroll } from '../context/TabBarScrollContext';
 import { radius, spacing } from '../theme/spacing';
 
 const KAABA = { latitude: 21.4225, longitude: 39.8262 };
@@ -52,9 +53,10 @@ function signedAngularDelta(target, from) {
   return diff;
 }
 
-export default function QiblaScreen() {
+export default function QiblaScreen({ route }) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
+  const registerScroll = useTabBarScroll();
   const [qiblaBearing, setQiblaBearing] = useState(null);
   const [heading, setHeading] = useState(0);
   const [error, setError] = useState(null);
@@ -135,7 +137,7 @@ export default function QiblaScreen() {
   const rotate = rotation.interpolate({ inputRange: [-100000, 100000], outputRange: ['-100000deg', '100000deg'] });
 
   return (
-    <Screen contentStyle={styles.content}>
+    <Screen contentStyle={styles.content} onScroll={registerScroll(route.key)} scrollEventThrottle={16}>
       <AppText weight="bold" size={22}>
         اتجاه القبلة
       </AppText>

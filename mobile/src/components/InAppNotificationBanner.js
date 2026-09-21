@@ -97,10 +97,9 @@ export default function InAppNotificationBanner() {
       pointerEvents="box-none"
       {...panResponder.panHandlers}
     >
-      {/* SafeAreaView (the native-computed one from this same package, not
-          the useSafeAreaInsets hook) so this renders correctly without
-          needing a SafeAreaProvider ancestor — the app doesn't set one up,
-          relying elsewhere (Screen.js) on this same native fallback. */}
+      {/* SafeAreaView (the component, not the useSafeAreaInsets hook) —
+          unchanged from before the app added a SafeAreaProvider (App.js);
+          no reason to churn this one now that both would work. */}
       <SafeAreaView edges={['top']} style={styles.safeWrap}>
         <TouchableOpacity activeOpacity={0.9} style={styles.card} onPress={handlePress}>
           <View style={styles.iconWrap}>

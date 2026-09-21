@@ -9,11 +9,11 @@ import ProgressRing from '../components/ProgressRing';
 import LiveClock from '../components/LiveClock';
 import Bounce from '../components/Bounce';
 import AthkarTile from '../components/AthkarTile';
-import MosqueMapLauncher from '../components/MosqueMapLauncher';
 import AthrCardStack, { HERO_OVERLAP } from '../components/AthrCardStack';
 import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
 import { useAuth } from '../context/AuthContext';
+import { useTabBarScroll } from '../context/TabBarScrollContext';
 import { todayISO, formatGregorian, formatWeekday, toHijri, greetingFor, voluntaryFastingDay } from '../utils/date';
 import usePrayerTimes, { formatCountdownWithSeconds, formatClock } from '../hooks/usePrayerTimes';
 import usePrayerNotifications from '../hooks/usePrayerNotifications';
@@ -29,10 +29,11 @@ const SCREEN_WIDTH = Dimensions.get('window').width;
 const TILE_GAP = spacing.sm;
 const TILE_WIDTH = (SCREEN_WIDTH - spacing.lg * 2 - TILE_GAP * 2) / 3;
 
-export default function HomeScreen({ navigation }) {
+export default function HomeScreen({ navigation, route }) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
   const { user, isGuest } = useAuth();
+  const registerScroll = useTabBarScroll();
   const date = todayISO();
   // Ticks every second (not just on focus/refresh) so the hero card's
   // countdown reads live, down to the second, like PrayerDetailScreen's.
@@ -56,22 +57,6 @@ export default function HomeScreen({ navigation }) {
   const remainingToNext = next ? next.time.getTime() - now.getTime() : null;
   const displayRemaining =
     remainingToNext != null && remainingToNext < 0 ? remainingToNext + 24 * 60 * 60 * 1000 : remainingToNext;
-
-  // No bottom tab bar — this row is the whole app's quick-access menu, right
-  // under the hero card: everything that used to live in a separate tab
-  // (تتبع/الأذكار) is one tap away from Home instead. Colored icon badges
-  // (instead of a bare icon) match the "الأذكار"/"أخرى" rows below, so the
-  // row reads as one deliberate family instead of five mismatched buttons.
-  const PRAYER_MENU = useMemo(
-    () => [
-      { key: 'tracker', title: 'المتابعة', icon: 'checkbox-outline', route: 'Tracker', color: colors.sage },
-      { key: 'times', title: 'المواقيت', icon: 'time-outline', route: 'PrayerDetail', color: colors.amber },
-      { key: 'qibla', title: 'القبلة', icon: 'compass-outline', route: 'Qibla', color: colors.clay },
-      { key: 'tasbih', title: 'العدّاد', icon: 'sync-outline', route: 'Tasbih', color: '#7C6A9C' },
-      { key: 'stats', title: 'إحصائياتي', icon: 'stats-chart-outline', route: 'WeeklyStats', color: '#4E7FA8' },
-    ],
-    [colors]
-  );
 
   // Home is pure navigation now — a tap opens the reading/counter screen,
   // nothing here ever marks a category done. Marking-complete (and seeing
@@ -199,7 +184,9 @@ export default function HomeScreen({ navigation }) {
   return (
     <Screen
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.amber} />}
-      overlay={<MosqueMapLauncher />}
+      onScroll={registerScroll(route.key)}
+      scrollEventThrottle={16}
+      contentStyle={{ paddingBottom: spacing.xxl * 3 }}
     >
       <View style={styles.topBar}>
         <LiveClock size={17} />
@@ -289,24 +276,6 @@ export default function HomeScreen({ navigation }) {
           </AppText>
         </Card>
       </Bounce>
-
-      <View style={styles.prayerMenuRow}>
-        {PRAYER_MENU.map((item) => (
-          <Bounce
-            key={item.key}
-            scaleTo={0.95}
-            style={styles.prayerMenuItem}
-            onPress={() => navigation.navigate(item.route)}
-          >
-            <View style={[styles.prayerMenuIcon, { backgroundColor: `${item.color}22` }]}>
-              <Ionicons name={item.icon} size={18} color={item.color} />
-            </View>
-            <AppText weight="semibold" size={11} numberOfLines={1} style={{ marginTop: 6, textAlign: 'center' }}>
-              {item.title}
-            </AppText>
-          </Bounce>
-        ))}
-      </View>
 
       <Card style={styles.scoreCard} onPress={() => navigation.navigate('Tracker')}>
         {showingFirstLoad ? (
@@ -430,25 +399,6 @@ function createStyles(colors) {
       flex: 1,
     },
     prayerChipDone: { backgroundColor: 'rgba(95,132,103,0.18)' },
-    // One row, every item the same size and the same fixed height — no
-    // wrap, so a longer label never stretches one box taller than the rest.
-    prayerMenuRow: {
-      flexDirection: 'row-reverse',
-      gap: spacing.xs,
-      marginTop: spacing.md,
-    },
-    prayerMenuItem: {
-      flex: 1,
-      height: 76,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: colors.surface,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: radius.md,
-      paddingHorizontal: 2,
-    },
-    prayerMenuIcon: { width: 32, height: 32, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
     scoreCard: {
       flexDirection: 'row-reverse',
       alignItems: 'center',
