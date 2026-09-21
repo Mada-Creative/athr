@@ -120,6 +120,7 @@
     <div class="tabs">
       <div class="tab active" id="tabPending" onclick="switchTab('pending')">قيد المراجعة</div>
       <div class="tab" id="tabReported" onclick="switchTab('reported')">تم الإبلاغ عنها</div>
+      <div class="tab" id="tabApproved" onclick="switchTab('approved')">المعتمدة</div>
     </div>
     <div id="list"></div>
   </div>
@@ -170,6 +171,7 @@
     currentTab = tab;
     document.getElementById('tabPending').classList.toggle('active', tab === 'pending');
     document.getElementById('tabReported').classList.toggle('active', tab === 'reported');
+    document.getElementById('tabApproved').classList.toggle('active', tab === 'approved');
     load();
   }
 
@@ -219,6 +221,24 @@
       </div>`;
   }
 
+  function approvedCard(m) {
+    return `
+      <div class="card" id="card-${m.id}">
+        <div class="card-head">
+          <div>
+            <div class="card-title">${escapeHtml(m.name)}</div>
+            <div class="card-city">${escapeHtml(m.city || 'بدون مدينة محددة')}</div>
+          </div>
+        </div>
+        <iframe class="map" src="${mapSrc(m.latitude, m.longitude)}"></iframe>
+        <div class="meta">أضافه: ${escapeHtml(m.addedBy?.name || 'غير معروف')} (${escapeHtml(m.addedBy?.email || '')})</div>
+        ${m.reports?.length ? `<div class="meta">⚠ ${m.reports.length} بلاغ عليه</div>` : ''}
+        <div class="actions">
+          <button class="btn-reject" onclick="act('${m.id}','remove')">حذف المسجد</button>
+        </div>
+      </div>`;
+  }
+
   async function act(id, action) {
     await api(`/${id}/${action}`, { method: 'POST' });
     const el = document.getElementById(`card-${id}`);
@@ -229,15 +249,21 @@
     return String(str || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   }
 
+  const TAB_CONFIG = {
+    pending: { path: '/pending', render: pendingCard, empty: 'لا يوجد مساجد بانتظار المراجعة' },
+    reported: { path: '/reported', render: reportedCard, empty: 'لا يوجد بلاغات حاليًا' },
+    approved: { path: '/approved', render: approvedCard, empty: 'لا يوجد مساجد معتمدة بعد' },
+  };
+
   async function load() {
-    const path = currentTab === 'pending' ? '/pending' : '/reported';
-    const data = await api(path);
+    const config = TAB_CONFIG[currentTab];
+    const data = await api(config.path);
     const list = document.getElementById('list');
     if (!data.mosques.length) {
-      list.innerHTML = `<div class="empty">${currentTab === 'pending' ? 'لا يوجد مساجد بانتظار المراجعة' : 'لا يوجد بلاغات حاليًا'}</div>`;
+      list.innerHTML = `<div class="empty">${config.empty}</div>`;
       return;
     }
-    list.innerHTML = data.mosques.map(currentTab === 'pending' ? pendingCard : reportedCard).join('');
+    list.innerHTML = data.mosques.map(config.render).join('');
   }
 
   (async function init() {

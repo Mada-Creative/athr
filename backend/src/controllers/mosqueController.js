@@ -1,4 +1,5 @@
 const Mosque = require('../models/Mosque');
+const { notifyAdmin } = require('../utils/mailer');
 
 // Anything closer than this to an already-approved mosque is treated as
 // the same mosque, not a new one — stops the map from filling up with
@@ -8,6 +9,11 @@ const DUPLICATE_RADIUS_METERS = 150;
 // How far "أقرب مسجد مني" is willing to look before saying there's
 // genuinely nothing nearby, rather than returning a mosque an hour away.
 const NEAREST_MAX_METERS = 30000;
+
+// PUBLIC_URL lets this link stay correct if the backend ever moves off
+// this Heroku app without a code change — falls back to the current host
+// since that env var isn't set anywhere yet.
+const ADMIN_PAGE_URL = `${process.env.PUBLIC_URL || 'https://safe-citadel-95574-87a79d0291e7.herokuapp.com'}/admin/mosques.html`;
 
 function parseCoords(body) {
   const latitude = Number(body.latitude);
@@ -49,6 +55,12 @@ async function create(req, res) {
     addedBy: req.user._id,
     status: 'pending',
   });
+
+  notifyAdmin(
+    'مسجد جديد بانتظار المراجعة — أثر',
+    `اقترح ${req.user.name} إضافة مسجد جديد:\n\n${name}${city ? ` — ${city}` : ''}\n\nراجعه من هنا:\n${ADMIN_PAGE_URL}`
+  );
+
   return res.status(201).json({ mosque: mosque.toPublicJSON(), status: 'pending' });
 }
 
@@ -95,6 +107,12 @@ async function report(req, res) {
     { new: true }
   );
   if (!mosque) return res.status(404).json({ message: 'المسجد غير موجود' });
+
+  notifyAdmin(
+    'بلاغ عن مسجد — أثر',
+    `أبلغ ${req.user.name} عن مسجد "${mosque.name}"${reason ? `:\n\n${reason}` : ' (بدون سبب محدد)'}\n\nراجعه من هنا:\n${ADMIN_PAGE_URL}`
+  );
+
   return res.json({ ok: true });
 }
 

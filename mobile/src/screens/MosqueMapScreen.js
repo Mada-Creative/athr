@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, StyleSheet, TextInput, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
@@ -282,7 +282,11 @@ function AddMosqueCard({ coords, colors, styles, onClose, onCreated, onSuggestio
   };
 
   return (
-    <View style={styles.detailCard}>
+    // "position" (not "padding"/"height") is the one behavior that moves an
+    // already absolutely-positioned view — this card sits pinned to the
+    // bottom of the map (styles.detailCard), so it needs to slide up above
+    // the keyboard rather than resize in place.
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'position' : undefined} style={styles.detailCard}>
       <View style={{ flex: 1 }}>
         <AppText weight="bold" size={14} style={{ marginBottom: spacing.xs }}>
           إضافة مسجد في موقعك الحالي
@@ -309,7 +313,7 @@ function AddMosqueCard({ coords, colors, styles, onClose, onCreated, onSuggestio
       <Bounce style={styles.detailBtnGhost} onPress={onClose}>
         <Ionicons name="close" size={16} color={colors.inkFaint} />
       </Bounce>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
