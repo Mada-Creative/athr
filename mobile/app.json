@@ -39,7 +39,12 @@
       "permissions": [
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION"
-      ]
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyDYaDAnTVqxZpNDWeGatAc-2yRyK0unw9w"
+        }
+      }
     },
     "web": {
       "favicon": "./assets/logo.png"
