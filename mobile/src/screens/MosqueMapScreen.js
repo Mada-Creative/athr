@@ -10,6 +10,7 @@ import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
 import { api } from '../api/client';
 import openDirections from '../utils/openDirections';
+import { fetchOsmMosques, regionToBounds } from '../utils/osmMosques';
 
 // No `provider` prop on purpose — react-native-maps defaults to Apple Maps
 // on iOS (zero setup, zero cost) and Google Maps on Android (the only map
@@ -33,10 +34,12 @@ export default function MosqueMapScreen({ onRequestClose }) {
   const [region, setRegion] = useState(null);
   const [userCoords, setUserCoords] = useState(null);
   const [mosques, setMosques] = useState([]);
+  const [osmMosques, setOsmMosques] = useState([]);
   const [selected, setSelected] = useState(null);
   const [error, setError] = useState(null);
   const [locating, setLocating] = useState(true);
   const [searchingNearest, setSearchingNearest] = useState(false);
+  const osmDebounceRef = useRef(null);
 
   const loadMosques = useCallback(async (coords) => {
     try {
@@ -48,6 +51,22 @@ export default function MosqueMapScreen({ onRequestClose }) {
       // stale/empty list, just without fresh data
     }
   }, []);
+
+  const loadOsmMosques = useCallback(async (mapRegion, options) => {
+    const found = await fetchOsmMosques(regionToBounds(mapRegion), options);
+    if (found) setOsmMosques(found);
+  }, []);
+
+  const onRegionChangeComplete = useCallback(
+    (mapRegion) => {
+      if (osmDebounceRef.current) clearTimeout(osmDebounceRef.current);
+      // Waits for panning/zooming to actually settle rather than querying
+      // Overpass (a shared public service, no API key) on every frame of
+      // a drag gesture.
+      osmDebounceRef.current = setTimeout(() => loadOsmMosques(mapRegion), 600);
+    },
+    [loadOsmMosques]
+  );
 
   const detectLocation = useCallback(async () => {
     setLocating(true);
@@ -61,19 +80,27 @@ export default function MosqueMapScreen({ onRequestClose }) {
       }
       const position = await Location.getCurrentPositionAsync({});
       const coords = { latitude: position.coords.latitude, longitude: position.coords.longitude };
+      const initialRegion = { ...coords, latitudeDelta: DEFAULT_DELTA, longitudeDelta: DEFAULT_DELTA };
       setUserCoords(coords);
-      setRegion({ ...coords, latitudeDelta: DEFAULT_DELTA, longitudeDelta: DEFAULT_DELTA });
-      await loadMosques(coords);
+      setRegion(initialRegion);
+      await Promise.all([loadMosques(coords), loadOsmMosques(initialRegion, { force: true })]);
     } catch (err) {
       setError('تعذر تحديد الموقع الحالي');
     } finally {
       setLocating(false);
     }
-  }, [loadMosques]);
+  }, [loadMosques, loadOsmMosques]);
 
   useEffect(() => {
     detectLocation();
   }, [detectLocation]);
+
+  useEffect(
+    () => () => {
+      if (osmDebounceRef.current) clearTimeout(osmDebounceRef.current);
+    },
+    []
+  );
 
   const onGoNearest = async () => {
     if (!userCoords) return;
@@ -158,7 +185,22 @@ export default function MosqueMapScreen({ onRequestClose }) {
             showsUserLocation
             showsMyLocationButton={false}
             onPress={() => setSelected(null)}
+            onRegionChangeComplete={onRegionChangeComplete}
           >
+            {/* Already mapped on OpenStreetMap — shown so the "+" flow is
+                only ever needed for a mosque missing from both this and our
+                own database, not every mosque that exists. A muted color
+                keeps them visually secondary to the ones this app's own
+                community actually vetted. */}
+            {osmMosques.map((m) => (
+              <Marker
+                key={m.id}
+                coordinate={{ latitude: m.latitude, longitude: m.longitude }}
+                title={m.name}
+                pinColor={selected?.id === m.id ? colors.sage : colors.inkFaint}
+                onPress={() => setSelected(m)}
+              />
+            ))}
             {mosques.map((m) => (
               <Marker
                 key={m.id}
@@ -219,6 +261,11 @@ export default function MosqueMapScreen({ onRequestClose }) {
                   {selected.name}
                   {selected.city ? ` - ${selected.city}` : ''}
                 </AppText>
+                {selected.source === 'osm' ? (
+                  <AppText size={11} color={colors.inkFaint} style={{ marginTop: 2 }}>
+                    من خرائط OpenStreetMap
+                  </AppText>
+                ) : null}
               </View>
               <Bounce style={styles.detailBtn} onPress={() => openDirections(selected.latitude, selected.longitude, selected.name)}>
                 <Ionicons name="navigate" size={16} color={colors.white} />
@@ -226,9 +273,13 @@ export default function MosqueMapScreen({ onRequestClose }) {
                   التوجه
                 </AppText>
               </Bounce>
-              <Bounce style={styles.detailBtnGhost} onPress={() => onReport(selected)}>
-                <Ionicons name="flag-outline" size={16} color={colors.clay} />
-              </Bounce>
+              {/* Reporting only applies to mosques in our own database —
+                  an OpenStreetMap pin isn't ours to review or remove. */}
+              {selected.source !== 'osm' ? (
+                <Bounce style={styles.detailBtnGhost} onPress={() => onReport(selected)}>
+                  <Ionicons name="flag-outline" size={16} color={colors.clay} />
+                </Bounce>
+              ) : null}
             </View>
           ) : null}
         </>
