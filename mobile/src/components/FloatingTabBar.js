@@ -27,7 +27,7 @@ const TAB_META = {
   Qibla: { icon: 'compass-outline', iconActive: 'compass' },
   Tasbih: { icon: 'sync-outline', iconActive: 'sync' },
   WeeklyStats: { icon: 'stats-chart-outline', iconActive: 'stats-chart' },
-  MosqueMap: { icon: 'location-outline', iconActive: 'location' },
+  MosqueMap: { icon: 'map-outline', iconActive: 'map' },
 };
 
 export default function FloatingTabBar({ state, descriptors, navigation, insets, scrollAnimByName }) {
