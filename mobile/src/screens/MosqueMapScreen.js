@@ -147,6 +147,17 @@ export default function MosqueMapScreen() {
     if (!userCoords) return;
     setSearchingNearest(true);
     try {
+      // The pins already on screen (osmMosques — loaded once, successfully,
+      // for the current viewport) are a free, instant, zero-network-risk
+      // candidate pool — computed client-side, they can't fail the way a
+      // fresh Overpass round-trip can. A close match from them is used
+      // immediately instead of also gambling on another live request that
+      // has no reason to succeed just because the last one eventually did.
+      const localCandidates = osmMosques.map((m) => ({ ...m, distance: haversineMeters(userCoords, m) }));
+      const localNearest = localCandidates.length
+        ? localCandidates.reduce((a, b) => (b.distance < a.distance ? b : a))
+        : null;
+
       // Our own database and OpenStreetMap searched side by side — neither
       // one alone is the full picture (ours is community-vetted but sparse
       // so far, OSM is broad but not reviewed by anyone here), so whichever
@@ -154,16 +165,21 @@ export default function MosqueMapScreen() {
       // source happened to answer first.
       const [dbRes, osmResult] = await Promise.all([
         api.get(`/mosques/nearest?latitude=${userCoords.latitude}&longitude=${userCoords.longitude}`).catch(() => ({ mosque: null })),
-        // No radius cap — keeps widening the search (see SEARCH_TIERS_METERS
-        // in osmMosques.js) until it finds something or genuinely runs out
-        // of ground to cover, rather than stopping at a fixed distance and
+        // Skip the live radius search entirely when the pins already on
+        // screen already have something close — no reason to risk another
+        // Overpass round-trip for a result that can't realistically beat
+        // what's already sitting in front of the user. No radius cap
+        // otherwise — keeps widening (see SEARCH_TIERS_METERS in
+        // osmMosques.js) until it finds something or genuinely runs out of
+        // ground to cover, rather than stopping at a fixed distance and
         // reporting "nothing nearby" when a mosque just happens to be far.
-        fetchNearestOsmMosque(userCoords),
+        localNearest && localNearest.distance < 3000 ? Promise.resolve(null) : fetchNearestOsmMosque(userCoords),
       ]);
 
       const candidates = [];
       if (dbRes.mosque) candidates.push({ ...dbRes.mosque, distance: haversineMeters(userCoords, dbRes.mosque) });
       if (osmResult?.mosque) candidates.push({ ...osmResult.mosque, distance: osmResult.distance });
+      if (localNearest) candidates.push(localNearest);
 
       if (!candidates.length) {
         Alert.alert('لا يوجد مسجد قريب', 'ما لقينا أي مسجد ضمن 300 كم من موقعك — كن أول من يضيف واحدًا!');
