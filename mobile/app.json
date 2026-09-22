@@ -49,9 +49,6 @@
     "web": {
       "favicon": "./assets/logo.png"
     },
-    "locales": {
-      "ar": "./locales/ar.json"
-    },
     "extra": {
       "apiBaseUrl": "https://safe-citadel-95574-87a79d0291e7.herokuapp.com/api",
       "eas": {
