@@ -127,16 +127,15 @@ function closestOf(coords, candidates) {
   return { mosque: nearest, distance: nearestDistance };
 }
 
-// Starts small (covers the common case — a mosque a few streets away —
-// with a light, fast query) and keeps widening only as far as it has to.
-// Querying a huge radius up front in a dense city — Damascus alone has
-// thousands of mapped mosques — is what was making this feel like a
-// freeze: a huge payload over a slow connection, for a search that almost
-// always resolves within 3km anyway. The last tier is a genuinely
-// "anywhere reachable by car in a day" ceiling, not an arbitrary stop —
-// someone in a sparse rural area should still get an answer, just a
-// farther one, rather than a premature "nothing found".
-const SEARCH_TIERS_METERS = [3000, 10000, 30000, 75000, 150000, 300000];
+// Starts at "same city" (covers the common case with a query still light
+// enough to stay fast even somewhere as densely mapped as Damascus) and
+// widens only as far as it has to. Each tier is a separate request that
+// only starts once the one before it comes back empty, so fewer, bigger
+// jumps mean less waiting through sequential round-trips in a sparse area
+// — going straight from "10km" to "anywhere reachable by car" skips the
+// slow march through several in-between radii that mostly turn up nothing
+// once the immediate city has already come up empty.
+const SEARCH_TIERS_METERS = [10000, 75000, 300000];
 
 // Overpass's `around` filter does the radius search directly around a
 // point (rather than a bbox), which is the shape "أقرب مسجد مني" actually

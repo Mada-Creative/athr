@@ -331,11 +331,14 @@ export default function MosqueMapScreen() {
             </AppText>
           </Bounce>
 
-          {/* Otherwise a failed OSM load just looks like "there are no
-              mosques here" with no way to tell it's actually a dropped
-              connection — this makes the retry an explicit, visible choice
-              instead of a silent dead end. */}
-          {osmFailed ? (
+          {/* Only when there's truly nothing to show — a later background
+              refresh failing (e.g. after panning slightly) must never hide
+              or cast doubt on pins from an earlier successful load that
+              are still sitting right there on the map. Otherwise a failed
+              OSM load just looks like "there are no mosques here" with no
+              way to tell it's actually a dropped connection, which is what
+              this pill is for in the first place. */}
+          {osmFailed && osmMosques.length === 0 ? (
             <Bounce style={styles.osmFailedPill} onPress={() => loadOsmMosquesRetrying(region)}>
               <Ionicons name="refresh-outline" size={14} color={colors.clay} />
               <AppText size={12} weight="semibold" color={colors.clay} style={{ marginRight: 4 }}>
