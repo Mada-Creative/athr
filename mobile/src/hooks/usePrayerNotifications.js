@@ -131,8 +131,8 @@ export default function usePrayerNotifications(schedule, settings, prayerLog) {
             await Notifications.scheduleNotificationAsync({
               identifier: `${ID_PREFIX}${prayer.key}-reminder`,
               content: {
-                title: 'تذكير بموعد الصلاة',
-                body: `تبقّى ${reminderMinutes} دقيقة على صلاة ${PRAYER_LABELS[prayer.key] || prayer.label} — قم وأدركها في جماعة\n\n"${jamaahHadith.text}"\n— ${jamaahHadith.source}`,
+                title: `اقترب موعد أذان ${PRAYER_LABELS[prayer.key] || prayer.label}`,
+                body: `تبقّى ${reminderMinutes} دقيقة — قم وأدركها في جماعة\n\n"${jamaahHadith.text}"\n— ${jamaahHadith.source}`,
                 sound: 'prayer_reminder.wav',
                 data: { screen: 'Tracker' },
                 ...(Platform.OS === 'android' ? { channelId: CHANNEL_REMINDER } : null),

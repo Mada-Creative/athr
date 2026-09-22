@@ -43,7 +43,7 @@ export default function HomeScreen({ navigation, route }) {
     return () => clearInterval(id);
   }, []);
   const hijri = toHijri(now);
-  const { schedule, next } = usePrayerTimes();
+  const { schedule, next, lastThirdOfNight } = usePrayerTimes();
   const { stats, prayerLog, loading, reload, toggleVoluntaryFasting } = useDailyData(date);
   // Only true for a genuine first load with nothing cached yet from a
   // previous successful fetch — a slow-but-normal request (a cold Heroku
@@ -152,6 +152,15 @@ export default function HomeScreen({ navigation, route }) {
   // up on it any day), but only *surfaced first* on Friday itself, the same
   // "the relevant thing floats to the top" idea as morning/evening athkar.
   const isFriday = now.getDay() === 5;
+
+  // Unlike the Friday tile (always present, just highlighted-or-not), this
+  // one only exists on the grid at all during its own window — the last
+  // third of the night up to fajr — same as the dua it opens only being
+  // relevant then. `lastThirdOfNight`/fajr are both today's own prayer
+  // times, computed once per day like the rest of `schedule`.
+  const fajrTime = schedule.find((p) => p.key === 'fajr')?.time || null;
+  const nightWakeActive = Boolean(lastThirdOfNight && fajrTime && now >= lastThirdOfNight && now < fajrTime);
+
   const homeTiles = useMemo(() => {
     const fridayTile = {
       key: 'fridaySunnah',
@@ -160,10 +169,23 @@ export default function HomeScreen({ navigation, route }) {
       color: colors.gold,
       onPress: () => navigation.navigate('FridaySunnah'),
     };
-    const combined = [...athkarHomeTiles, ...MORE_LINKS, fridayTile];
-    if (!isFriday) return combined;
-    return [{ ...fridayTile, highlighted: true }, ...combined.filter((t) => t.key !== 'fridaySunnah')];
-  }, [athkarHomeTiles, MORE_LINKS, isFriday, colors.gold, navigation]);
+    let combined = [...athkarHomeTiles, ...MORE_LINKS, fridayTile];
+    if (isFriday) {
+      combined = [{ ...fridayTile, highlighted: true }, ...combined.filter((t) => t.key !== 'fridaySunnah')];
+    }
+    if (nightWakeActive) {
+      const nightWakeTile = {
+        key: 'nightWake',
+        title: 'تعارّيت من الليل؟',
+        icon: 'moon-outline',
+        color: colors.gold,
+        highlighted: true,
+        onPress: () => navigation.navigate('NightWake'),
+      };
+      combined = [nightWakeTile, ...combined];
+    }
+    return combined;
+  }, [athkarHomeTiles, MORE_LINKS, isFriday, nightWakeActive, colors.gold, navigation]);
 
   usePrayerNotifications(schedule, user?.prayerNotifications, prayerLog);
   useAthkarReminderNotifications(schedule);
