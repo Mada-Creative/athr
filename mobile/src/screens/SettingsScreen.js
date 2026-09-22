@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, I18nManager, StyleSheet, Switch, TouchableOpacity, View } from 'react-native';
+import { Alert, I18nManager, Linking, StyleSheet, Switch, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import AppText from '../components/AppText';
@@ -32,6 +32,8 @@ const REMINDER_OPTIONS = [
   { value: 30, label: '30 دقيقة' },
   { value: 60, label: 'ساعة' },
 ];
+
+const INSTAGRAM_URL = 'https://www.instagram.com/byatharapp/';
 
 const THEME_OPTIONS = [
   { value: 'light', label: 'فاتح', icon: 'sunny-outline' },
@@ -206,6 +208,24 @@ export default function SettingsScreen() {
         </View>
       </Card>
 
+      <AppText weight="bold" size={16} style={{ marginTop: spacing.xl, marginBottom: spacing.sm }}>
+        تواصل معنا
+      </AppText>
+      <Card onPress={() => Linking.openURL(INSTAGRAM_URL)} style={styles.socialRow}>
+        <View style={styles.socialIconWrap}>
+          <Ionicons name="logo-instagram" size={20} color={colors.clay} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <AppText size={14} weight="semibold">
+            تابعنا على إنستغرام
+          </AppText>
+          <AppText size={11.5} color={colors.inkSoft} style={{ marginTop: 2 }}>
+            عندك اقتراح أو ملاحظة؟ راسلنا من هناك
+          </AppText>
+        </View>
+        <Ionicons name="chevron-back" size={18} color={colors.inkSoft} />
+      </Card>
+
       {error ? (
         <AppText color={colors.clay} size={13} style={{ marginTop: spacing.md }}>
           {error}
@@ -261,5 +281,14 @@ function createStyles(colors) {
     },
     notifRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: spacing.md },
     divider: { height: 1, backgroundColor: colors.border, marginVertical: spacing.md },
+    socialRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: spacing.md },
+    socialIconWrap: {
+      width: 38,
+      height: 38,
+      borderRadius: radius.pill,
+      backgroundColor: colors.claySoft,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
   });
 }
