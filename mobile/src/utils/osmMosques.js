@@ -4,16 +4,15 @@
 // automatically, and the "+" add flow is only ever needed for the ones
 // missing from both OSM and our own database, not every mosque that exists.
 //
-// Several independently-run mirrors, not just the main instance — a device
-// that consistently can't reach overpass-api.de (network filtering, that
-// one instance being down/overloaded, a regional routing issue) may still
-// reach a different one just fine, and retrying the *same* unreachable
-// host over and over never recovers from that on its own.
-const OVERPASS_URLS = [
-  'https://overpass-api.de/api/interpreter',
-  'https://overpass.kumi.systems/api/interpreter',
-  'https://overpass.openstreetmap.ru/api/interpreter',
-];
+// Back to a single endpoint, on purpose — an earlier version of this fired
+// the same query at three mirrors simultaneously to route around one being
+// slow/unreachable, but that meant every single fetch (including retries)
+// sent 2-3x as many concurrent requests to Overpass's shared, keyless
+// public infrastructure, which is exactly the kind of traffic pattern a
+// free community service starts rate-limiting or dropping — making things
+// measurably *worse*, not more resilient. One request at a time, like the
+// very first version of this that worked fine.
+const OVERPASS_URL = 'https://overpass-api.de/api/interpreter';
 
 // `region` is react-native-maps' own shape ({latitude, longitude,
 // latitudeDelta, longitudeDelta}) — converted to a plain north/south/east/west
@@ -76,30 +75,8 @@ async function fetchOnce(url, query) {
   }
 }
 
-// All mirrors fired at once, not one after another — whichever answers
-// first wins, so the total wait is bounded by the *fastest* mirror, not
-// however many fail before a working one is tried. Only reports failure
-// once every single one of them has failed.
-function raceToFirstSuccess(promises) {
-  return new Promise((resolve) => {
-    let remaining = promises.length;
-    let settled = false;
-    promises.forEach((p) => {
-      p.then((result) => {
-        if (result && !settled) {
-          settled = true;
-          resolve(result);
-          return;
-        }
-        remaining -= 1;
-        if (remaining === 0 && !settled) resolve(null);
-      });
-    });
-  });
-}
-
 async function overpassQuery(query) {
-  return raceToFirstSuccess(OVERPASS_URLS.map((url) => fetchOnce(url, query)));
+  return fetchOnce(OVERPASS_URL, query);
 }
 
 function toMosques(elements) {

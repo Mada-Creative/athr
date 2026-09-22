@@ -52,10 +52,6 @@ export default function MosqueMapScreen() {
   const [userCoords, setUserCoords] = useState(null);
   const [mosques, setMosques] = useState([]);
   const [osmMosques, setOsmMosques] = useState([]);
-  // Only true once every retry has been exhausted with nothing to show —
-  // surfaced as a small "couldn't load, tap to retry" pill instead of just
-  // silently leaving the map looking empty with no explanation at all.
-  const [osmFailed, setOsmFailed] = useState(false);
   const [selected, setSelected] = useState(null);
   const [error, setError] = useState(null);
   const [locating, setLocating] = useState(true);
@@ -81,7 +77,6 @@ export default function MosqueMapScreen() {
   // pins and no second try either, which is exactly the "moved the map,
   // pins never showed up" report this fixes.
   const loadOsmMosquesRetrying = useCallback(async (mapRegion) => {
-    setOsmFailed(false);
     for (const delay of OSM_RETRY_DELAYS_MS) {
       if (delay) await new Promise((resolve) => setTimeout(resolve, delay));
       const found = await fetchOsmMosques(regionToBounds(mapRegion));
@@ -90,7 +85,12 @@ export default function MosqueMapScreen() {
         return;
       }
     }
-    setOsmFailed(true);
+    // Every retry failed — silently leave whatever pins were already on
+    // screen (from an earlier successful load, or none yet) rather than
+    // showing a "couldn't load" indicator: a background refresh failing
+    // (e.g. after panning slightly) must never cast doubt on pins that are
+    // still sitting right there on the map, and there's nothing useful to
+    // tell the user about a dropped request they didn't ask about.
   }, []);
 
   const onRegionChangeComplete = useCallback(
@@ -331,22 +331,6 @@ export default function MosqueMapScreen() {
             </AppText>
           </Bounce>
 
-          {/* Only when there's truly nothing to show — a later background
-              refresh failing (e.g. after panning slightly) must never hide
-              or cast doubt on pins from an earlier successful load that
-              are still sitting right there on the map. Otherwise a failed
-              OSM load just looks like "there are no mosques here" with no
-              way to tell it's actually a dropped connection, which is what
-              this pill is for in the first place. */}
-          {osmFailed && osmMosques.length === 0 ? (
-            <Bounce style={styles.osmFailedPill} onPress={() => loadOsmMosquesRetrying(region)}>
-              <Ionicons name="refresh-outline" size={14} color={colors.clay} />
-              <AppText size={12} weight="semibold" color={colors.clay} style={{ marginRight: 4 }}>
-                تعذّر تحميل بعض المساجد — إعادة المحاولة
-              </AppText>
-            </Bounce>
-          ) : null}
-
           {!selected ? (
             <>
               <Bounce style={[styles.addBtn, { bottom: bottomClearance }]} onPress={() => setSelected({ __addFlow: true })}>
@@ -542,17 +526,6 @@ function createStyles(colors) {
       shadowRadius: 8,
       shadowOffset: { width: 0, height: 3 },
       elevation: 4,
-    },
-    osmFailedPill: {
-      position: 'absolute',
-      top: spacing.lg + 46,
-      alignSelf: 'center',
-      flexDirection: 'row-reverse',
-      alignItems: 'center',
-      backgroundColor: colors.claySoft,
-      paddingHorizontal: spacing.md,
-      paddingVertical: 7,
-      borderRadius: radius.pill,
     },
     addBtn: {
       position: 'absolute',
