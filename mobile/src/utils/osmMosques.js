@@ -5,23 +5,6 @@
 // missing from both OSM and our own database, not every mosque that exists.
 const OVERPASS_URL = 'https://overpass-api.de/api/interpreter';
 
-// Keeps a single request in flight at a time and skips a call entirely if
-// the map hasn't moved far enough to matter — Overpass is a shared public
-// service with no key, so it deserves being called sparingly, not on every
-// pixel of pan/zoom.
-let lastBounds = null;
-const MIN_DELTA = 0.01;
-
-function boundsChangedEnough(bounds) {
-  if (!lastBounds) return true;
-  return (
-    Math.abs(bounds.north - lastBounds.north) > MIN_DELTA ||
-    Math.abs(bounds.south - lastBounds.south) > MIN_DELTA ||
-    Math.abs(bounds.east - lastBounds.east) > MIN_DELTA ||
-    Math.abs(bounds.west - lastBounds.west) > MIN_DELTA
-  );
-}
-
 // `region` is react-native-maps' own shape ({latitude, longitude,
 // latitudeDelta, longitudeDelta}) — converted to a plain north/south/east/west
 // box, which is what Overpass QL's bbox filter wants.
@@ -141,12 +124,9 @@ export async function fetchNearestOsmMosque(coords, maxRadiusMeters = SEARCH_TIE
   return null;
 }
 
-export async function fetchOsmMosques(bounds, { force = false } = {}) {
-  if (!force && !boundsChangedEnough(bounds)) return null;
-
+export async function fetchOsmMosques(bounds) {
   const query = `[out:json][timeout:8];node["amenity"="place_of_worship"]["religion"="muslim"](${bounds.south},${bounds.west},${bounds.north},${bounds.east});out body 300;`;
   const data = await overpassQuery(query);
-  if (!data) return null;
-  lastBounds = bounds;
+  if (!data) return null; // failed/timed out — caller decides whether to retry
   return toMosques(data.elements);
 }

@@ -52,6 +52,10 @@ export default function MosqueMapScreen() {
   const [userCoords, setUserCoords] = useState(null);
   const [mosques, setMosques] = useState([]);
   const [osmMosques, setOsmMosques] = useState([]);
+  // Only true once every retry has been exhausted with nothing to show —
+  // surfaced as a small "couldn't load, tap to retry" pill instead of just
+  // silently leaving the map looking empty with no explanation at all.
+  const [osmFailed, setOsmFailed] = useState(false);
   const [selected, setSelected] = useState(null);
   const [error, setError] = useState(null);
   const [locating, setLocating] = useState(true);
@@ -69,31 +73,25 @@ export default function MosqueMapScreen() {
     }
   }, []);
 
-  // Returns whether the request actually succeeded (even with zero
-  // results) — distinct from a failed/timed-out request, which callers
-  // that need to retry (the initial load below) need to tell apart from
-  // "this area genuinely has no mapped mosques".
-  const loadOsmMosques = useCallback(async (mapRegion, options) => {
-    const found = await fetchOsmMosques(regionToBounds(mapRegion), options);
-    if (found) setOsmMosques(found);
-    return found != null;
-  }, []);
-
-  // The map's only other trigger for a fresh OSM fetch is the user
-  // panning/zooming (onRegionChangeComplete below) — if this first load
-  // fails outright (a dropped request, Overpass momentarily overloaded)
-  // and the user never touches the map, it would otherwise sit with no
-  // pins at all indefinitely. Retries with backoff before giving up.
-  const loadOsmMosquesInitial = useCallback(
-    async (mapRegion) => {
-      for (const delay of OSM_RETRY_DELAYS_MS) {
-        if (delay) await new Promise((resolve) => setTimeout(resolve, delay));
-        const ok = await loadOsmMosques(mapRegion, { force: true });
-        if (ok) return;
+  // Every OSM fetch — the initial load AND every settled pan/zoom — gets
+  // the same retry-with-backoff treatment. Earlier this only covered the
+  // initial load, on the theory that panning would naturally trigger
+  // another attempt on its own — but a pan to an area that then also fails
+  // (same flaky connection, not just one unlucky request) was left with no
+  // pins and no second try either, which is exactly the "moved the map,
+  // pins never showed up" report this fixes.
+  const loadOsmMosquesRetrying = useCallback(async (mapRegion) => {
+    setOsmFailed(false);
+    for (const delay of OSM_RETRY_DELAYS_MS) {
+      if (delay) await new Promise((resolve) => setTimeout(resolve, delay));
+      const found = await fetchOsmMosques(regionToBounds(mapRegion));
+      if (found) {
+        setOsmMosques(found);
+        return;
       }
-    },
-    [loadOsmMosques]
-  );
+    }
+    setOsmFailed(true);
+  }, []);
 
   const onRegionChangeComplete = useCallback(
     (mapRegion) => {
@@ -101,9 +99,9 @@ export default function MosqueMapScreen() {
       // Waits for panning/zooming to actually settle rather than querying
       // Overpass (a shared public service, no API key) on every frame of
       // a drag gesture.
-      osmDebounceRef.current = setTimeout(() => loadOsmMosques(mapRegion), 600);
+      osmDebounceRef.current = setTimeout(() => loadOsmMosquesRetrying(mapRegion), 600);
     },
-    [loadOsmMosques]
+    [loadOsmMosquesRetrying]
   );
 
   const detectLocation = useCallback(async () => {
@@ -125,14 +123,14 @@ export default function MosqueMapScreen() {
       // hold the loading spinner up for no reason; the map is fully usable
       // with just our own DB mosques + the user's location, and OSM pins
       // pop in whenever that finishes, retries included.
-      loadOsmMosquesInitial(initialRegion);
+      loadOsmMosquesRetrying(initialRegion);
       await loadMosques(coords);
     } catch (err) {
       setError('تعذر تحديد الموقع الحالي');
     } finally {
       setLocating(false);
     }
-  }, [loadMosques, loadOsmMosquesInitial]);
+  }, [loadMosques, loadOsmMosquesRetrying]);
 
   useEffect(() => {
     detectLocation();
@@ -299,6 +297,19 @@ export default function MosqueMapScreen() {
               أقرب مسجد مني
             </AppText>
           </Bounce>
+
+          {/* Otherwise a failed OSM load just looks like "there are no
+              mosques here" with no way to tell it's actually a dropped
+              connection — this makes the retry an explicit, visible choice
+              instead of a silent dead end. */}
+          {osmFailed ? (
+            <Bounce style={styles.osmFailedPill} onPress={() => loadOsmMosquesRetrying(region)}>
+              <Ionicons name="refresh-outline" size={14} color={colors.clay} />
+              <AppText size={12} weight="semibold" color={colors.clay} style={{ marginRight: 4 }}>
+                تعذّر تحميل بعض المساجد — إعادة المحاولة
+              </AppText>
+            </Bounce>
+          ) : null}
 
           {!selected ? (
             <Bounce style={[styles.addBtn, { bottom: bottomClearance }]} onPress={() => setSelected({ __addFlow: true })}>
@@ -490,6 +501,17 @@ function createStyles(colors) {
       shadowRadius: 8,
       shadowOffset: { width: 0, height: 3 },
       elevation: 4,
+    },
+    osmFailedPill: {
+      position: 'absolute',
+      top: spacing.lg + 46,
+      alignSelf: 'center',
+      flexDirection: 'row-reverse',
+      alignItems: 'center',
+      backgroundColor: colors.claySoft,
+      paddingHorizontal: spacing.md,
+      paddingVertical: 7,
+      borderRadius: radius.pill,
     },
     addBtn: {
       position: 'absolute',
