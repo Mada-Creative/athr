@@ -32,7 +32,16 @@ async function fetchRegion(bbox) {
   try {
     const res = await fetch(OVERPASS_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        // Requests from a plain server-side fetch (no Accept/User-Agent, as
+        // Node's fetch sends by default) get rejected with 406 by Overpass —
+        // both headers below are what a browser or the phone's own fetch
+        // sends automatically, and Overpass's own usage policy asks for a
+        // descriptive User-Agent identifying the app anyway.
+        Accept: '*/*',
+        'User-Agent': 'AtharApp/1.0 (prayer & athkar tracking app; mosque map feature)',
+      },
       body: `data=${encodeURIComponent(query)}`,
       signal: controller.signal,
     });
