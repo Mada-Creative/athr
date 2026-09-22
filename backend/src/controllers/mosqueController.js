@@ -59,10 +59,19 @@ async function create(req, res) {
   // creating a second pin — surfaced back to the client as a suggestion
   // rather than silently rejected, so the app can ask "هل تقصد هذا
   // المسجد؟" and let the user confirm instead of guessing on its own.
-  const nearby = await Mosque.findOne({
-    status: 'approved',
-    location: { $near: { $geometry: point, $maxDistance: DUPLICATE_RADIUS_METERS } },
-  });
+  // Checked against our own community-approved mosques first (they're the
+  // ones this app's own users vetted), then against the local OSM mirror —
+  // without this second check, a mosque already visible on the map as an
+  // OSM pin could still get submitted as a "new" one, since the app only
+  // ever compared against its own collection before this mirror existed.
+  const nearby =
+    (await Mosque.findOne({
+      status: 'approved',
+      location: { $near: { $geometry: point, $maxDistance: DUPLICATE_RADIUS_METERS } },
+    })) ||
+    (await OsmMosque.findOne({
+      location: { $near: { $geometry: point, $maxDistance: DUPLICATE_RADIUS_METERS } },
+    }));
   if (nearby) {
     return res.status(409).json({
       message: 'يوجد مسجد قريب مسجّل مسبقًا',
