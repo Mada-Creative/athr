@@ -114,12 +114,35 @@ npm run import:osm-mosques
 
 This fetches every mapped mosque for ~20 countries (see
 `src/data/osmImportRegions.js` — add more there if the app's reach grows)
-one region at a time, with a short pause between each, and upserts them by
-OSM node id, so it's safe to re-run. It can take a while (several minutes) —
-that's fine, since nothing user-facing waits on it. Run it once after
-setting up a new database, then re-run occasionally (e.g. via Heroku
-Scheduler running `npm run import:osm-mosques` monthly, or manually with
-`heroku run npm run import:osm-mosques` on production) to pick up changes.
+one region at a time, retrying (and, if a region keeps failing, splitting
+it into smaller pieces and retrying those) rather than giving up on the
+first 429/504 from Overpass. It can take a while (tens of minutes) — that's
+fine, since nothing user-facing waits on it. Run it once after setting up a
+new database (`heroku run "npm run import:osm-mosques"` on production).
+
+#### Keeping it refreshed automatically (Heroku Scheduler)
+
+Mosques added/edited on OSM after an import won't show up until the next
+one, so this should re-run periodically — monthly is plenty. Heroku
+Scheduler doesn't offer a monthly frequency natively (only every 10
+minutes, hourly, or daily), so there's a separate script for it:
+
+```
+npm run scheduled:import-osm-mosques
+```
+
+This runs daily (as Scheduler requires) but only actually re-imports on the
+1st of the month — every other day it's a no-op. Set it up once:
+
+1. `heroku addons:create scheduler:standard` (free) if the app doesn't
+   already have it — `heroku addons` lists what's installed.
+2. `heroku addons:open scheduler` opens its dashboard in the browser.
+3. Add a job: Run Command `npm run scheduled:import-osm-mosques`,
+   Frequency **Daily**, any time (e.g. 03:00 UTC — off-peak for both
+   Overpass and this app's own users).
+
+That's it — from then on it re-imports itself once a month with no manual
+step.
 
 ### Guest accounts (no forced login)
 
