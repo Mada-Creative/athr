@@ -3,7 +3,17 @@
 // for the visible map region means most real mosques show up on the map
 // automatically, and the "+" add flow is only ever needed for the ones
 // missing from both OSM and our own database, not every mosque that exists.
-const OVERPASS_URL = 'https://overpass-api.de/api/interpreter';
+//
+// Several independently-run mirrors, not just the main instance — a device
+// that consistently can't reach overpass-api.de (network filtering, that
+// one instance being down/overloaded, a regional routing issue) may still
+// reach a different one just fine, and retrying the *same* unreachable
+// host over and over never recovers from that on its own.
+const OVERPASS_URLS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+  'https://overpass.openstreetmap.ru/api/interpreter',
+];
 
 // `region` is react-native-maps' own shape ({latitude, longitude,
 // latitudeDelta, longitudeDelta}) — converted to a plain north/south/east/west
@@ -34,15 +44,17 @@ export function haversineMeters(a, b) {
 
 // A hung/slow Overpass response (a shared public server, reached over
 // whatever connection the phone has) must never leave "أقرب مسجد مني"
-// spinning forever — this bounds every request to a fixed wall-clock time,
-// after which it's treated the same as a failed request.
-const FETCH_TIMEOUT_MS = 9000;
+// spinning forever — this bounds every single request to a fixed
+// wall-clock time, after which it's treated the same as a failed request.
+// Shorter than the old single-mirror timeout since a failure here now
+// means "try the next mirror", not "give up".
+const FETCH_TIMEOUT_MS = 6000;
 
-async function overpassQuery(query) {
+async function fetchOnce(url, query) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
-    const res = await fetch(OVERPASS_URL, {
+    const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: `data=${encodeURIComponent(query)}`,
@@ -51,12 +63,22 @@ async function overpassQuery(query) {
     if (!res.ok) return null;
     return await res.json();
   } catch (err) {
-    // offline, Overpass unreachable, or it didn't answer within the
-    // timeout above — either way, nothing to show from this call.
+    // offline, this mirror unreachable, or it didn't answer within the
+    // timeout above — either way, nothing to show from this one.
     return null;
   } finally {
     clearTimeout(timeout);
   }
+}
+
+// Tries each mirror in turn, returning the first one that actually
+// answers — only reports failure once none of them do.
+async function overpassQuery(query) {
+  for (const url of OVERPASS_URLS) {
+    const data = await fetchOnce(url, query);
+    if (data) return data;
+  }
+  return null;
 }
 
 function toMosques(elements) {
@@ -112,13 +134,15 @@ async function searchRadius(coords, radiusMeters) {
 }
 
 export async function fetchNearestOsmMosque(coords, maxRadiusMeters = SEARCH_TIERS_METERS[SEARCH_TIERS_METERS.length - 1]) {
+  // Each searchRadius call already tries every Overpass mirror on its own
+  // (see overpassQuery) before reporting failure, so a tier failing here
+  // means none of them answered — worth widening to the next tier still
+  // (a wider `around` query is a different request, might succeed where a
+  // smaller one at the same point timed out), just not worth re-asking
+  // the same failed tier again immediately.
   for (const radius of SEARCH_TIERS_METERS) {
     if (radius > maxRadiusMeters) break;
-    let result = await searchRadius(coords, radius);
-    // A failed request (timeout/offline) gets one retry at the same
-    // radius before giving up on that tier and widening — a single
-    // dropped request shouldn't make a nearby mosque look unreachable.
-    if (result === undefined) result = await searchRadius(coords, radius);
+    const result = await searchRadius(coords, radius);
     if (result) return result;
   }
   return null;
