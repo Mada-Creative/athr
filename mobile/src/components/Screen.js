@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Animated, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import { spacing } from '../theme/spacing';
@@ -15,7 +15,10 @@ export default function Screen({
 }) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
-  const Wrapper = scroll ? ScrollView : View;
+  // Animated.ScrollView behaves exactly like a plain ScrollView for every
+  // screen that doesn't pass onScroll — only the tab screens (FloatingTabBar)
+  // actually drive a native-animated value off it.
+  const Wrapper = scroll ? Animated.ScrollView : View;
   const wrapperProps = scroll
     ? {
         contentContainerStyle: [styles.content, contentStyle],

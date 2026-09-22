@@ -137,7 +137,7 @@ export default function QiblaScreen({ route }) {
   const rotate = rotation.interpolate({ inputRange: [-100000, 100000], outputRange: ['-100000deg', '100000deg'] });
 
   return (
-    <Screen contentStyle={styles.content} onScroll={registerScroll(route.key)} scrollEventThrottle={16}>
+    <Screen contentStyle={styles.content} onScroll={registerScroll(route.name)} scrollEventThrottle={16}>
       <AppText weight="bold" size={22}>
         اتجاه القبلة
       </AppText>

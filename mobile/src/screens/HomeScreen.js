@@ -184,7 +184,7 @@ export default function HomeScreen({ navigation, route }) {
   return (
     <Screen
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.amber} />}
-      onScroll={registerScroll(route.key)}
+      onScroll={registerScroll(route.name)}
       scrollEventThrottle={16}
       contentStyle={{ paddingBottom: spacing.xxl * 3 }}
     >

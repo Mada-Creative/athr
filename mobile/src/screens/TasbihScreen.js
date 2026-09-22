@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { FlatList, StyleSheet, TextInput, View } from 'react-native';
+import { Animated, StyleSheet, TextInput, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
@@ -84,11 +84,11 @@ export default function TasbihScreen({ navigation, route }) {
 
   return (
     <Screen scroll={false} contentStyle={{ flex: 1 }}>
-      <FlatList
+      <Animated.FlatList
         data={counters}
         keyExtractor={(item) => item._id}
         keyboardShouldPersistTaps="handled"
-        onScroll={registerScroll(route.key)}
+        onScroll={registerScroll(route.name)}
         scrollEventThrottle={16}
         contentContainerStyle={{ paddingBottom: spacing.xxl * 3 }}
         ListHeaderComponent={

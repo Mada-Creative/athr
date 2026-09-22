@@ -160,7 +160,7 @@ export default function WeeklyStatsScreen({ route }) {
 
   return (
     <Screen
-      onScroll={registerScroll(route.key)}
+      onScroll={registerScroll(route.name)}
       scrollEventThrottle={16}
       contentStyle={{ paddingBottom: spacing.xxl * 3 }}
     >

@@ -1,27 +1,26 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Animated, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Bounce from './Bounce';
 import { useTheme } from '../context/ThemeContext';
 import { spacing } from '../theme/spacing';
 
-// A floating pill over the content (not docked to the screen edges), same
-// idea as a collapsing header but applied to the bottom bar instead: full
-// size at the top of the active tab's scroll, eased smaller once scrolling
-// starts. Driven by plain state (not Animated.Value/CSS-style transitions)
-// updated straight off each screen's onScroll and smoothed with an
-// exponential moving average — a fixed-duration transition would chase a
-// moving scroll target and read as laggy; tracking the raw (smoothed)
-// value every frame is what makes it feel glued to the gesture.
+// A floating pill over the content (not docked to the screen edges).
+// Shrinks smoothly as the active tab's content scrolls, back to full size
+// at the top — but purely via a native-driven `transform: scale` (plus a
+// matching translateY so it shrinks toward its own bottom edge instead of
+// its center), not by animating width/height/left/right through plain JS
+// state. Those layout properties can only ever update on the JS thread, so
+// however smoothly they were computed, applying them was still bound by
+// whatever else the JS thread was doing at that instant — which is what
+// read as laggy/artificial while actively scrolling. A transform animates
+// on the UI thread once handed off (useNativeDriver: true, wired in
+// MainTabs' registerScroll), so it stays glued to the scroll gesture.
+const BAR_HEIGHT = 66;
+const BAR_SIDE = 22;
+const BAR_BOTTOM = 12;
+const MIN_SCALE = 0.78;
 const COLLAPSE_DISTANCE = 90;
-const BAR_MAX_HEIGHT = 66;
-const BAR_MIN_HEIGHT = 50;
-const BAR_MAX_SIDE = 22;
-const BAR_MIN_SIDE = 52;
-const BAR_MAX_BOTTOM = 12;
-const BAR_MIN_BOTTOM = 8;
-const BTN_MAX_SIZE = 50;
-const BTN_MIN_SIZE = 38;
 
 const TAB_META = {
   Home: { icon: 'home-outline', iconActive: 'home' },
@@ -31,7 +30,7 @@ const TAB_META = {
   MosqueMap: { icon: 'location-outline', iconActive: 'location' },
 };
 
-export default function FloatingTabBar({ state, descriptors, navigation, insets, scrollYByRoute }) {
+export default function FloatingTabBar({ state, descriptors, navigation, insets, scrollAnimByName }) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
 
@@ -47,26 +46,35 @@ export default function FloatingTabBar({ state, descriptors, navigation, insets,
   };
 
   const activeRoute = state.routes[state.index];
-  const scrollY = scrollYByRoute[activeRoute.key] || 0;
-  const t = Math.min(Math.max(scrollY / COLLAPSE_DISTANCE, 0), 1);
+  const scrollY = scrollAnimByName[activeRoute.name];
 
-  const barHeight = BAR_MAX_HEIGHT - t * (BAR_MAX_HEIGHT - BAR_MIN_HEIGHT);
-  const barSide = BAR_MAX_SIDE + t * (BAR_MIN_SIDE - BAR_MAX_SIDE);
-  const barBottom = (insets?.bottom || 0) + BAR_MAX_BOTTOM - t * (BAR_MAX_BOTTOM - BAR_MIN_BOTTOM);
-  const btnSize = BTN_MAX_SIZE - t * (BTN_MAX_SIZE - BTN_MIN_SIZE);
-  const collapseScale = 1 - t * 0.22;
+  const scale = scrollY.interpolate({
+    inputRange: [0, COLLAPSE_DISTANCE],
+    outputRange: [1, MIN_SCALE],
+    extrapolate: 'clamp',
+  });
+  // Compensates the scale's own center-anchored shrink so the bar's
+  // bottom edge stays visually put and only its top edge comes down —
+  // without this the whole pill would shrink symmetrically toward its
+  // middle and appear to lift away from the bottom of the screen.
+  const translateY = scrollY.interpolate({
+    inputRange: [0, COLLAPSE_DISTANCE],
+    outputRange: [0, ((1 - MIN_SCALE) * BAR_HEIGHT) / 2],
+    extrapolate: 'clamp',
+  });
 
   return (
-    <View
+    <Animated.View
       pointerEvents="box-none"
       style={[
         styles.bar,
         {
-          left: barSide,
-          right: barSide,
-          bottom: barBottom,
-          height: barHeight,
-          borderRadius: barHeight / 2,
+          left: BAR_SIDE,
+          right: BAR_SIDE,
+          bottom: (insets?.bottom || 0) + BAR_BOTTOM,
+          height: BAR_HEIGHT,
+          borderRadius: BAR_HEIGHT / 2,
+          transform: [{ translateY }, { scale }],
         },
       ]}
     >
@@ -91,25 +99,18 @@ export default function FloatingTabBar({ state, descriptors, navigation, insets,
             accessibilityState={isFocused ? { selected: true } : {}}
             accessibilityLabel={options.title || route.name}
             onPress={onPress}
-            style={[
-              styles.tabBtn,
-              {
-                width: btnSize,
-                height: btnSize,
-                backgroundColor: isFocused ? `${color}22` : 'transparent',
-              },
-            ]}
+            style={[styles.tabBtn, { backgroundColor: isFocused ? `${color}22` : 'transparent' }]}
           >
             <Ionicons
               name={isFocused ? meta.iconActive : meta.icon}
               size={22}
               color={isFocused ? color : colors.inkFaint}
-              style={{ transform: [{ scale: collapseScale * (isFocused ? 1.08 : 1) }] }}
+              style={isFocused ? { transform: [{ scale: 1.08 }] } : null}
             />
           </Bounce>
         );
       })}
-    </View>
+    </Animated.View>
   );
 }
 
@@ -129,6 +130,8 @@ function createStyles(colors) {
       elevation: 8,
     },
     tabBtn: {
+      width: 50,
+      height: 50,
       borderRadius: 999,
       alignItems: 'center',
       justifyContent: 'center',
