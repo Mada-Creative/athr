@@ -101,13 +101,16 @@ function closestOf(coords, candidates) {
   return { mosque: nearest, distance: nearestDistance };
 }
 
-// A first, small-radius search covers the common case (a mosque a few
-// streets away) with a light, fast query; the full radius only runs when
-// that comes up empty. Querying the full radius (tens of km) up front in a
-// dense city — Damascus alone has thousands of mapped mosques — is what
-// was making this feel like a freeze: a huge payload over a slow
-// connection, for a search that almost always resolves within 3km anyway.
-const NEARBY_FIRST_RADIUS_METERS = 3000;
+// Starts small (covers the common case — a mosque a few streets away —
+// with a light, fast query) and keeps widening only as far as it has to.
+// Querying a huge radius up front in a dense city — Damascus alone has
+// thousands of mapped mosques — is what was making this feel like a
+// freeze: a huge payload over a slow connection, for a search that almost
+// always resolves within 3km anyway. The last tier is a genuinely
+// "anywhere reachable by car in a day" ceiling, not an arbitrary stop —
+// someone in a sparse rural area should still get an answer, just a
+// farther one, rather than a premature "nothing found".
+const SEARCH_TIERS_METERS = [3000, 10000, 30000, 75000, 150000, 300000];
 
 // Overpass's `around` filter does the radius search directly around a
 // point (rather than a bbox), which is the shape "أقرب مسجد مني" actually
@@ -125,16 +128,17 @@ async function searchRadius(coords, radiusMeters) {
   return closestOf(coords, candidates);
 }
 
-export async function fetchNearestOsmMosque(coords, radiusMeters) {
-  const firstRadius = Math.min(radiusMeters, NEARBY_FIRST_RADIUS_METERS);
-  const nearby = await searchRadius(coords, firstRadius);
-  if (nearby) return nearby;
-  if (nearby === null && firstRadius >= radiusMeters) return null;
-  // Either the small search came up empty and there's more radius to try,
-  // or it failed outright — the full radius is also this function's one
-  // retry for a failed small search, not just its "search wider" step.
-  const wide = await searchRadius(coords, radiusMeters);
-  return wide || null;
+export async function fetchNearestOsmMosque(coords, maxRadiusMeters = SEARCH_TIERS_METERS[SEARCH_TIERS_METERS.length - 1]) {
+  for (const radius of SEARCH_TIERS_METERS) {
+    if (radius > maxRadiusMeters) break;
+    let result = await searchRadius(coords, radius);
+    // A failed request (timeout/offline) gets one retry at the same
+    // radius before giving up on that tier and widening — a single
+    // dropped request shouldn't make a nearby mosque look unreachable.
+    if (result === undefined) result = await searchRadius(coords, radius);
+    if (result) return result;
+  }
+  return null;
 }
 
 export async function fetchOsmMosques(bounds, { force = false } = {}) {

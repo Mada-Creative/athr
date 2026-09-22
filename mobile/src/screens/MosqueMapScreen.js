@@ -22,10 +22,19 @@ import { fetchOsmMosques, fetchNearestOsmMosque, haversineMeters, regionToBounds
 // isn't worth the extra setup.
 const DEFAULT_DELTA = 0.05;
 const NEAREST_DELTA = 0.01;
-// Mirrors the backend's own NEAREST_MAX_METERS (mosqueController.js) — how
-// far "أقرب مسجد مني" is willing to look on the OSM side too, so neither
-// source gets a wider search radius than the other.
-const NEAREST_MAX_METERS = 30000;
+// How many times (and how long to wait between) the *initial* OSM pin load
+// retries after a failed/timed-out Overpass request — without this, a
+// single dropped request on load left the map with no pins at all until
+// the user happened to pan or zoom (the only other thing that triggers a
+// fetch), which could mean a genuinely empty-looking map for good.
+const OSM_RETRY_DELAYS_MS = [0, 2500, 6000];
+
+function formatDistance(meters) {
+  if (meters == null) return null;
+  if (meters < 1000) return `${Math.round(meters)} م`;
+  const km = meters / 1000;
+  return `${km < 10 ? km.toFixed(1) : Math.round(km)} كم`;
+}
 
 export default function MosqueMapScreen() {
   const { colors } = useTheme();
@@ -60,10 +69,31 @@ export default function MosqueMapScreen() {
     }
   }, []);
 
+  // Returns whether the request actually succeeded (even with zero
+  // results) — distinct from a failed/timed-out request, which callers
+  // that need to retry (the initial load below) need to tell apart from
+  // "this area genuinely has no mapped mosques".
   const loadOsmMosques = useCallback(async (mapRegion, options) => {
     const found = await fetchOsmMosques(regionToBounds(mapRegion), options);
     if (found) setOsmMosques(found);
+    return found != null;
   }, []);
+
+  // The map's only other trigger for a fresh OSM fetch is the user
+  // panning/zooming (onRegionChangeComplete below) — if this first load
+  // fails outright (a dropped request, Overpass momentarily overloaded)
+  // and the user never touches the map, it would otherwise sit with no
+  // pins at all indefinitely. Retries with backoff before giving up.
+  const loadOsmMosquesInitial = useCallback(
+    async (mapRegion) => {
+      for (const delay of OSM_RETRY_DELAYS_MS) {
+        if (delay) await new Promise((resolve) => setTimeout(resolve, delay));
+        const ok = await loadOsmMosques(mapRegion, { force: true });
+        if (ok) return;
+      }
+    },
+    [loadOsmMosques]
+  );
 
   const onRegionChangeComplete = useCallback(
     (mapRegion) => {
@@ -91,13 +121,18 @@ export default function MosqueMapScreen() {
       const initialRegion = { ...coords, latitudeDelta: DEFAULT_DELTA, longitudeDelta: DEFAULT_DELTA };
       setUserCoords(coords);
       setRegion(initialRegion);
-      await Promise.all([loadMosques(coords), loadOsmMosques(initialRegion, { force: true })]);
+      // Not awaited — its retries (up to ~8.5s of backoff) would otherwise
+      // hold the loading spinner up for no reason; the map is fully usable
+      // with just our own DB mosques + the user's location, and OSM pins
+      // pop in whenever that finishes, retries included.
+      loadOsmMosquesInitial(initialRegion);
+      await loadMosques(coords);
     } catch (err) {
       setError('تعذر تحديد الموقع الحالي');
     } finally {
       setLocating(false);
     }
-  }, [loadMosques, loadOsmMosques]);
+  }, [loadMosques, loadOsmMosquesInitial]);
 
   useEffect(() => {
     detectLocation();
@@ -121,7 +156,11 @@ export default function MosqueMapScreen() {
       // source happened to answer first.
       const [dbRes, osmResult] = await Promise.all([
         api.get(`/mosques/nearest?latitude=${userCoords.latitude}&longitude=${userCoords.longitude}`).catch(() => ({ mosque: null })),
-        fetchNearestOsmMosque(userCoords, NEAREST_MAX_METERS),
+        // No radius cap — keeps widening the search (see SEARCH_TIERS_METERS
+        // in osmMosques.js) until it finds something or genuinely runs out
+        // of ground to cover, rather than stopping at a fixed distance and
+        // reporting "nothing nearby" when a mosque just happens to be far.
+        fetchNearestOsmMosque(userCoords),
       ]);
 
       const candidates = [];
@@ -129,7 +168,7 @@ export default function MosqueMapScreen() {
       if (osmResult?.mosque) candidates.push({ ...osmResult.mosque, distance: osmResult.distance });
 
       if (!candidates.length) {
-        Alert.alert('لا يوجد مسجد قريب', 'ما في مساجد مسجّلة ضمن مسافة معقولة من موقعك بعد — كن أول من يضيف واحدًا!');
+        Alert.alert('لا يوجد مسجد قريب', 'ما لقينا أي مسجد ضمن 300 كم من موقعك — كن أول من يضيف واحدًا!');
         return;
       }
       candidates.sort((a, b) => a.distance - b.distance);
@@ -293,9 +332,14 @@ export default function MosqueMapScreen() {
                   {selected.name}
                   {selected.city ? ` - ${selected.city}` : ''}
                 </AppText>
-                {selected.source === 'osm' ? (
+                {selected.distance != null || selected.source === 'osm' ? (
                   <AppText size={11} color={colors.inkFaint} style={{ marginTop: 2 }}>
-                    من خرائط OpenStreetMap
+                    {[
+                      selected.distance != null ? `يبعد عنك ${formatDistance(selected.distance)}` : null,
+                      selected.source === 'osm' ? 'من خرائط OpenStreetMap' : null,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
                   </AppText>
                 ) : null}
               </View>
