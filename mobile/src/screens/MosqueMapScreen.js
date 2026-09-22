@@ -172,15 +172,32 @@ export default function MosqueMapScreen() {
       candidates.sort((a, b) => a.distance - b.distance);
       const nearestMosque = candidates[0];
       setSelected(nearestMosque);
-      mapRef.current?.animateToRegion(
-        { latitude: nearestMosque.latitude, longitude: nearestMosque.longitude, latitudeDelta: NEAREST_DELTA, longitudeDelta: NEAREST_DELTA },
-        400
+      // Fits both the user's own position and the mosque in view together
+      // (not just a tight zoom on the mosque alone) — regardless of where
+      // the map was scrolled to when this was pressed, the result always
+      // grounds "where I am" against "where it is", not just the
+      // destination in isolation.
+      mapRef.current?.fitToCoordinates(
+        [userCoords, { latitude: nearestMosque.latitude, longitude: nearestMosque.longitude }],
+        { edgePadding: { top: 120, right: 60, bottom: bottomClearance + 80, left: 60 }, animated: true }
       );
     } catch (err) {
       Alert.alert('تعذر البحث', 'تحقّق من اتصالك بالإنترنت وحاول مرة أخرى');
     } finally {
       setSearchingNearest(false);
     }
+  };
+
+  // Jumps back to the user's own real GPS position at the default zoom —
+  // for whenever they've panned/zoomed off browsing the map and just want
+  // to find themselves again without hunting for the blue dot.
+  const onRecenter = () => {
+    if (!userCoords) return;
+    setSelected(null);
+    mapRef.current?.animateToRegion(
+      { ...userCoords, latitudeDelta: DEFAULT_DELTA, longitudeDelta: DEFAULT_DELTA },
+      400
+    );
   };
 
   const onReport = (mosque) => {
@@ -312,9 +329,14 @@ export default function MosqueMapScreen() {
           ) : null}
 
           {!selected ? (
-            <Bounce style={[styles.addBtn, { bottom: bottomClearance }]} onPress={() => setSelected({ __addFlow: true })}>
-              <Ionicons name="add" size={26} color={colors.white} />
-            </Bounce>
+            <>
+              <Bounce style={[styles.addBtn, { bottom: bottomClearance }]} onPress={() => setSelected({ __addFlow: true })}>
+                <Ionicons name="add" size={26} color={colors.white} />
+              </Bounce>
+              <Bounce style={[styles.recenterBtn, { bottom: bottomClearance }]} onPress={onRecenter}>
+                <Ionicons name="navigate-outline" size={20} color={colors.ink} />
+              </Bounce>
+            </>
           ) : null}
 
           {selected?.__addFlow ? (
@@ -528,6 +550,24 @@ function createStyles(colors) {
       shadowRadius: 10,
       shadowOffset: { width: 0, height: 4 },
       elevation: 5,
+    },
+    recenterBtn: {
+      position: 'absolute',
+      bottom: spacing.xl,
+      right: spacing.lg,
+      width: 48,
+      height: 48,
+      borderRadius: radius.pill,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: '#000',
+      shadowOpacity: 0.15,
+      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 3 },
+      elevation: 4,
     },
     detailCard: {
       position: 'absolute',
