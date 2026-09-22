@@ -44,11 +44,16 @@ export function haversineMeters(a, b) {
 
 // A hung/slow Overpass response (a shared public server, reached over
 // whatever connection the phone has) must never leave "أقرب مسجد مني"
-// spinning forever — this bounds every single request to a fixed
-// wall-clock time, after which it's treated the same as a failed request.
-// Shorter than the old single-mirror timeout since a failure here now
-// means "try the next mirror", not "give up".
-const FETCH_TIMEOUT_MS = 6000;
+// spinning forever — this bounds every request to a fixed wall-clock time,
+// after which it's treated the same as a failed request. Generous on
+// purpose: Overpass legitimately takes several seconds on a normal query,
+// and the earlier version of this — trying each mirror one after another,
+// each with its own short timeout — could end up *slower* than a single
+// patient request: abandoning the primary instance at 6s and starting a
+// fresh request to a second mirror often cost more time than just waiting
+// the extra couple of seconds would have, in the common case where the
+// primary was going to answer anyway.
+const FETCH_TIMEOUT_MS = 12000;
 
 async function fetchOnce(url, query) {
   const controller = new AbortController();
@@ -71,14 +76,30 @@ async function fetchOnce(url, query) {
   }
 }
 
-// Tries each mirror in turn, returning the first one that actually
-// answers — only reports failure once none of them do.
+// All mirrors fired at once, not one after another — whichever answers
+// first wins, so the total wait is bounded by the *fastest* mirror, not
+// however many fail before a working one is tried. Only reports failure
+// once every single one of them has failed.
+function raceToFirstSuccess(promises) {
+  return new Promise((resolve) => {
+    let remaining = promises.length;
+    let settled = false;
+    promises.forEach((p) => {
+      p.then((result) => {
+        if (result && !settled) {
+          settled = true;
+          resolve(result);
+          return;
+        }
+        remaining -= 1;
+        if (remaining === 0 && !settled) resolve(null);
+      });
+    });
+  });
+}
+
 async function overpassQuery(query) {
-  for (const url of OVERPASS_URLS) {
-    const data = await fetchOnce(url, query);
-    if (data) return data;
-  }
-  return null;
+  return raceToFirstSuccess(OVERPASS_URLS.map((url) => fetchOnce(url, query)));
 }
 
 function toMosques(elements) {
