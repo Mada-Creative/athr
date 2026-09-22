@@ -22,11 +22,11 @@ import { fetchOsmMosques, fetchNearestOsmMosque, haversineMeters, regionToBounds
 // isn't worth the extra setup.
 const DEFAULT_DELTA = 0.05;
 const NEAREST_DELTA = 0.01;
-// How many times (and how long to wait between) the *initial* OSM pin load
-// retries after a failed/timed-out Overpass request — without this, a
-// single dropped request on load left the map with no pins at all until
-// the user happened to pan or zoom (the only other thing that triggers a
-// fetch), which could mean a genuinely empty-looking map for good.
+// How many times (and how long to wait between) an OSM pin load retries
+// after a failed/timed-out request to our own backend — without this, a
+// single dropped request left the map with no pins at all until the user
+// happened to pan or zoom again, which could mean a genuinely empty-looking
+// map for good.
 const OSM_RETRY_DELAYS_MS = [0, 2500, 6000];
 
 function formatDistance(meters) {
@@ -165,14 +165,13 @@ export default function MosqueMapScreen() {
       // source happened to answer first.
       const [dbRes, osmResult] = await Promise.all([
         api.get(`/mosques/nearest?latitude=${userCoords.latitude}&longitude=${userCoords.longitude}`).catch(() => ({ mosque: null })),
-        // Skip the live radius search entirely when the pins already on
-        // screen already have something close — no reason to risk another
-        // Overpass round-trip for a result that can't realistically beat
-        // what's already sitting in front of the user. No radius cap
-        // otherwise — keeps widening (see SEARCH_TIERS_METERS in
-        // osmMosques.js) until it finds something or genuinely runs out of
-        // ground to cover, rather than stopping at a fixed distance and
-        // reporting "nothing nearby" when a mosque just happens to be far.
+        // Skip the request entirely when the pins already on screen already
+        // have something close — no reason to ask again for a result that
+        // can't realistically beat what's already sitting in front of the
+        // user. Otherwise a single indexed query against our own OSM mirror
+        // (see osmMosques.js), generous enough to find a mosque even a
+        // couple hundred km away rather than stopping at a fixed nearby
+        // radius and reporting "nothing nearby" when one just happens to be far.
         localNearest && localNearest.distance < 3000 ? Promise.resolve(null) : fetchNearestOsmMosque(userCoords),
       ]);
 

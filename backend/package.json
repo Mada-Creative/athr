@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "seed": "node src/seed/runSeed.js"
+    "seed": "node src/seed/runSeed.js",
+    "import:osm-mosques": "node src/scripts/importOsmMosques.js"
   },
   "dependencies": {
     "apple-signin-auth": "^1.7.6",

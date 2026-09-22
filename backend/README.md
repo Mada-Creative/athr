@@ -96,6 +96,31 @@ link to an existing account with the same email) — see `mobile/README.md`
 needs, and set `GOOGLE_CLIENT_IDS` / `APPLE_CLIENT_ID` in `.env` before
 testing them.
 
+### Mosque map — local OpenStreetMap mirror
+
+The map's OSM pins (`GET /api/mosques/osm`, `GET /api/mosques/osm/nearest`)
+are served from our own `OsmMosque` collection, not by querying OpenStreetMap's
+Overpass API live from the app — that used to mean every user's phone hit the
+same free, shared, keyless Overpass server on every pan/zoom, which was slow
+and easy to accidentally rate-limit.
+
+That collection needs to be populated (and refreshed periodically, since it's
+just a mirror — mosques added/edited on OSM after an import won't show up
+until the next one):
+
+```
+npm run import:osm-mosques
+```
+
+This fetches every mapped mosque for ~20 countries (see
+`src/data/osmImportRegions.js` — add more there if the app's reach grows)
+one region at a time, with a short pause between each, and upserts them by
+OSM node id, so it's safe to re-run. It can take a while (several minutes) —
+that's fine, since nothing user-facing waits on it. Run it once after
+setting up a new database, then re-run occasionally (e.g. via Heroku
+Scheduler running `npm run import:osm-mosques` monthly, or manually with
+`heroku run npm run import:osm-mosques` on production) to pick up changes.
+
 ### Guest accounts (no forced login)
 
 `POST /api/auth/device` is the app's real entry point — there's no logged-out
