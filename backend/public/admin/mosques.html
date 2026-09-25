@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>مراجعة المساجد — أثر</title>
+<style>
+  :root {
+    --bg: #FAF5EC;
+    --surface: #FFFFFF;
+    --ink: #3A2A1E;
+    --ink-soft: #6B5B4C;
+    --ink-faint: #A89885;
+    --amber: #C4863B;
+    --amber-deep: #9C6423;
+    --amber-soft: #EFD9B3;
+    --sage: #5F8467;
+    --sage-soft: #DDEAE0;
+    --clay: #B5573D;
+    --clay-soft: #F4DCD3;
+    --border: #E9DCC3;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+    padding: 24px 16px 80px;
+  }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .sub { color: var(--ink-soft); font-size: 13px; margin: 0 0 24px; }
+  .wrap { max-width: 720px; margin: 0 auto; }
+
+  #loginBox {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    max-width: 360px;
+    margin: 80px auto;
+    text-align: center;
+  }
+  #loginBox input {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    margin: 12px 0;
+    font-size: 14px;
+    text-align: right;
+  }
+  button {
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+    border-radius: 999px;
+    padding: 8px 18px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .btn-primary { background: var(--ink); color: #fff; }
+  .btn-approve { background: var(--sage-soft); color: var(--sage); }
+  .btn-reject { background: var(--clay-soft); color: var(--clay); }
+  .btn-ghost { background: var(--amber-soft); color: var(--amber-deep); }
+  #err { color: var(--clay); font-size: 13px; min-height: 18px; }
+
+  .tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+  .tab {
+    flex: 1;
+    text-align: center;
+    padding: 10px;
+    border-radius: 999px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--ink-soft);
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .tab.active { background: var(--amber-soft); color: var(--amber-deep); border-color: var(--amber); }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 14px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.05);
+  }
+  .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .card-title { font-weight: 700; font-size: 16px; }
+  .card-city { color: var(--ink-soft); font-size: 13px; margin-top: 2px; }
+  .meta { color: var(--ink-faint); font-size: 12px; margin-top: 8px; }
+  .actions { display: flex; gap: 8px; margin-top: 14px; }
+  iframe.map {
+    width: 100%;
+    height: 180px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-top: 12px;
+  }
+  .reports { margin-top: 10px; border-top: 1px dashed var(--border); padding-top: 10px; }
+  .report-item { font-size: 12.5px; color: var(--ink-soft); margin-bottom: 4px; }
+  .empty { text-align: center; color: var(--ink-faint); padding: 40px 0; font-size: 13px; }
+</style>
+</head>
+<body>
+  <div id="loginBox">
+    <h1>مراجعة المساجد</h1>
+    <p class="sub">أدخل رمز الإدارة (ADMIN_TOKEN) للمتابعة</p>
+    <input id="tokenInput" type="password" placeholder="رمز الإدارة" />
+    <button class="btn-primary" onclick="login()">دخول</button>
+    <div id="err"></div>
+  </div>
+
+  <div class="wrap" id="mainBox" style="display:none">
+    <h1>مراجعة المساجد</h1>
+    <p class="sub">مساجد اقترحها المستخدمون — راجعها خلال 48 ساعة</p>
+    <div class="tabs">
+      <div class="tab active" id="tabPending" onclick="switchTab('pending')">قيد المراجعة</div>
+      <div class="tab" id="tabReported" onclick="switchTab('reported')">تم الإبلاغ عنها</div>
+      <div class="tab" id="tabApproved" onclick="switchTab('approved')">المعتمدة</div>
+    </div>
+    <div id="list"></div>
+  </div>
+
+<script>
+  const TOKEN_KEY = 'athr_admin_token';
+  let currentTab = 'pending';
+
+  function getToken() { return localStorage.getItem(TOKEN_KEY); }
+
+  async function api(path, options = {}) {
+    const res = await fetch('/api/admin/mosques' + path, {
+      ...options,
+      headers: { 'Content-Type': 'application/json', 'x-admin-token': getToken(), ...(options.headers || {}) },
+    });
+    if (res.status === 401) {
+      localStorage.removeItem(TOKEN_KEY);
+      showLogin('رمز الإدارة غير صحيح أو منتهي');
+      throw new Error('unauthorized');
+    }
+    return res.json();
+  }
+
+  function showLogin(err) {
+    document.getElementById('loginBox').style.display = 'block';
+    document.getElementById('mainBox').style.display = 'none';
+    document.getElementById('err').textContent = err || '';
+  }
+
+  function showMain() {
+    document.getElementById('loginBox').style.display = 'none';
+    document.getElementById('mainBox').style.display = 'block';
+  }
+
+  async function login() {
+    const value = document.getElementById('tokenInput').value.trim();
+    if (!value) return;
+    localStorage.setItem(TOKEN_KEY, value);
+    try {
+      await load();
+      showMain();
+    } catch (e) {
+      // showLogin already called by api() on 401
+    }
+  }
+
+  function switchTab(tab) {
+    currentTab = tab;
+    document.getElementById('tabPending').classList.toggle('active', tab === 'pending');
+    document.getElementById('tabReported').classList.toggle('active', tab === 'reported');
+    document.getElementById('tabApproved').classList.toggle('active', tab === 'approved');
+    load();
+  }
+
+  function mapSrc(lat, lng) {
+    const d = 0.004;
+    const bbox = [lng - d, lat - d, lng + d, lat + d].join('%2C');
+    return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&marker=${lat}%2C${lng}&layer=mapnik`;
+  }
+
+  function pendingCard(m) {
+    return `
+      <div class="card" id="card-${m.id}">
+        <div class="card-head">
+          <div>
+            <div class="card-title">${escapeHtml(m.name)}</div>
+            <div class="card-city">${escapeHtml(m.city || 'بدون مدينة محددة')}</div>
+          </div>
+        </div>
+        <iframe class="map" src="${mapSrc(m.latitude, m.longitude)}"></iframe>
+        <div class="meta">أضافه: ${escapeHtml(m.addedBy?.name || 'غير معروف')} (${escapeHtml(m.addedBy?.email || '')})</div>
+        <div class="meta">${new Date(m.createdAt).toLocaleString('ar')}</div>
+        <div class="actions">
+          <button class="btn-approve" onclick="act('${m.id}','approve')">قبول</button>
+          <button class="btn-reject" onclick="act('${m.id}','reject')">رفض</button>
+        </div>
+      </div>`;
+  }
+
+  function reportedCard(m) {
+    const reportsHtml = (m.reports || [])
+      .map((r) => `<div class="report-item">• ${escapeHtml(r.user?.name || 'مستخدم')}: ${escapeHtml(r.reason || 'بدون سبب محدد')}</div>`)
+      .join('');
+    return `
+      <div class="card" id="card-${m.id}">
+        <div class="card-head">
+          <div>
+            <div class="card-title">${escapeHtml(m.name)}</div>
+            <div class="card-city">${escapeHtml(m.city || 'بدون مدينة محددة')}</div>
+          </div>
+        </div>
+        <iframe class="map" src="${mapSrc(m.latitude, m.longitude)}"></iframe>
+        <div class="reports">${reportsHtml}</div>
+        <div class="actions">
+          <button class="btn-ghost" onclick="act('${m.id}','dismiss-reports')">تجاهل البلاغ</button>
+          <button class="btn-reject" onclick="act('${m.id}','remove')">حذف المسجد</button>
+        </div>
+      </div>`;
+  }
+
+  function approvedCard(m) {
+    return `
+      <div class="card" id="card-${m.id}">
+        <div class="card-head">
+          <div>
+            <div class="card-title">${escapeHtml(m.name)}</div>
+            <div class="card-city">${escapeHtml(m.city || 'بدون مدينة محددة')}</div>
+          </div>
+        </div>
+        <iframe class="map" src="${mapSrc(m.latitude, m.longitude)}"></iframe>
+        <div class="meta">أضافه: ${escapeHtml(m.addedBy?.name || 'غير معروف')} (${escapeHtml(m.addedBy?.email || '')})</div>
+        ${m.reports?.length ? `<div class="meta">⚠ ${m.reports.length} بلاغ عليه</div>` : ''}
+        <div class="actions">
+          <button class="btn-reject" onclick="act('${m.id}','remove')">حذف المسجد</button>
+        </div>
+      </div>`;
+  }
+
+  async function act(id, action) {
+    await api(`/${id}/${action}`, { method: 'POST' });
+    const el = document.getElementById(`card-${id}`);
+    if (el) el.remove();
+  }
+
+  function escapeHtml(str) {
+    return String(str || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  const TAB_CONFIG = {
+    pending: { path: '/pending', render: pendingCard, empty: 'لا يوجد مساجد بانتظار المراجعة' },
+    reported: { path: '/reported', render: reportedCard, empty: 'لا يوجد بلاغات حاليًا' },
+    approved: { path: '/approved', render: approvedCard, empty: 'لا يوجد مساجد معتمدة بعد' },
+  };
+
+  async function load() {
+    const config = TAB_CONFIG[currentTab];
+    const data = await api(config.path);
+    const list = document.getElementById('list');
+    if (!data.mosques.length) {
+      list.innerHTML = `<div class="empty">${config.empty}</div>`;
+      return;
+    }
+    list.innerHTML = data.mosques.map(config.render).join('');
+  }
+
+  (async function init() {
+    if (getToken()) {
+      try {
+        await load();
+        showMain();
+      } catch (e) {
+        // showLogin already triggered
+      }
+    } else {
+      showLogin();
+    }
+  })();
+</script>
+</body>
+</html>
