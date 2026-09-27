@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
-import { Platform } from 'react-native';
+import { Alert, Linking, Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import { pickAdhanHadith, pickJamaahHadith } from '../constants/prayerHadiths';
 import navigationRef from '../navigation/navigationRef';
@@ -173,6 +174,32 @@ async function cancelForgotReminder(prayerKey) {
 }
 
 export { cancelForgotReminder };
+
+const EXACT_ALARM_PROMPT_KEY = 'athr_exact_alarm_prompted';
+
+// Android 12+ silently downgrades a scheduled notification's alarm to an
+// inexact one unless the app holds SCHEDULE_EXACT_ALARM — the OS then
+// defers delivery until something else wakes the device (e.g. the app
+// being opened), which reproduces exactly as "notifications don't arrive
+// unless I open the app". This permission can only be granted through the
+// system's own settings screen, not a normal in-app permission dialog, so
+// this sends the user there once per install rather than nagging on every
+// launch.
+export async function ensureAndroidExactAlarmPermission() {
+  if (Platform.OS !== 'android' || Platform.Version < 31) return;
+  const alreadyPrompted = await AsyncStorage.getItem(EXACT_ALARM_PROMPT_KEY);
+  if (alreadyPrompted) return;
+  await AsyncStorage.setItem(EXACT_ALARM_PROMPT_KEY, '1');
+
+  Alert.alert(
+    'لتصلك تنبيهات الصلاة بدقة',
+    'فعّل صلاحية "التنبيهات والمنبهات" من إعدادات النظام عشان إشعارات الصلاة توصلك بوقتها بالضبط، حتى لو التطبيق مسكّر.',
+    [
+      { text: 'لاحقًا', style: 'cancel' },
+      { text: 'فتح الإعدادات', onPress: () => Linking.sendIntent('android.settings.REQUEST_SCHEDULE_EXACT_ALARM') },
+    ]
+  );
+}
 
 export async function ensureAndroidNotificationChannel() {
   if (Platform.OS !== 'android') return;

@@ -22,7 +22,7 @@ import { AmiriQuran_400Regular } from '@expo-google-fonts/amiri-quran';
 import { AuthProvider } from './src/context/AuthContext';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import RootNavigator from './src/navigation/RootNavigator';
-import { ensureAndroidNotificationChannel } from './src/hooks/usePrayerNotifications';
+import { ensureAndroidNotificationChannel, ensureAndroidExactAlarmPermission } from './src/hooks/usePrayerNotifications';
 import useAthrCardNotifications from './src/hooks/useAthrCardNotifications';
 import useFastingNotifications from './src/hooks/useFastingNotifications';
 import foregroundState from './src/utils/foregroundState';
@@ -132,6 +132,7 @@ export default function App() {
 
   useEffect(() => {
     ensureAndroidNotificationChannel().catch(() => {});
+    ensureAndroidExactAlarmPermission().catch(() => {});
   }, []);
 
   return (
