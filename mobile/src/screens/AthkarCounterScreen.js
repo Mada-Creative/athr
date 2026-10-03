@@ -44,15 +44,21 @@ function dhikrFontSize(length) {
 export default function AthkarCounterScreen({ route, navigation }) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
-  const { category } = route.params;
+  const { category, favoriteItems } = route.params;
   const meta = ATHKAR_META[category];
-  const definition = athkarContent[category];
-  const items = definition.items;
+  // Normal flow: today's real items for this category, tied to today's
+  // actual progress (fetched below) and synced to the backend as you count.
+  // Favorites flow (favoriteItems passed in): the exact same card/swipe/ring
+  // experience, over just the starred subset of this category — but
+  // ephemeral, since "favorited dhikr read back later" isn't today's real
+  // progress and shouldn't be double-counted into it.
+  const isFavoritesMode = Boolean(favoriteItems);
+  const items = favoriteItems || athkarContent[category].items;
   const date = todayISO();
 
   useEffect(() => {
-    navigation.setOptions({ title: meta.title });
-  }, [navigation, meta.title]);
+    navigation.setOptions({ title: isFavoritesMode ? `مفضلة ${meta.title}` : meta.title });
+  }, [navigation, meta.title, isFavoritesMode]);
 
   const [counts, setCounts] = useState(() => items.map(() => 0));
   // Reading order — a list of item indices, computed once the real
@@ -85,6 +91,7 @@ export default function AthkarCounterScreen({ route, navigation }) {
   );
 
   useEffect(() => {
+    if (isFavoritesMode) return; // no real daily progress behind a favorites read — starts at 0 every time
     (async () => {
       try {
         const res = await api.get(`/athkar/${date}`);
@@ -105,18 +112,18 @@ export default function AthkarCounterScreen({ route, navigation }) {
     // Only ever meant to run once per category, on mount — `items` is a
     // stable module-level array for a given category.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category, date]);
+  }, [category, date, isFavoritesMode]);
 
   const syncItem = useCallback(
     async (itemIndex, wasComplete, isNowComplete) => {
-      if (wasComplete === isNowComplete) return;
+      if (isFavoritesMode || wasComplete === isNowComplete) return;
       try {
         await api.patch(`/athkar/${date}/${category}`, { itemIndex });
       } catch (err) {
         // will resync next time the screen loads with network back
       }
     },
-    [date, category]
+    [date, category, isFavoritesMode]
   );
 
   const onRingPress = useCallback(
