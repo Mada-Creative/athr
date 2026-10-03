@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Dimensions, ScrollView, StyleSheet, View } from 'react-native';
+import { Animated, Dimensions, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -13,6 +13,7 @@ import { api } from '../api/client';
 import { todayISO } from '../utils/date';
 import athkarContent from '../constants/athkarContent';
 import ATHKAR_META from '../constants/athkarMeta';
+import { toggleFavorite, getFavoriteTextsForCategory } from '../utils/favorites';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const CARD_WIDTH = SCREEN_WIDTH - spacing.lg * 2;
@@ -63,6 +64,25 @@ export default function AthkarCounterScreen({ route, navigation }) {
   const [pos, setPos] = useState(0);
   const [previewDir, setPreviewDir] = useState(null); // 'next' | 'prev' | null
   const [transitioning, setTransitioning] = useState(false);
+  const [favoriteTexts, setFavoriteTexts] = useState(() => new Set());
+
+  useEffect(() => {
+    getFavoriteTextsForCategory(category).then(setFavoriteTexts);
+  }, [category]);
+
+  const onToggleFavorite = useCallback(
+    (item) => {
+      // Optimistic — flips immediately, AsyncStorage write happens behind it.
+      setFavoriteTexts((prev) => {
+        const next = new Set(prev);
+        if (next.has(item.text)) next.delete(item.text);
+        else next.add(item.text);
+        return next;
+      });
+      toggleFavorite(category, item);
+    },
+    [category]
+  );
 
   useEffect(() => {
     (async () => {
@@ -313,6 +333,8 @@ export default function AthkarCounterScreen({ route, navigation }) {
               styles={styles}
               onPress={() => onRingPress(itemIndex)}
               onComplete={onRingComplete}
+              favorite={favoriteTexts.has(frontItem.text)}
+              onToggleFavorite={() => onToggleFavorite(frontItem)}
             />
           </Animated.View>
         </GestureDetector>
@@ -325,11 +347,20 @@ export default function AthkarCounterScreen({ route, navigation }) {
   );
 }
 
-function CardBody({ itemKey, item, count, meta, colors, styles, onPress, onComplete }) {
+function CardBody({ itemKey, item, count, meta, colors, styles, onPress, onComplete, favorite, onToggleFavorite }) {
   const done = count >= item.repeat;
   const fontSize = dhikrFontSize(item.text.length);
   return (
     <>
+      {onToggleFavorite ? (
+        <TouchableOpacity
+          style={styles.favoriteButton}
+          onPress={onToggleFavorite}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Ionicons name={favorite ? 'star' : 'star-outline'} size={22} color={favorite ? colors.amber : colors.inkFaint} />
+        </TouchableOpacity>
+      ) : null}
       <View style={[styles.tag, { backgroundColor: `${meta.color}22` }]}>
         <Ionicons name={meta.icon} size={13} color={meta.color} />
         <AppText size={12} weight="bold" color={meta.color} style={{ marginRight: 4 }}>
@@ -419,6 +450,9 @@ function createStyles(colors) {
     },
     cardFront: { zIndex: 2 },
     cardBack: { zIndex: 1 },
+    // Fixed top-right regardless of the app's hand-mirrored RTL layout —
+    // `right` is a physical-screen offset either way, not a flow-relative one.
+    favoriteButton: { position: 'absolute', top: spacing.md, right: spacing.md, zIndex: 3 },
     tag: {
       flexDirection: 'row-reverse',
       alignItems: 'center',

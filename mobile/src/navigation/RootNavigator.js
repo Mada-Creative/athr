@@ -19,6 +19,7 @@ import UpgradeAccountScreen from '../screens/UpgradeAccountScreen';
 import MainTabs from './MainTabs';
 import AthkarCounterScreen from '../screens/AthkarCounterScreen';
 import AthkarListScreen from '../screens/AthkarListScreen';
+import FavoritesScreen from '../screens/FavoritesScreen';
 import QuranScreen from '../screens/QuranScreen';
 import QuranSurahListScreen from '../screens/QuranSurahListScreen';
 import QuranReaderScreen from '../screens/QuranReaderScreen';
@@ -76,6 +77,7 @@ function MainStack() {
       />
       <Stack.Screen name="Tracker" component={TrackerScreen} options={{ title: 'متابعة العبادات' }} />
       <Stack.Screen name="AthkarList" component={AthkarListScreen} options={{ title: 'الأذكار' }} />
+      <Stack.Screen name="Favorites" component={FavoritesScreen} options={{ title: 'المفضلة' }} />
       <Stack.Screen name="AthkarCounter" component={AthkarCounterScreen} options={{ title: '' }} />
       <Stack.Screen name="Quran" component={QuranScreen} options={{ title: 'القرآن الكريم' }} />
       <Stack.Screen name="QuranSurahList" component={QuranSurahListScreen} options={{ title: 'القرآن الكريم' }} />

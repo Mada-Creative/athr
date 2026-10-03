@@ -129,6 +129,7 @@ export default function HomeScreen({ navigation, route }) {
       },
       { key: 'names', title: 'أسماء الله الحسنى', icon: 'sparkles-outline', color: colors.sage, onPress: () => navigation.navigate('Names') },
       { key: 'duas', title: 'أدعية مأثورة', icon: 'hand-left-outline', color: colors.clay, onPress: () => navigation.navigate('Duas') },
+      { key: 'favorites', title: 'المفضلة', icon: 'star-outline', color: colors.amber, onPress: () => navigation.navigate('Favorites') },
       // Only on Monday/Thursday. Unlike the athkar tiles above (which are
       // pure navigation now — see the comment on them), there's no "read"
       // screen to send this one to: marking it *is* the whole interaction,
