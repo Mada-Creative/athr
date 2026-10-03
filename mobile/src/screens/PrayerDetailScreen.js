@@ -24,6 +24,7 @@ export default function PrayerDetailScreen() {
     isStaleLocation,
     refreshLocation,
     lastThirdOfNight,
+    sunrise,
   } = usePrayerTimes();
   const [now, setNow] = useState(new Date());
 
@@ -82,27 +83,48 @@ export default function PrayerDetailScreen() {
         const hasPassed = prayer.time < now && !isNext;
 
         return (
-          <View key={prayer.key} style={[styles.row, isNext && styles.rowActive]}>
-            <View style={styles.rowMain}>
-              <AppText weight="bold" size={16} color={isNext ? colors.white : colors.ink}>
-                {prayer.label}
-              </AppText>
-              <AppText size={12} color={isNext ? colors.accentSoft : colors.inkSoft} style={{ marginTop: 2 }}>
-                {hasPassed ? 'مضت' : isNext ? 'القادمة' : 'لاحقًا اليوم'}
-              </AppText>
+          <React.Fragment key={prayer.key}>
+            <View style={[styles.row, isNext && styles.rowActive]}>
+              <View style={styles.rowMain}>
+                <AppText weight="bold" size={16} color={isNext ? colors.white : colors.ink}>
+                  {prayer.label}
+                </AppText>
+                <AppText size={12} color={isNext ? colors.accentSoft : colors.inkSoft} style={{ marginTop: 2 }}>
+                  {hasPassed ? 'مضت' : isNext ? 'القادمة' : 'لاحقًا اليوم'}
+                </AppText>
+              </View>
+
+              <View style={{ alignItems: 'flex-end' }}>
+                <AppText weight="bold" size={18} color={isNext ? colors.white : colors.ink} style={{ direction: 'ltr' }}>
+                  {formatClock(prayer.time)}
+                </AppText>
+                {isNext ? (
+                  <AppText size={12} color={colors.gold} style={{ marginTop: 2, direction: 'ltr' }}>
+                    بعد {formatCountdownWithSeconds(displayRemaining)}
+                  </AppText>
+                ) : null}
+              </View>
             </View>
 
-            <View style={{ alignItems: 'flex-end' }}>
-              <AppText weight="bold" size={18} color={isNext ? colors.white : colors.ink} style={{ direction: 'ltr' }}>
-                {formatClock(prayer.time)}
-              </AppText>
-              {isNext ? (
-                <AppText size={12} color={colors.gold} style={{ marginTop: 2, direction: 'ltr' }}>
-                  بعد {formatCountdownWithSeconds(displayRemaining)}
+            {/* Not a prayer — shown right after Fajr purely as a reference
+                point (end of fajr time / when ishraq starts), same reason
+                it's kept out of `schedule` itself (see usePrayerTimes.js).
+                Deliberately plainer than the prayer rows above so it doesn't
+                read as a 6th one to track. */}
+            {prayer.key === 'fajr' && sunrise ? (
+              <View style={styles.sunriseRow}>
+                <View style={styles.sunriseLabelGroup}>
+                  <Ionicons name="sunny-outline" size={14} color={colors.inkSoft} />
+                  <AppText size={12.5} color={colors.inkSoft} style={{ marginRight: 6 }}>
+                    الشروق
+                  </AppText>
+                </View>
+                <AppText size={12.5} color={colors.inkSoft} weight="semibold" style={{ direction: 'ltr' }}>
+                  {formatClock(sunrise)}
                 </AppText>
-              ) : null}
-            </View>
-          </View>
+              </View>
+            ) : null}
+          </React.Fragment>
         );
       })}
 
@@ -159,6 +181,15 @@ function createStyles(colors) {
   // theme, so the white text/time on it never washes out in dark mode.
   rowActive: { backgroundColor: colors.accentDark, borderColor: colors.accentDark },
   rowMain: { flex: 1 },
+  sunriseRow: {
+    flexDirection: 'row-reverse',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    marginTop: -2,
+    marginBottom: spacing.sm,
+  },
+  sunriseLabelGroup: { flexDirection: 'row-reverse', alignItems: 'center' },
   qiyamCard: { marginTop: spacing.md },
   qiyamRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: spacing.md },
   qiyamIcon: {

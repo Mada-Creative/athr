@@ -202,6 +202,12 @@ export default function usePrayerTimes() {
     dayPeriod,
     lastThirdOfNight: sunnah?.lastThirdOfTheNight ?? null,
     middleOfNight: sunnah?.middleOfTheNight ?? null,
+    // Exposed separately from `schedule` rather than left in it — `schedule`
+    // feeds prayer-completion tracking (Tracker's grid, notification
+    // scheduling) where sunrise has no business being a 6th "prayer" to mark
+    // done; this is purely for display (see PrayerDetailScreen, right after
+    // Fajr's own row).
+    sunrise: times?.sunrise ?? null,
   };
 }
 
