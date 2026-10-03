@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Env
+.env
+.env.local
+
+# Expo
+mobile/.expo/
+mobial/.expo-shared/
+mobile/dist/
+mobile/web-build/
+
+# Native builds
+mobile/ios/
+mobile/android/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# OS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
