@@ -146,16 +146,21 @@ function createStyles(colors) {
     bannerRule: { height: 1, alignSelf: 'stretch', backgroundColor: colors.gold, opacity: 0.4, marginVertical: 6 },
     surahName: { fontFamily: typography.fontQuran, fontSize: 24, color: colors.amberDeep, textAlign: 'center' },
     bismillah: { fontFamily: typography.fontQuran, fontSize: 20, color: colors.ink, textAlign: 'center' },
-    // `justify` so the page reads as one flowing block (closer to the real
-    // mushaf's layout) rather than ragged-edged like a normal paragraph —
-    // supported on both platforms, though exact spacing distribution is up
-    // to each OS's own text engine.
+    // Plain right alignment, not 'justify' — justify's stretched inter-word
+    // spacing has a real bug with Arabic text on both platforms' text
+    // engines: it can split a word's trailing connected letter (tanween's
+    // alif in particular — "مَرَضًا" rendering as "مَرَضَ" then a stray "ا"
+    // floating on its own) onto the wrong line entirely. A normal ragged
+    // left edge is how every other Arabic reading app (including the old
+    // per-ayah-card version of this screen) renders body text, for exactly
+    // this reason.
     pageText: {
       fontFamily: typography.fontQuran,
       fontSize: 22,
       lineHeight: 46,
       color: colors.ink,
-      textAlign: 'justify',
+      textAlign: 'right',
+      writingDirection: 'rtl',
       marginBottom: spacing.lg,
     },
     ayahMarker: { fontSize: 16, color: colors.amberDeep },
