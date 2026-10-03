@@ -19,6 +19,7 @@ import usePrayerTimes, { formatCountdownWithSeconds, formatClock } from '../hook
 import usePrayerNotifications from '../hooks/usePrayerNotifications';
 import useAthkarReminderNotifications from '../hooks/useAthkarReminderNotifications';
 import useFridaySunnahNotifications from '../hooks/useFridaySunnahNotifications';
+import useQuranReminderNotification from '../hooks/useQuranReminderNotification';
 import useDailyData from '../hooks/useDailyData';
 import ATHKAR_META from '../constants/athkarMeta';
 import { afterPrayerCategory } from '../constants/afterPrayerSlots';
@@ -190,6 +191,7 @@ export default function HomeScreen({ navigation, route }) {
   usePrayerNotifications(schedule, user?.prayerNotifications, prayerLog);
   useAthkarReminderNotifications(schedule);
   useFridaySunnahNotifications(schedule);
+  useQuranReminderNotification(user?.quranReminderTime);
 
   useFocusEffect(
     useCallback(() => {

@@ -41,6 +41,10 @@ const UserSchema = new mongoose.Schema(
     calculationMethod: { type: String, default: 'UmmAlQura' },
     madhab: { type: String, enum: ['shafii', 'hanafi'], default: 'shafii' },
     prayerNotifications: { type: PrayerNotificationsSchema, default: () => ({}) },
+    // "HH:mm" (24h) for the daily Quran-wird reminder; null means off. Any
+    // time of day is valid (unlike reminderMinutes above, there's no preset
+    // list) — validated as a plain HH:mm string in the controller.
+    quranReminderTime: { type: String, default: null },
   },
   { timestamps: true }
 );
@@ -61,6 +65,7 @@ UserSchema.methods.toPublicJSON = function toPublicJSON() {
     calculationMethod: this.calculationMethod,
     madhab: this.madhab,
     prayerNotifications: this.prayerNotifications,
+    quranReminderTime: this.quranReminderTime,
     createdAt: this.createdAt,
   };
 };

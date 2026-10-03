@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Alert, I18nManager, Linking, StyleSheet, Switch, TouchableOpacity, View } from 'react-native';
+import { Alert, I18nManager, Linking, Platform, StyleSheet, Switch, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import Screen from '../components/Screen';
 import AppText from '../components/AppText';
 import Card from '../components/Card';
@@ -33,6 +34,21 @@ const REMINDER_OPTIONS = [
   { value: 60, label: 'ساعة' },
 ];
 
+// No time of day is off-limits for the Quran reminder (unlike reminderMinutes
+// above, there's no preset list) — "HH:mm" is what the backend stores and
+// what the notification hook schedules from; these just bridge that to/from
+// the native time picker's Date object.
+const DEFAULT_QURAN_REMINDER_TIME = '20:00';
+function timeStringToDate(hhmm) {
+  const [hour, minute] = (hhmm || DEFAULT_QURAN_REMINDER_TIME).split(':').map(Number);
+  const d = new Date();
+  d.setHours(hour, minute, 0, 0);
+  return d;
+}
+function dateToTimeString(date) {
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+}
+
 const INSTAGRAM_URL = 'https://www.instagram.com/byatharapp/';
 
 const THEME_OPTIONS = [
@@ -47,12 +63,24 @@ export default function SettingsScreen() {
   const { user, isGuest, updateUser, logout } = useAuth();
   const [atAdhan, setAtAdhan] = useState(user?.prayerNotifications?.atAdhan ?? false);
   const [reminderMinutes, setReminderMinutes] = useState(user?.prayerNotifications?.reminderMinutes ?? null);
+  const [quranReminderOn, setQuranReminderOn] = useState(Boolean(user?.quranReminderTime));
+  const [quranReminderTime, setQuranReminderTime] = useState(timeStringToDate(user?.quranReminderTime));
+  const [showQuranTimePicker, setShowQuranTimePicker] = useState(false);
   const [gender, setGender] = useState(user?.gender ?? null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   // Debug-only escape hatch — see the toggle below for why this exists.
   const [rtlOn, setRtlOn] = useState(I18nManager.isRTL);
+
+  // Android's picker is a one-shot dialog (fires once, closes itself); iOS's
+  // inline spinner stays open and keeps firing as the user scrolls it, so
+  // only Android needs to be told to hide after a selection.
+  const onQuranTimeChange = (event, selectedDate) => {
+    if (Platform.OS === 'android') setShowQuranTimePicker(false);
+    if (event.type === 'dismissed' || !selectedDate) return;
+    setQuranReminderTime(selectedDate);
+  };
 
   const onToggleRealRTL = (value) => {
     I18nManager.allowRTL(value);
@@ -69,6 +97,7 @@ export default function SettingsScreen() {
       const res = await api.put('/auth/settings', {
         gender,
         prayerNotifications: { atAdhan, reminderMinutes },
+        quranReminderTime: quranReminderOn ? dateToTimeString(quranReminderTime) : null,
       });
       updateUser(res.user);
       setSuccess(true);
@@ -188,6 +217,48 @@ export default function SettingsScreen() {
       </Card>
 
       <AppText weight="bold" size={16} style={{ marginTop: spacing.xl, marginBottom: spacing.sm }}>
+        تذكير ورد القرآن
+      </AppText>
+      <Card>
+        <View style={styles.notifRow}>
+          <Switch value={quranReminderOn} onValueChange={setQuranReminderOn} trackColor={{ true: colors.amber }} />
+          <View style={{ flex: 1 }}>
+            <AppText size={14} weight="semibold">
+              تذكير يومي بوقت تختاره
+            </AppText>
+            <AppText size={11.5} color={colors.inkSoft} style={{ marginTop: 2 }}>
+              إشعار كل يوم بنفس الوقت يذكّرك تاخذ وردك من القرآن
+            </AppText>
+          </View>
+        </View>
+
+        {quranReminderOn ? (
+          <>
+            <View style={styles.divider} />
+            <TouchableOpacity style={styles.timeRow} onPress={() => setShowQuranTimePicker(true)}>
+              <AppText size={14} weight="semibold">
+                الوقت
+              </AppText>
+              <View style={styles.timeValue}>
+                <AppText size={14} weight="bold" color={colors.accentDark}>
+                  {dateToTimeString(quranReminderTime)}
+                </AppText>
+                <Ionicons name="time-outline" size={18} color={colors.accentDark} />
+              </View>
+            </TouchableOpacity>
+            {showQuranTimePicker ? (
+              <DateTimePicker
+                value={quranReminderTime}
+                mode="time"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={onQuranTimeChange}
+              />
+            ) : null}
+          </>
+        ) : null}
+      </Card>
+
+      <AppText weight="bold" size={16} style={{ marginTop: spacing.xl, marginBottom: spacing.sm }}>
         تجربة: اتجاه الواجهة (تجريبي)
       </AppText>
       <AppText size={12} color={colors.inkSoft} style={{ marginBottom: spacing.sm }}>
@@ -280,6 +351,13 @@ function createStyles(colors) {
       borderBottomColor: colors.border,
     },
     notifRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: spacing.md },
+    timeRow: {
+      flexDirection: 'row-reverse',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: spacing.xs,
+    },
+    timeValue: { flexDirection: 'row-reverse', alignItems: 'center', gap: spacing.xs },
     divider: { height: 1, backgroundColor: colors.border, marginVertical: spacing.md },
     socialRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: spacing.md },
     socialIconWrap: {

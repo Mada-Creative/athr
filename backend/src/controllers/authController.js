@@ -251,10 +251,11 @@ async function me(req, res) {
 }
 
 const REMINDER_PRESETS = [null, 5, 10, 15, 30, 60];
+const TIME_HH_MM = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 async function updateSettings(req, res) {
   try {
-    const { name, city, gender, calculationMethod, madhab, prayerNotifications } = req.body;
+    const { name, city, gender, calculationMethod, madhab, prayerNotifications, quranReminderTime } = req.body;
     const user = req.user;
 
     if (name !== undefined) user.name = name;
@@ -275,6 +276,13 @@ async function updateSettings(req, res) {
         return res.status(400).json({ message: 'قيمة التذكير قبل الصلاة غير صالحة' });
       }
       user.prayerNotifications = merged;
+    }
+
+    if (quranReminderTime !== undefined) {
+      if (quranReminderTime !== null && !TIME_HH_MM.test(quranReminderTime)) {
+        return res.status(400).json({ message: 'وقت تذكير القرآن يجب أن يكون بصيغة HH:mm أو فارغًا' });
+      }
+      user.quranReminderTime = quranReminderTime;
     }
 
     await user.save();
