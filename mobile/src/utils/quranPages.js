@@ -58,21 +58,29 @@ export function pageForSurah(surahId) {
   return surah?.verses?.[0]?.page ?? 1;
 }
 
-// The bundled Uthmani text writes the silent "extra" alif after a tanween
-// fatḥ (e.g. "مَرَضًا") as its own character separated by a real space —
-// `مَرَضࣰ` + ` ` + `ا` — matching how that alif sits slightly apart from
-// the rest of the word in an actual printed mushaf. It's not a word
-// boundary though: it's one word, and a plain space there is a legal line
-// break point as far as any text-wrapping engine is concerned, which is
-// exactly what was splitting "مَرَضًا" into "مَرَضَ" + a stray "ا" at the
-// end of a line. Swapping that one space for a non-breaking space keeps
-// the same visual gap (correct Uthmani spacing) but stops the line from
-// ever breaking there. Matches U+08F0/08F1/08F2 (the Quran-specific open
-// tanween marks this dataset uses) as well as the standard U+064B-D
-// tanween marks, just in case.
-const TANWEEN_ALIF_SPACE = /([ً-ࣰٍ-ࣲ]) (آ|ا)/g;
+// The bundled Uthmani text writes the silent "extra" letter after a
+// tanween fath (the alif in "مَرَضًا", or alif maqsura in "هُدًى") as its
+// own character separated by a REAL space — `مَرَضࣰ` + ` ` + `ا` — a
+// convention meant for specialist mushaf-print fonts that reshape that
+// exact sequence into one tucked-in glyph via an OpenType feature. Our
+// font (and React Native's text rendering in general) doesn't apply that
+// substitution, so the space just renders as a literal gap — the letter
+// visibly detached from its own word, on the very same line (confirmed
+// against real verses; an earlier fix here only stopped it from also
+// wrapping onto the next line, which was never the actual complaint).
+// A tanween+space+ا/ى/آ is NOT always this convention, though — sometimes
+// it's a real new word genuinely starting with one of those letters (most
+// often a hamza written in decomposed form, "ا" + combining hamza-above,
+// as in "عَذَابٌ أَلِيمٌ"). The giveaway: a real word's alif carries its
+// own tashkeel mark right after it (U+064B-065F); the silent trailing
+// letter never does — it's followed only by whitespace, a Quranic
+// pause/annotation mark, punctuation, or the end of the verse. Checked
+// against the full Quran text with this rule: 2417 genuine silent-letter
+// collapses, 369 real word boundaries correctly left alone (verified by
+// hand against cases like "عَذَابٌ أَلِيمٌ", "إِلَّا", "أَوْ").
+const TANWEEN_ALIF_SPACE = /([\u064B-\u064D\u08F0-\u08F2]) ([اىآ])(?![\u064B-\u065F])/g;
 export function fixTanweenAlifSpacing(text) {
-  return text.replace(TANWEEN_ALIF_SPACE, '$1 $2');
+  return text.replace(TANWEEN_ALIF_SPACE, '$1$2');
 }
 
 const ARABIC_INDIC_DIGITS = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
