@@ -6,7 +6,14 @@ import AppText from '../components/AppText';
 import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme/spacing';
 import typography from '../theme/typography';
-import { QURAN_PAGES, TOTAL_PAGES, NO_BISMILLAH_HEADER, pageForSurah, toArabicIndicDigits } from '../utils/quranPages';
+import {
+  QURAN_PAGES,
+  TOTAL_PAGES,
+  NO_BISMILLAH_HEADER,
+  pageForSurah,
+  toArabicIndicDigits,
+  fixTanweenAlifSpacing,
+} from '../utils/quranPages';
 
 const BISMILLAH = 'بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ';
 
@@ -91,7 +98,7 @@ export default function QuranReaderScreen({ route, navigation }) {
             <AppText key={`verses-${block.surah.id}-${i}`} style={styles.pageText}>
               {block.verses.map((v) => (
                 <Text key={v.id}>
-                  {v.text}
+                  {fixTanweenAlifSpacing(v.text)}
                   <Text style={styles.ayahMarker}>{` ﴿${toArabicIndicDigits(v.id)}﴾ `}</Text>
                   {v.sajda ? <Text style={styles.sajdaMark}>۩ </Text> : null}
                 </Text>

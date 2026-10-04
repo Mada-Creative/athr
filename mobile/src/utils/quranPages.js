@@ -58,6 +58,23 @@ export function pageForSurah(surahId) {
   return surah?.verses?.[0]?.page ?? 1;
 }
 
+// The bundled Uthmani text writes the silent "extra" alif after a tanween
+// fatḥ (e.g. "مَرَضًا") as its own character separated by a real space —
+// `مَرَضࣰ` + ` ` + `ا` — matching how that alif sits slightly apart from
+// the rest of the word in an actual printed mushaf. It's not a word
+// boundary though: it's one word, and a plain space there is a legal line
+// break point as far as any text-wrapping engine is concerned, which is
+// exactly what was splitting "مَرَضًا" into "مَرَضَ" + a stray "ا" at the
+// end of a line. Swapping that one space for a non-breaking space keeps
+// the same visual gap (correct Uthmani spacing) but stops the line from
+// ever breaking there. Matches U+08F0/08F1/08F2 (the Quran-specific open
+// tanween marks this dataset uses) as well as the standard U+064B-D
+// tanween marks, just in case.
+const TANWEEN_ALIF_SPACE = /([ً-ࣰٍ-ࣲ]) (آ|ا)/g;
+export function fixTanweenAlifSpacing(text) {
+  return text.replace(TANWEEN_ALIF_SPACE, '$1 $2');
+}
+
 const ARABIC_INDIC_DIGITS = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
 export function toArabicIndicDigits(n) {
   return String(n)
