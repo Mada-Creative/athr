@@ -32,6 +32,7 @@ const NAWAFIL_KEYS = [
   'dhuhrBadiyah',
   'maghribSunnah',
   'ishaSunnah',
+  'duha',
   'qiyam',
   'witr',
 ];

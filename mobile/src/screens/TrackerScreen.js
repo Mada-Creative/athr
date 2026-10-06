@@ -50,6 +50,7 @@ const PRAYER_COLUMNS = [
       { type: 'fard', key: 'fajr', title: 'الفرض', icon: 'moon-outline' },
       { type: 'athkar', category: afterPrayerCategory('fajr'), title: 'أذكار الصلاة', icon: 'business-outline' },
       { type: 'nawafil', key: 'fajrSunnah', title: 'سنة', icon: 'star-outline' },
+      { type: 'nawafil', key: 'duha', title: 'الضحى', icon: 'sunny-outline' },
       { type: 'athkar', category: 'morning', title: 'أذكار الصباح', icon: 'partly-sunny-outline' },
     ],
   },

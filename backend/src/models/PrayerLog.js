@@ -21,6 +21,7 @@ const PrayerLogSchema = new mongoose.Schema(
       dhuhrBadiyah: { type: Boolean, default: false },
       maghribSunnah: { type: Boolean, default: false },
       ishaSunnah: { type: Boolean, default: false },
+      duha: { type: Boolean, default: false },
       qiyam: { type: Boolean, default: false },
       witr: { type: Boolean, default: false },
     },

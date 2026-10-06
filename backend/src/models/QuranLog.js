@@ -7,6 +7,11 @@ const QuranLogSchema = new mongoose.Schema(
     date: { type: String, required: true, index: true },
     completed: { type: Boolean, default: false },
     pagesRead: { type: Number, default: 0 },
+    // Separate from the daily wird (`completed`) — سنة قراءة سورة الكهف
+    // only applies on Fridays, so it's its own flag rather than folded
+    // into the same checkbox someone might have already ticked for an
+    // unrelated reading portion that same day.
+    kahfRead: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

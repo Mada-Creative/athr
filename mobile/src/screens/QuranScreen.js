@@ -59,6 +59,21 @@ export default function QuranScreen({ navigation }) {
     }
   };
 
+  const toggleKahf = async () => {
+    const next = !log?.kahfRead;
+    setLog((prev) => ({ ...prev, kahfRead: next }));
+    try {
+      const res = await api.patch(`/quran/${date}`, { kahfRead: next });
+      setLog(res.log);
+    } catch (err) {
+      setLog((prev) => ({ ...prev, kahfRead: !next }));
+    }
+  };
+
+  // Own flag (kahfRead), separate from the daily wird — Friday-only, so
+  // only shown that day rather than as a 6/7-empty row the rest of the week.
+  const isFriday = new Date().getDay() === 5;
+
   return (
     <Screen>
       <AppText weight="bold" size={22}>
@@ -104,6 +119,42 @@ export default function QuranScreen({ navigation }) {
         </View>
         <Ionicons name="chevron-back" size={18} color={colors.white} />
       </Bounce>
+
+      {isFriday ? (
+        <Card style={{ marginTop: spacing.lg }}>
+          <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: spacing.sm }}>
+            <View style={[styles.heroIconWrap, { width: 40, height: 40, backgroundColor: log?.kahfRead ? colors.sage : colors.amberSoft }]}>
+              <Ionicons
+                name={log?.kahfRead ? 'checkmark' : 'book-outline'}
+                size={18}
+                color={log?.kahfRead ? colors.white : colors.amberDeep}
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <AppText weight="bold" size={14}>
+                سُنّة قراءة سورة الكهف
+              </AppText>
+              <AppText size={11.5} color={colors.inkSoft} style={{ marginTop: 2 }}>
+                من قرأها يوم الجمعة أضاء له من النور ما بين الجمعتين
+              </AppText>
+            </View>
+          </View>
+          <View style={{ flexDirection: 'row-reverse', gap: spacing.sm, marginTop: spacing.md }}>
+            <PrimaryButton
+              title={log?.kahfRead ? 'تمت القراءة ✓' : 'تمت القراءة'}
+              onPress={toggleKahf}
+              variant={log?.kahfRead ? 'outline' : 'solid'}
+              style={{ flex: 1 }}
+            />
+            <PrimaryButton
+              title="اقرأها الآن"
+              onPress={() => navigation.navigate('QuranReader', { surahId: 18 })}
+              variant="outline"
+              style={{ flex: 1 }}
+            />
+          </View>
+        </Card>
+      ) : null}
 
       <Card style={{ marginTop: spacing.lg }}>
         <AppText weight="semibold" size={14} style={{ marginBottom: spacing.sm }}>

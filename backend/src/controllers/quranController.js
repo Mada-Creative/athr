@@ -25,7 +25,7 @@ async function getByDate(req, res) {
 
 async function toggle(req, res) {
   const { date } = req.params;
-  const { completed, pagesRead } = req.body;
+  const { completed, pagesRead, kahfRead } = req.body;
 
   if (!isValidDateParam(date)) {
     return res.status(400).json({ message: 'صيغة التاريخ غير صحيحة (YYYY-MM-DD)' });
@@ -34,6 +34,7 @@ async function toggle(req, res) {
   const update = {};
   if (typeof completed === 'boolean') update.completed = completed;
   if (typeof pagesRead === 'number') update.pagesRead = pagesRead;
+  if (typeof kahfRead === 'boolean') update.kahfRead = kahfRead;
 
   let log;
   try {
